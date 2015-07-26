@@ -1,0 +1,14 @@
+
+#define ENABLE_RELOCATABLE 1
+#undef mbstate_t
+#undef HAVE_ICONV
+#define ICONV_CONST const
+#undef HAVE_GETC_UNLOCKED
+#undef HAVE_LANGINFO_CODESET
+#undef HAVE_MBRTOWC
+#define HAVE_SETLOCALE 1
+#define HAVE_STDDEF_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#undef HAVE_WCRTOMB
+#define WORDS_LITTLEENDIAN 1
