@@ -8,60 +8,60 @@ namespace ssh
 
 	Mail::Command_Entry command_list[] =
 	{
-		{Mail::command_smtp_INIT, 20000, 220, L"SERVER_NOT_RESPONDING"},
-		{Mail::command_smtp_EHLO, 20000, 250, L"COMMAND_EHLO"},
-		{Mail::command_smtp_AUTHPLAIN, 20000, 235, L"COMMAND_AUTH_PLAIN"},
-		{Mail::command_smtp_AUTHLOGIN, 20000, 334, L"COMMAND_AUTH_LOGIN"},
-		{Mail::command_smtp_AUTHCRAMMD5, 20000, 334, L"COMMAND_AUTH_CRAMMD5"},
-		{Mail::command_smtp_AUTHDIGESTMD5, 20000, 334, L"COMMAND_AUTH_DIGESTMD5"},
-		{Mail::command_smtp_DIGESTMD5, 20000, 335, L"COMMAND_DIGESTMD5"},
-		{Mail::command_smtp_USER, 20000, 334, L"UNDEF_XYZ_RESPONSE"},
-		{Mail::command_smtp_PASSWORD, 20000, 235, L"BAD_LOGIN_PASS"},
-		{Mail::command_smtp_MAILFROM, 20000, 250, L"COMMAND_MAIL_FROM"},
-		{Mail::command_smtp_RCPTTO, 20000, 250, L"COMMAND_RCPT_TO"},
-		{Mail::command_smtp_DATA, 10000, 354, L"COMMAND_DATA"},
-		{Mail::command_smtp_DATABLOCK, 10000, 0, L"COMMAND_DATABLOCK"},
-		{Mail::command_smtp_DATAEND, 30000, 250, L"MSG_BODY_ERROR"},
-		{Mail::command_smtp_STARTTLS, 20000, 220, L"COMMAND_EHLO_STARTTLS"},
-		{Mail::command_smtp_QUIT, 20000, 221, L"COMMAND_QUIT"},
-		{Mail::command_pop_INIT, 20000, 1, L"SERVER_NOT_RESPONDING"},
-		{Mail::command_pop_USER, 20000, 1, L"UNDEF_XYZ_RESPONSE"},
-		{Mail::command_pop_PASSWORD, 20000, 1, L"BAD_LOGIN_PASS"},
-		{Mail::command_pop_APOP, 20000, 1, L"COOMAND_APOP"},
-		{Mail::command_pop_DELE, 20000, 1, L"COOMAND_DELE"},
-		{Mail::command_pop_LIST, 20000, 1, L"COOMAND_LIST"},
-		{Mail::command_pop_NOOP, 20000, 1, L"COOMAND_NOOP"},
-		{Mail::command_pop_RETR, 20000, 1, L"COOMAND_RETR"},
-		{Mail::command_pop_RSET, 20000, 1, L"COOMAND_RSET"},
-		{Mail::command_pop_STAT, 20000, 1, L"COOMAND_STAT"},
-		{Mail::command_pop_TOP, 20000, 1, L"COOMAND_TOP"},
-		{Mail::command_pop_STLS, 20000, 1, L"COMMAND_STARTTLS"},
-		{Mail::command_pop_QUIT, 20000, 1, L"COMMAND_QUIT"},
-		{Mail::command_pop_CAPA, 20000, 1, L"COMMAND_CAPA"},
-		{Mail::command_pop_UIDL, 20000, 1, L"COMMAND_UIDL"},
-		{Mail::command_imap_INIT, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_LOGIN, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_AUTHENTICATE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_CLOSE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_LOGOUT, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_CREATE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_DELETE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_RENAME, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_SUBSCRIBE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_UNSUBSCRIBE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_LIST, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_LSUB, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_STATUS, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_APPEND, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_CHECK, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_EXPUNGE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_SEARCH, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_FETCH, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_STORE, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_COPY, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_UID, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_CAPABILITY, 20000, 1, L"COMMAND_"},
-		{Mail::command_imap_NOOP, 20000, 1, L"COMMAND_"}
+		{Mail::command_smtp_INIT, 220, L"SERVER_NOT_RESPONDING"},
+		{Mail::command_smtp_EHLO, 250, L"COMMAND_EHLO"},
+		{Mail::command_smtp_AUTHPLAIN, 235, L"COMMAND_AUTH_PLAIN"},
+		{Mail::command_smtp_AUTHLOGIN, 334, L"COMMAND_AUTH_LOGIN"},
+		{Mail::command_smtp_AUTHCRAMMD5, 334, L"COMMAND_AUTH_CRAMMD5"},
+		{Mail::command_smtp_AUTHDIGESTMD5, 334, L"COMMAND_AUTH_DIGESTMD5"},
+		{Mail::command_smtp_DIGESTMD5, 335, L"COMMAND_DIGESTMD5"},
+		{Mail::command_smtp_USER, 334, L"UNDEF_XYZ_RESPONSE"},
+		{Mail::command_smtp_PASSWORD, 235, L"BAD_LOGIN_PASS"},
+		{Mail::command_smtp_MAILFROM, 250, L"COMMAND_MAIL_FROM"},
+		{Mail::command_smtp_RCPTTO, 250, L"COMMAND_RCPT_TO"},
+		{Mail::command_smtp_DATA, 354, L"COMMAND_DATA"},
+		{Mail::command_smtp_DATABLOCK, 0, L"COMMAND_DATABLOCK"},
+		{Mail::command_smtp_DATAEND, 250, L"MSG_BODY_ERROR"},
+		{Mail::command_smtp_STARTTLS, 220, L"COMMAND_EHLO_STARTTLS"},
+		{Mail::command_smtp_QUIT, 221, L"COMMAND_QUIT"},
+		{Mail::command_pop_INIT, 1, L"SERVER_NOT_RESPONDING"},
+		{Mail::command_pop_USER, 1, L"UNDEF_XYZ_RESPONSE"},
+		{Mail::command_pop_PASSWORD, 1, L"BAD_LOGIN_PASS"},
+		{Mail::command_pop_APOP, 1, L"COOMAND_APOP"},
+		{Mail::command_pop_DELE, 1, L"COOMAND_DELE"},
+		{Mail::command_pop_LIST, 1, L"COOMAND_LIST"},
+		{Mail::command_pop_NOOP, 1, L"COOMAND_NOOP"},
+		{Mail::command_pop_RETR, 1, L"COOMAND_RETR"},
+		{Mail::command_pop_RSET, 1, L"COOMAND_RSET"},
+		{Mail::command_pop_STAT, 1, L"COOMAND_STAT"},
+		{Mail::command_pop_TOP, 1, L"COOMAND_TOP"},
+		{Mail::command_pop_STLS, 1, L"COMMAND_STARTTLS"},
+		{Mail::command_pop_QUIT, 1, L"COMMAND_QUIT"},
+		{Mail::command_pop_CAPA, 1, L"COMMAND_CAPA"},
+		{Mail::command_pop_UIDL, 1, L"COMMAND_UIDL"},
+		{Mail::command_imap_INIT, 1, L"COMMAND_"},
+		{Mail::command_imap_LOGIN, 1, L"COMMAND_"},
+		{Mail::command_imap_AUTHENTICATE, 1, L"COMMAND_AUTHENTICATE"},
+		{Mail::command_imap_CLOSE, 1, L"COMMAND_CLOSE"},
+		{Mail::command_imap_LOGOUT, 1, L"COMMAND_LOGOUT"},
+		{Mail::command_imap_CREATE, 1, L"COMMAND_CREATE"},
+		{Mail::command_imap_DELETE, 1, L"COMMAND_DELETE"},
+		{Mail::command_imap_RENAME, 1, L"COMMAND_RENAME"},
+		{Mail::command_imap_SUBSCRIBE, 1, L"COMMAND_SUBSCRIBE"},
+		{Mail::command_imap_UNSUBSCRIBE, 1, L"COMMAND_"},
+		{Mail::command_imap_LIST, 1, L"COMMAND_"},
+		{Mail::command_imap_LSUB, 1, L"COMMAND_"},
+		{Mail::command_imap_STATUS, 1, L"COMMAND_"},
+		{Mail::command_imap_APPEND, 1, L"COMMAND_"},
+		{Mail::command_imap_CHECK, 1, L"COMMAND_"},
+		{Mail::command_imap_EXPUNGE, 1, L"COMMAND_"},
+		{Mail::command_imap_SEARCH, 1, L"COMMAND_"},
+		{Mail::command_imap_FETCH, 1, L"COMMAND_"},
+		{Mail::command_imap_STORE, 1, L"COMMAND_"},
+		{Mail::command_imap_COPY, 1, L"COMMAND_"},
+		{Mail::command_imap_UID, 1, L"COMMAND_"},
+		{Mail::command_imap_CAPABILITY, 1, L"COMMAND_"},
+		{Mail::command_imap_NOOP, 1, L"COMMAND_"}
 	};
 
 	static void sock_connect(Socket* sock, Socket::SOCK* s)
@@ -130,7 +130,7 @@ namespace ssh
 		return (rx.match(caps, cmd.fmt(L"(?im)[-\\s=]+%s[\\s=]+", keyword)) > 0);
 	}
 	
-	void Mail::send_cmd(ssh_u command, ssh_u flags, const Buffer<ssh_cs>& data)
+	void Mail::send_cmd(ssh_u command, const Buffer<ssh_cs>& data, ssh_u flags)
 	{
 		resp.empty();
 		const Socket::SOCK* s(sock.get_sock(0));
@@ -145,12 +145,12 @@ namespace ssh
 		if(!log->is_email_blocked()) SSH_LOG(L"Ошибка при отправке!");
 	}
 
-	void Mail::send_cmd(ssh_u command, ssh_u flags, ssh_wcs fmt, ...)
+	void Mail::send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags, ...)
 	{
 		String data;
 		// формируем сообщение
 		va_list	arglist;
-		va_start(arglist, fmt);
+		va_start(arglist, flags);
 		data.fmt(fmt, arglist);
 		va_end(arglist);
 
@@ -216,7 +216,7 @@ namespace ssh
 			connect_pop3();
 			// ***** ПОЛУЧЕНИЕ СПИСКА ПИСЕМ *****
 			// определяем количество писем и их суммарнй размер в байтах
-			send_cmd(command_pop_STAT, 0, L"STAT\r\n");
+			send_cmd(command_pop_STAT, L"STAT\r\n");
 			ssh_u count(resp.toNum<ssh_u>(4, String::_dec));
 			// проходим циклом по все письмам
 			for(ssh_u i = 1; i < count; i++)
@@ -224,10 +224,10 @@ namespace ssh
 				MAIL* m(nullptr);
 				if(check_keyword(L"TOP"))
 				{
-					send_cmd(command_pop_TOP, Mail::cont_resp, L"TOP %i 0\r\n", i);
+					send_cmd(command_pop_TOP, L"TOP %i 0\r\n", Mail::cont_resp, i);
 					if(!(m = parse_mail(resp, x, nullptr, false))) continue;
 				}
-				send_cmd(command_pop_RETR, Mail::cont_resp, L"RETR %i\r\n", i);
+				send_cmd(command_pop_RETR, L"RETR %i\r\n", Mail::cont_resp, i);
 				if((m = parse_mail(resp, x, m, true)))
 				{
 					if(lst) lst->add(m);
@@ -253,22 +253,22 @@ namespace ssh
 		String timestamp;
 		protocol = Protocol::_pop3;
 		sock.init(host, 0, sock_flags, L"", L"");
-		recv_resp(command_pop_INIT, 0);
+		recv_resp(command_pop_INIT);
 		ssh_l pos(resp.find(L" <"));
 		if(pos >= 0) timestamp = resp.substr(pos + 1, resp.find_rev(L'>') - (pos + 1));
-		send_cmd(command_pop_CAPA, 0, L"CAPA\r\n");
+		send_cmd(command_pop_CAPA, L"CAPA\r\n");
 		caps = resp;
 		if(check_keyword(L"STLS") && (sock_flags & Socket::OPENTLS)) start_tls();
 		// проверяем на тип авторизации (USER APOP)
 		if(check_keyword(L"APOP"))
 		{
 			String str(ssh_md5(timestamp + pass));
-			send_cmd(command_pop_APOP, 0, L"APOP %s %s\r\n", login, str);
+			send_cmd(command_pop_APOP, L"APOP %s %s\r\n", login, str);
 		}
 		else if(check_keyword(L"USER"))
 		{
-			send_cmd(command_pop_USER, 0, L"USER %s\r\n", login);
-			send_cmd(command_pop_PASSWORD, 0, L"PASS %s\r\n", pass);
+			send_cmd(command_pop_USER, L"USER %s\r\n", login);
+			send_cmd(command_pop_PASSWORD, L"PASS %s\r\n", pass);
 		}
 		else SSH_THROW(L"LOGIN_NOT_SUPPORTED");
 	}
@@ -295,9 +295,9 @@ namespace ssh
 		String timestamp;
 		protocol = Protocol::_pop3;
 		sock.init(host, 0, sock_flags, L"", L"");
-		recv_resp(command_imap_INIT, 0);
+		recv_resp(command_imap_INIT);
 		ssh_l pos(resp.find(L" <"));
-		send_cmd(command_imap_CAPABILITY, 0, L"CAPABILITY\r\n");
+		send_cmd(command_imap_CAPABILITY, L"CAPABILITY\r\n");
 		caps = resp;
 //		if(check_keyword(L"STLS") && (sock_flags & Socket::OPENTLS)) start_tls();
 	}
@@ -326,13 +326,13 @@ namespace ssh
 			// ***** ОТПРАВКА ПОЧТЫ *****
 			if(recipients.is_empty()) SSH_THROW(L"UNDEF_RECIPIENTS");
 			if(sender.mail.is_empty()) SSH_THROW(L"UNDEF_MAIL_FROM");
-			send_cmd(command_smtp_MAILFROM, 0, L"MAIL FROM: %s\r\n", sender.mail);
+			send_cmd(command_smtp_MAILFROM, L"MAIL FROM: %s\r\n", 0, sender.mail);
 			auto nn(recipients.root());
-			while((nn = recipients.next())) send_cmd(command_smtp_RCPTTO, 0, L"RCPT TO: %s\r\n", nn->value.mail);
+			while((nn = recipients.next())) send_cmd(command_smtp_RCPTTO, L"RCPT TO: %s\r\n", 0, nn->value.mail);
 			// DATA <CRLF>
-			send_cmd(command_smtp_DATA, 0, L"DATA\r\n");
-			send_cmd(command_smtp_DATABLOCK, Mail::no_resp, headers(subject, is_html, is_notify).buffer());
-			send_cmd(command_smtp_DATABLOCK, Mail::no_resp, ssh_cnv(charset, body, false));
+			send_cmd(command_smtp_DATA, L"DATA\r\n");
+			send_cmd(command_smtp_DATABLOCK, headers(subject, is_html, is_notify).buffer(), Mail::no_resp);
+			send_cmd(command_smtp_DATABLOCK, ssh_cnv(charset, body, false), Mail::no_resp);
 			n = attach.root();
 			while((n = attach.next()))
 			{
@@ -343,14 +343,14 @@ namespace ssh
 					if((pos = name.find_rev(L'\\')) < 0) continue;
 					File f(name, File::open_read);
 					name.fmt(L"=?%s?B?%s?=", charset, ssh_to_base64(name.substr(pos + 1), true).to<ssh_ws>());
-					send_cmd(command_smtp_DATABLOCK, Mail::no_resp, L"--%s\r\nContent-Type: application/x-msdownload; name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n", msg_id, name, name);
-					send_cmd(command_smtp_DATABLOCK, Mail::add_crlf | Mail::no_resp, ssh_to_base64(f.read<ssh_cs>(), false));
+					send_cmd(command_smtp_DATABLOCK, L"--%s\r\nContent-Type: application/x-msdownload; name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n", Mail::no_resp, msg_id, name, name);
+					send_cmd(command_smtp_DATABLOCK, ssh_to_base64(f.read<ssh_cs>(), false), Mail::add_crlf | Mail::no_resp);
 					f.close();
 				}
 				catch(const Exception& e) { e.add(L"Не удалось открыть файл вложений при отправке электронной почты!"); }
 			}
-			if(!attach.is_empty()) send_cmd(command_smtp_DATABLOCK, Mail::no_resp, L"\r\n--%s--\r\n", msg_id);
-			send_cmd(command_smtp_DATAEND, 0, L"\r\n.\r\n");
+			if(!attach.is_empty()) send_cmd(command_smtp_DATABLOCK, L"\r\n--%s--\r\n", Mail::no_resp, msg_id);
+			send_cmd(command_smtp_DATAEND, L"\r\n.\r\n");
 			say_quit();
 		}
 		catch(const Exception& e)
@@ -378,13 +378,13 @@ namespace ssh
 			{
 				cmd = login + L'\1' + login + L'\1' + pass;
 				cmd.replace(L'\1', L'\0');
-				send_cmd(command_smtp_AUTHPLAIN, 0, L"AUTH PLAIN %s", ssh_to_base64(cmd, true).to<ssh_ws>());
+				send_cmd(command_smtp_AUTHPLAIN, L"AUTH PLAIN %s\r\n", 0, ssh_to_base64(cmd, true).to<ssh_ws>());
 			}
 			else if(check_keyword(L"LOGIN"))
 			{
-				send_cmd(command_smtp_AUTHLOGIN, 0, L"AUTH LOGIN");
-				send_cmd(command_smtp_USER, 0, ssh_to_base64(login, false));
-				send_cmd(command_smtp_PASSWORD, 0, ssh_to_base64(pass, false));
+				send_cmd(command_smtp_AUTHLOGIN, L"AUTH LOGIN");
+				send_cmd(command_smtp_USER, ssh_to_base64(login, false));
+				send_cmd(command_smtp_PASSWORD, ssh_to_base64(pass, false));
 			}
 			else SSH_THROW(L"LOGIN_NOT_SUPPORTED");
 		}
@@ -393,14 +393,14 @@ namespace ssh
 	void Mail::say_hello()
 	{
 		SSH_TRACE;
-		send_cmd(command_smtp_EHLO, 0, L"EHLO %s\r\n", hlp->get_system_info(Helpers::siCompName));
+		send_cmd(command_smtp_EHLO, L"EHLO %s\r\n", 0, hlp->get_system_info(Helpers::siCompName));
 		caps = resp;
 	}
 
 	void Mail::say_quit()
 	{
 		SSH_TRACE;
-		send_cmd((protocol == _smtp ? command_smtp_QUIT : (protocol == _pop3 ? command_pop_QUIT : command_pop_QUIT)), 0, L"QUIT\r\n");
+		send_cmd((protocol == _smtp ? command_smtp_QUIT : (protocol == _pop3 ? command_pop_QUIT : command_pop_QUIT)), L"QUIT\r\n");
 	}
 
 	void Mail::start_tls()
@@ -409,11 +409,11 @@ namespace ssh
 		if(protocol == _smtp)
 		{
 			if(!check_keyword(L"STARTTLS")) SSH_THROW(L"STARTTLS_NOT_SUPPORTED");
-			send_cmd(command_smtp_STARTTLS, 0, L"STARTTLS\r\n");
+			send_cmd(command_smtp_STARTTLS, L"STARTTLS\r\n");
 		}
 		else if(protocol == _pop3)
 		{
-			send_cmd(command_pop_STLS, 0, L"STLS\r\n");
+			send_cmd(command_pop_STLS, L"STLS\r\n");
 		}
 		else
 		{

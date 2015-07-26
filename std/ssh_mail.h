@@ -75,8 +75,6 @@ namespace ssh
 		{
 			// комманда серверу
 			SMTP_COMMAND command;
-			// флаги комманды
-			ssh_d flags;
 			// валидный код ответа от сервера
 			ssh_u valid_code;
 			//  сообщение об ошибке
@@ -181,10 +179,10 @@ namespace ssh
 		void connect_imap();
 		void connect_smtp();
 		// отправка данных
-		void send_cmd(ssh_u command, ssh_u flags, ssh_wcs fmt, ...);
-		void send_cmd(ssh_u command, ssh_u flags, const Buffer<ssh_cs>& base64);
+		void send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags = 0, ...);
+		void send_cmd(ssh_u command, const Buffer<ssh_cs>& base64, ssh_u flags = 0);
 		// получить ответ
-		void recv_resp(ssh_u command, ssh_u flags);
+		void recv_resp(ssh_u command, ssh_u flags = 0);
 		// формирование связки имя <адрес>
 		MAIL_NAME makeNameMail(const String& name, const String& mail);
 		// сокет
