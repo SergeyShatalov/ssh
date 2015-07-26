@@ -55,11 +55,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			int x = 0;
 		}
-//		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", L"IfnfkjdCthutq", Mail::stTLS);
+//		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
 //		List<Mail::MAIL*> lst;
 //		mail_pop.imap(L"X-Priority", &lst, false);
 //		return 0;
-		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", L"IfnfkjdCthutq", Mail::stTLS);
+		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
+		mail_smtp.set_charset(L"koi8-r");
 		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
 		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov-skal@yandex.ru");
 		mail_smtp.set_sender(L"Влад", L"ostrov-skal@yandex.ru");

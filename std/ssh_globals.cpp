@@ -187,12 +187,18 @@ namespace ssh
 		return ret;
 	}
 
+	Buffer<ssh_cs> SSH ssh_to_base64(ssh_wcs charset, const String& str, bool is_str)
+	{
+		return ssh_to_base64(ssh_cnv(charset, str, false), is_str);
+	}
+
 	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf, bool is_str)
 	{
 		ssh_u i = 0, j = 0, _ret(0), pos(0), len(buf.count());
-		ssh_u len_buf((len / 3 * 4) + ((len % 3) ? 4 : 0));
-		if(is_str) len_buf = ((len_buf * 2) + 2);
+		ssh_u len_buf((len / 3 * 4) + ((len % 3) ? 4 : 0)), offs(1);
+		if(is_str) { len_buf = ((len_buf * 2) + 2); offs = 2; }
 		Buffer<ssh_cs> ret(len_buf);
+		memset(ret, 0, len_buf);
 		ssh_cs char_array_3[3], char_array_4[4];
 		ssh_cs* ptr(buf);
 		while(len--)
@@ -204,11 +210,7 @@ namespace ssh
 				char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
 				char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 				char_array_4[3] = char_array_3[2] & 0x3f;
-				for(i = 0; i < 4; i++)
-				{
-					ret[_ret++] = (ssh_cs)base64_chars[char_array_4[i]];
-					if(is_str) ret[_ret++] = 0;
-				}
+				for(i = 0; i < 4; i++) ret[_ret] = (ssh_cs)base64_chars[char_array_4[i]], _ret += offs;
 				i = 0;
 			}
 		}
@@ -220,13 +222,8 @@ namespace ssh
 			char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
 			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 			char_array_4[3] = char_array_3[2] & 0x3f;
-			for(j = 0; (j < i + 1); j++) ret[_ret++] = (ssh_cs)base64_chars[char_array_4[j]];
-			while((i++ < 3)) ret[_ret++] = '=';
-		}
-		if(is_str)
-		{
-			ret[_ret++] = 0;
-			ret[_ret++] = 0;
+			for(j = 0; (j < i + 1); j++) ret[_ret] = (ssh_cs)base64_chars[char_array_4[j]], _ret += offs;
+			while((i++ < 3)) ret[_ret] = '=', _ret += offs;
 		}
 		return ret;
 	}

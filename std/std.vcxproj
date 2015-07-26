@@ -95,7 +95,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Common\ssh_config.h" />
-    <ClInclude Include="..\..\Common\ssh_defs.h" />
     <ClInclude Include="ssh_arch.h" />
     <ClInclude Include="ssh_array.h" />
     <ClInclude Include="ssh_buf.h" />
