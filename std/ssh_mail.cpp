@@ -84,8 +84,8 @@ namespace ssh
 		SSH_TRACE;
 		recipients.setID(205);
 		attach.setID(206);
-		rx.set_pattern(0, LR"(^[a-z0-9\._-]+@[a-z0-9\._-]+\.[a-z]{2,4}$)", 0);
-		rx.set_pattern(1, LR"((?m)^\d{3,3}[-|=|\s|\r\n])", 0);
+		rx.set_pattern(0, LR"(^[a-z0-9\._-]+@[a-z0-9\._-]+\.[a-z]{2,4}$)");
+		rx.set_pattern(1, LR"((?m)^\d{3,3}[-|=|\s|\r\n])");
 		sock.setCallbacks(sock_receive, sock_connect, nullptr, nullptr, this);
 		hEvent = CreateEvent(nullptr, true, false, nullptr);
 		default(true, true);
@@ -525,7 +525,7 @@ namespace ssh
 				m->body_type = rx.substr(1).lower();
 				String coding_body(rx.substr(3).lower());
 				idx = rx.vec(3, 1);
-				if(rx.match(mail, cmd.fmt(LR"((?mis)(?:\r\n\r\n(.*)|(?:(--%s\r\n)|(\r\n\.\r\n)))", msg_id), 0, idx) > 0)
+				if(rx.match(mail, cmd.fmt(LR"((?mis)(?:\r\n\r\n(.*)|(?:(--%s\r\n)|(\r\n\.\r\n)))", msg_id), idx) > 0)
 				{
 					m->body = decode_string(charset, rx.substr(1), coding_body == L"base64");
 					idx = rx.vec(0, 1);
@@ -547,7 +547,7 @@ namespace ssh
 											L"Content-Transfer-Encoding: ([\w\d-]+).*"
 											L"Content-Disposition: attachment;.*"
 											L"filename=["]?(?:(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)=\?=)|([\w\d_\.=-]+))["]?\r\n\r\n"
-											L"(.*?)\r\n")", msg_id), 0);
+											L"(.*?)\r\n")", msg_id));
 				while(rx.match(mail, (ssh_u)0, idx) == 7)
 				{
 					MAIL::ATTACH* attach = new MAIL::ATTACH;

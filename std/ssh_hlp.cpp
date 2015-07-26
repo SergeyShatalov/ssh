@@ -519,8 +519,8 @@ namespace ssh
 		if(lst)
 		{
 			regx rx;
-			rx.set_pattern(0, LR"((?mUs)/\*.*\*/)", 0);
-			rx.set_pattern(1, LR"((?m)\s*//.*[\r\n]*)", 0);
+			rx.set_pattern(0, LR"((?mUs)/\*.*\*/)");
+			rx.set_pattern(1, LR"((?m)\s*//.*[\r\n]*)");
 
 			for(ssh_u i = 0; i < count; i++)
 			{

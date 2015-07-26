@@ -80,7 +80,7 @@ namespace ssh
 	{
 		SSH_TRACE;
 		String ret;
-		regx rx(LR"((?im)<\?xml\s+version=.+encoding=["]?(utf-\d\d(?:le|be))["]?\s*\?>)", 0);
+		regx rx(LR"((?im)<\?xml\s+version=.+encoding=["]?(utf-\d\d(?:le|be))["]?\s*\?>)");
 		// проверить на BOM
 		ssh_b _0(buf[0]), _1(buf[1]), _2(buf[2]);
 		bool bom16be(_0 == 0xfe && _1 == 0xff);
