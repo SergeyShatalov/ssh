@@ -37,6 +37,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		SSH_REL(tmp);
 		SSH_REL(tmp1);
 		SSH_REL(tmp2);
+		char* buf(new char[10]);
+		delete[] buf;
 		Buffer<ssh_cs> _csss;
 		_csss = Buffer < ssh_cs>(100);
 		String timestamp = L"<1896.697170952@dbc.mtview.ca.us>vasinpass";
@@ -63,7 +65,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		mail_smtp.set_sender(L"Влад", L"ostrov-skal@yandex.ru");
 		mail_smtp.add_attach(L"e:\\1.jpg");
 		mail_smtp.add_attach(L"e:\\2.jpg");
-		mail_smtp.smtp(L"Новое сообщение", L"Моё второе собственноручно отправленное письмо!!!");
+		mail_smtp.smtp(L"Новое сообщение", L"Моё третье собственноручно отправленное письмо!!!");
 
 //		Xml xml(L"c:\\1.xml", Xml::_utf16be);
 //		xml.save(L"c:\\o.xml");

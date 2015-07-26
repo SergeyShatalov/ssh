@@ -307,12 +307,12 @@ namespace ssh
 		return false;
 	}
 
-	bool Socket::send(SOCK* s, const Buffer<ssh_cs>& buf)
+	bool Socket::send(const SOCK* s, ssh_cs* buf, ssh_u size)
 	{
 		ssh_u pos(0);
-		while(pos < buf.size())
+		while(pos < size)
 		{
-			if((err = ((s->ssl) ? SSL_write(s->ssl, buf + pos, (int)(buf.size() - pos)) : ::send(s->h, buf + pos, (int)(buf.size() - pos), 0))) <= 0)
+			if((err = (s->ssl) ? SSL_write(s->ssl, buf + pos, (int)(size - pos)) : ::send(s->h, buf + pos, (int)(size - pos), 0)) <= 0)
 			{
 				if(is_wouldblock(s->ssl, err)) continue;
 				return false;

@@ -16,7 +16,7 @@ static CsocketDlg* dlg = nullptr;
 void receive(Socket* sock, Socket::SOCK* s, const Buffer<ssh_cs>& buf)
 {
 	dlg->m_msgs.AddString(CString(String(buf.to<ssh_ws>(), buf.count() / 2)));
-	if(sock->is_server()) dlg->sock.response(s, String(L"OK"));
+	if(sock->is_server()) dlg->sock.send(s, String(L"OK"));
 }
 
 void close(Socket* sock, Socket::SOCK* s)
@@ -124,7 +124,7 @@ HCURSOR CsocketDlg::OnQueryDragIcon()
 
 void CsocketDlg::OnBnClickedSender()
 {
-	sock.send(m_server.GetCheck() ? m_clients.GetCurSel() : 0, String(sendmsg));
+	sock.send(sock.get_sock(m_server.GetCheck() ? m_clients.GetCurSel() : 0), String(sendmsg));
 	sendmsg.Empty();
 	m_sendmsg.SetWindowTextW(sendmsg);
 }

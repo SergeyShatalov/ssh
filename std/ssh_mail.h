@@ -75,12 +75,19 @@ namespace ssh
 		{
 			// комманда серверу
 			SMTP_COMMAND command;
-			// таймаут ожидани€ ответа от сервера
-			ssh_d timeout;
+			// флаги комманды
+			ssh_d flags;
 			// валидный код ответа от сервера
 			ssh_u valid_code;
 			//  сообщение об ошибке
 			ssh_wcs	error;
+		};
+		enum CommandFlags
+		{
+			no_send		= 0x01,
+			cont_resp	= 0x02,
+			add_crlf	= 0x04,
+			no_resp		= 0x08
 		};
 		enum SecurityType
 		{
@@ -163,8 +170,6 @@ namespace ssh
 		bool is_correct_mail(const String& mail);
 		// форматируем заголовок дл€ блока данных
 		String headers(const String& subject, bool is_html, bool is_notify);
-		// преобразовать в base64
-		String cnvBase64(const String& str);
 		// приветствие серверу
 		void say_hello();
 		// выход
@@ -176,7 +181,10 @@ namespace ssh
 		void connect_imap();
 		void connect_smtp();
 		// отправка данных
-		void send_cmd(ssh_u command, const String& data, bool is_pt = false);
+		void send_cmd(ssh_u command, ssh_u flags, ssh_wcs fmt, ...);
+		void send_cmd(ssh_u command, ssh_u flags, const Buffer<ssh_cs>& base64);
+		// получить ответ
+		void recv_resp(ssh_u command, ssh_u flags);
 		// формирование св€зки им€ <адрес>
 		MAIL_NAME makeNameMail(const String& name, const String& mail);
 		// сокет

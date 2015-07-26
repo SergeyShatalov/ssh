@@ -12,7 +12,7 @@ namespace ssh
 	ssh_u SSH ssh_rand(ssh_u begin, ssh_u end);
 	ssh_u SSH ssh_hash(ssh_wcs wcs);
 	String SSH ssh_md5(const String& str);
-	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf);
+	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf, bool is_str);
 	Buffer<ssh_cs> SSH ssh_from_base64(const Buffer<ssh_cs>& buf);
 	vec3 SSH ssh_vec3_mtx(const vec3& v, const mtx& m);
 	vec4 SSH ssh_vec4_mtx(const vec4& v, const mtx& m);

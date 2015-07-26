@@ -116,11 +116,9 @@ namespace ssh
 		// закрытие
 		virtual void close(SOCK* s = nullptr);
 		// отправка данных
-		virtual bool send(ssh_u id_client, const String& str) { return send(id_client, Buffer<ssh_cs>(str)); }
-		virtual bool send(ssh_u id_client, const Buffer<ssh_cs>& buf) { return send(&socks[id_client], buf); }
-		virtual bool send(SOCK* s, const Buffer<ssh_cs>& buf);
-		// отправка ответа
-		virtual bool response(SOCK* s, const Buffer<ssh_cs>& buf) { return send(s, buf); }
+		virtual bool send(const SOCK* s, const String& str) { return send(s, Buffer<ssh_cs>(str)); }
+		virtual bool send(const SOCK* s, const Buffer<ssh_cs>& buf) { return send(s, buf, buf.count()); }
+		virtual bool send(const SOCK* s, ssh_cs* buf, ssh_u sz);
 		// сброс функций обратного вызова
 		void resetCallbacks();
 		// установка функций обратного вызова
@@ -135,6 +133,8 @@ namespace ssh
 		template<typename T> T get_user_data() { return (T)user_data; }
 		// запуск TLS
 		void startTLS();
+		// вернуть структуру сокета по индексу
+		const SOCK* get_sock(ssh_u idx) { return &socks[idx]; }
 	protected:
 		// при приеме данных
 		_receive m_receive;
