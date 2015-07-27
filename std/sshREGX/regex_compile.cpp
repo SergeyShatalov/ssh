@@ -4097,6 +4097,11 @@ static void add_name(compile_data *cd, ssh_wcs name, ssh_l length, ssh_u groupno
 	cd->names_found++;
 }
 
+REGEX_EXP_DEFN void regex_free(void* p)
+{
+	::free(p);
+}
+
 REGEX_EXP_DEFN regex16* regex16_compile(REGEX_SPTR16 pattern, ssh_l options)
 {
 	REAL_PCRE *re;

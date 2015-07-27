@@ -121,9 +121,14 @@ namespace ssh
 	class SSH regx
 	{
 	public:
-		regx() : result(0), re(nullptr) { memset(patterns, 0, sizeof(patterns)); }
-		regx(ssh_wcs pattern) : regx() { compile(pattern); }
-		~regx() {}
+		regx() : result(0), re(nullptr), subj(nullptr) { memset(patterns, 0, sizeof(patterns)); }
+		regx(ssh_wcs pattern) : regx() { re = compile(pattern); }
+		~regx()
+		{
+			if(re) regex_free(re);
+			for(ssh_u i = 0; i < 32; i++)
+				if(patterns[i]) regex_free(patterns[i]);
+		}
 		// запомнить паттерн в массиве
 		bool set_pattern(ssh_u idx, ssh_wcs pattern)
 		{
@@ -131,20 +136,29 @@ namespace ssh
 			return false;
 		}
 		// найти совпадени€ без компил€ции паттерна
-		ssh_l match(const String& subject, ssh_u idx_ptrn = -1, ssh_l idx = 0)
+		ssh_l match(ssh_wcs subject, ssh_u idx_ptrn = -1, ssh_l idx = 0)
 		{
-			subj = subject;
-			return (result = regex16_exec((idx_ptrn == -1 ? re : patterns[idx_ptrn]), subject, subject.length(), idx, 0, vector, 256));
+			subj = (ssh_ws*)subject;
+			return (result = regex16_exec((idx_ptrn == -1 ? re : patterns[idx_ptrn]), subject, wcslen(subject), idx, 0, vector, 256));
 		}
 		// найти совпадени€ с компил€цией паттерна
-		ssh_l match(const String& subject, ssh_wcs pattern, ssh_l idx = 0)
+		ssh_l match(ssh_wcs subject, ssh_wcs pattern, ssh_l idx = 0)
 		{
 			return ((re = compile(pattern)) ? match(subject, -1, idx) : 0);
 		}
 		// вернуть подстроку по результатам последней операции
 		String substr(ssh_l idx)
 		{
-			return String((idx < result && idx >= 0) ? subj.substr(vector[idx * 2], vector[idx * 2 + 1] - vector[idx * 2]) : L"");
+			String ret;
+			if(idx < result && idx >= 0 && vec(idx, 0) != -1)
+			{
+				ssh_u offs(vector[idx * 2 + 1]);
+				ssh_ws ws(subj[offs]);
+				subj[offs] = L'\0';
+				ret = (subj + vector[idx * 2]);
+				subj[offs] = ws;
+			}
+			return ret;
 		}
 		// заменить без компил€ции паттерна
 		void replace(String& subject, ssh_wcs repl, ssh_u idx_ptrn = -1, ssh_l idx = 0)
@@ -161,7 +175,7 @@ namespace ssh
 		// заменить с компил€цией паттерна
 		void replace(String& subject, ssh_wcs pattern, ssh_wcs repl, ssh_l idx = 0)
 		{
-			if(compile(pattern)) replace(subject, repl, -1, idx);
+			if((re = compile(pattern))) replace(subject, repl, -1, idx);
 		}
 		// вернуть количество найденных совпадений
 		ssh_l count() const { return result; }
@@ -172,9 +186,10 @@ namespace ssh
 		regex16* compile(ssh_wcs pattern)
 		{
 			result = 0;
-			return (re = regex16_compile(pattern, 0));
+			if(re) { regex_free(re); re = nullptr; }
+			return regex16_compile(pattern, 0);
 		}
-		String subj;
+		ssh_ws* subj;
 		// найденные позиции
 		ssh_l vector[256];
 		// всего найденных

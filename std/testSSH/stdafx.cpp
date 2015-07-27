@@ -51,39 +51,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		String eml(_x.read(L"windows-1251", 0));
 		String cmd;
 		String charset;
-		// xml
-		// 1. <tag>
-		// 2. </tag>
-		// 3. <tag attr1=val1 ... />
-		// 3. <tag attr1=val1 ... >
-		eml = L"(19+*(29+(30+(40+1)+20)+30)+40)";
-		eml = L"<div>текс в див<div>а это вложенный див</div></div><div>а это другой див</div>";
-		if(rx.match(eml, LR"serg((?:<(div)>)(?:(?:(?!</?\1>).)|(?R))*(?:</\1>))serg") > 0)
-		{
-			for(ssh_l i = 1; i < rx.count(); i++)
-			{
-				eml = rx.substr(i);
-			}
-		}
-//		if(rx.match(eml, LR"((?mUs)<([/\w\d_-]+)(?:\s+([\w\d_-]+)\s*=\s*["]*([\w\d_\s+,]*)["]*\s+)([/]*)>)") > 0)
-		//eml = LR"(<elem path="startScreen.fse" name="startScreen" src="startScreen.bmp" type="Fse"/>)";
-		eml = LR"(</elem a-"1212jdjd,-0=0@#$%^&&b" b="a"//>)";
-		//eml = LR"(</elem>)";
-		//eml = LR"(<elem path="startScreen.fse" name="startScreen" src="startScreen.bmp" type="Fse">)";
-		if(rx.match(eml, LR"serg(<([/]{0,1})([\w\d_-]+)(?:\s+(.*?[/]*?))\s*([/]{0,1})>)serg") > 0)
-		{
-			for(ssh_l i = 1; i < rx.count(); i++)
-			{
-				eml = rx.substr(i);
-			}
-			eml = rx.substr(3);
-			ssh_l idx(0);
-			rx.match(eml, LR"serg(([\w\d_-]+)\s*=\s*"(.*?)")serg", idx);
-			for(ssh_l i = 1; i < rx.count(); i++)
-			{
-				eml = rx.substr(i);
-			}
-		}
 //		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
 //		List<Mail::MAIL*> lst;
 //		mail_pop.imap(L"X-Priority", &lst, false);

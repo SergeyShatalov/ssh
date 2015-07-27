@@ -528,7 +528,7 @@ namespace ssh
 				if(rx.match(mail, cmd.fmt(LR"((?mis)(?:\r\n\r\n(.*)|(?:(--%s\r\n)|(\r\n\.\r\n)))", msg_id), idx) > 0)
 				{
 					m->body = decode_string(charset, rx.substr(1), coding_body == L"base64");
-					idx = rx.vec(0, 1);
+					idx = rx.vec(0, 1) + 1;
 				}
 			}
 			/*

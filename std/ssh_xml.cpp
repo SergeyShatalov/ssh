@@ -71,7 +71,14 @@ namespace ssh
 			// 2. загружаем, декодируем и строим дерево
 			String tmp(encode(f.read<ssh_cs>()));
 			_xml = tmp.buffer();
-			make(root(), 0);
+			regx rx;
+			// тег
+			rx.set_pattern(0, LR"serg(<(?mUs)([/]{0,1})([\w_]+[\w\d_-]*)(\s+.*")\s*([/]{0,1})>)serg");
+			// атрибуты
+			rx.set_pattern(1, LR"serg(\s+([\w_]+[\w\d_-]*)\s*=\s*"(.*?)")serg");
+			// значение тега
+			rx.set_pattern(2, LR"serg((?ms)"(.*?)")serg");
+			make(&rx, root(), 0);
 		}
 		catch(const Exception& e) { e.add(L"Парсер XML <%s>!", path); }
 	}
@@ -90,13 +97,85 @@ namespace ssh
 		else if(rx.match(buf.to<ssh_ws>()) > 0)
 		{
 			bool is(false);
-			String charset(rx.substr(1).lower());
+			String charset(rx.substr(1));
+			charset.lower();
 			if((charset == L"utf-16be") && bom16be) { is = true; }
 			else if((charset == L"utf-16le") && bom16le) { is = true; }
 			if(is) ret = ssh_cnv(charset, buf, 2);
 		}
 		if(ret.is_empty()) ret = ssh_cnv(cp_ansi, buf, 0);
 		return ret.substr(ret.find(L'\n', ret.find(L"<?xml")) + 1);
+	}
+
+	void Xml::make(regx* rx, HXML hp, ssh_u lev)
+	{
+		while(*_xml)
+		{
+			if(rx->match(_xml, (ssh_u)0) > 0)
+			{
+				// это завершающий тег?
+				if(rx->vec(1, 0) != -1)
+				{
+					// </tag>
+					if(rx->vec(4, 0) != -1 || rx->vec(3, 0) != -1) SSH_THROW(L"");
+					_xml[rx->vec(2, 1)] = 0;
+					if(get_name(hp) != (_xml + rx->vec(2, 0))) SSH_THROW(L"");
+					_xml += rx->vec(0, 1) + 1;
+					return;
+				}
+				else
+				{
+					// это стартовый тег
+					bool is(rx->vec(4, 0) == -1);
+					_xml[rx->vec(2, 1)] = 0;
+					HXML h(add_node(hp, _xml + rx->vec(2, 0), L""));
+					// проверить атрибуты есть?
+					if(rx->vec(3, 0) != -1)
+					{
+						// <tag attr1=val1 ... />
+						// <tag attr1=val1 ... >
+						ssh_l idx(0);
+						String attrs(rx->substr(3));
+						ssh_ws* _ws(attrs.buffer());
+						while(rx->match(_ws, (ssh_u)1, idx) == 3)
+						{
+							// проверка на пространство между атрибутами
+							_ws[rx->vec(1, 0) - 1] = 0;
+							ssh_ws ws;
+							while((ws = _ws[idx++])) { if(ws != L' ' || ws != L'\t') SSH_THROW(L""); }
+							// добавить атрибут
+							_ws[rx->vec(1, 1)] = 0;
+							_ws[rx->vec(2, 1)] = 0;
+							set_attr(h, _ws + rx->vec(1, 0), _ws + rx->vec(2, 0));
+							idx = rx->vec(2, 1) + 1;
+						}
+						// проверить после найденных атрибутов больше ничего нет?
+						if(_ws[idx] != L'\0') SSH_THROW(L"");
+					}
+					else
+					{
+						// <tag>
+						if(!is) SSH_THROW(L"");
+					}
+					_xml += rx->vec(0, 1) + 1;
+					if(is)
+					{
+						make(rx, h, lev + 1);
+					}
+				}
+			}
+			else
+			{
+				// может это значение тега?
+				if(rx->match(_xml, (ssh_u)2, 0) > 0)
+				{
+					set_val(hp, _xml);
+					_xml += rx->vec(0, 1) + 1;
+				}
+				else SSH_THROW(L"");
+			}
+		}
+		if(lev) SSH_THROW(L"");
 	}
 
 	void Xml::_skip_spc()
