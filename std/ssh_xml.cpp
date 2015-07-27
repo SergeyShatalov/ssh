@@ -54,7 +54,14 @@ namespace ssh
 			init();
 			String tmp(encode(buf));
 			_xml = tmp.buffer();
-			make(root(), 0);
+			regx rx;
+			// тег
+			rx.set_pattern(0, LR"serg(<(?mUs)([/]{0,1})([\w_]+[\w\d_-]*)(\s+.*")\s*([/]{0,1})>)serg");
+			// атрибуты
+			rx.set_pattern(1, LR"serg(\s+([\w_]+[\w\d_-]*)\s*=\s*"(.*?)")serg");
+			// значение тега
+			rx.set_pattern(2, LR"serg((?ms)"(.*?)")serg");
+			make(&rx, root(), 0);
 		}
 		catch(const Exception& e) { e.add(L"Парсер XML!"); }
 	}
@@ -178,115 +185,6 @@ namespace ssh
 		if(lev) SSH_THROW(L"");
 	}
 
-	void Xml::_skip_spc()
-	{
-		while((*_xml <= L' ' && *_xml != 0)) { _xml++; }
-	}
-
-	static ssh_ws xml_chars[] =	L"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-								L"szkzzzzzzzzzzzzzddddddddddzzzssz"
-								L"zwwwwwwwwwwwwwwwwwwwwwwwwwwzzzzw"
-								L"zwwwwwwwwwwwwwwwwwwwwwwwwwwzzzzz";
-	
-	ssh_ws* Xml::_word(int sub)
-	{
-		ssh_ws _w;
-		bool is_s;
-		_xml += sub;
-		if((is_s = (*_xml == L'\"'))) _xml++;
-		ssh_ws* _ws(_xml);
-		_null_ws = 0;
-		while((_w = *_xml++))
-		{
-			ssh_ws _ww(_w < 128 ? xml_chars[_w] : L'w');
-			if((is_s && _ww != L'k') || (!is_s && (_ww == L'w' || (_ww == L'd' && (_ws != (_xml - 1)))))) continue;
-			if(_ww == L's' || (is_s && _ww == L'k'))
-			{
-				_null_ws = _w;
-				*(_xml - 1) = 0;
-				_skip_spc();
-				return _ws;
-			}
-			break;
-		}
-		*_xml = 0;
-		SSH_THROW(L"Слово <%s> задано недопустимо.", _ws);
-	}
-
-	void Xml::make(HXML hp, ssh_u _lev)
-	{
-		ssh_ws _ws;
-		ssh_ws* _nm;
-		HXML h;
-		_skip_spc();
-		while((_ws = *_xml++))
-		{
-			if(_ws == L'\"')
-			{
-				// возможно значение тега?
-				set_val(hp, _word(-1));
-			}
-			else if(_ws == L'<')
-			{
-				// может конец тега?
-				if(*_xml == L'/')
-				{
-					if(get_name(hp) != (_nm = _word(1))) SSH_THROW(L"Начальный <%s> и завершающий <%s> теги не совпадают.", get_name(hp), _nm);
-					return;
-				}
-				else if(*_xml == L'!')
-				{
-					// может комментарий?
-					if(*(ssh_d*)++_xml != 0x002d002d) SSH_THROW(L"Недопустимо задан тег <!--.");
-					_xml += 2;
-					// пропустить все до -->
-					bool is(false);
-					while((_ws = *_xml))
-					{
-						if(*(ssh_d*)_xml == 0x002d002d) { is = true; _xml += 2; }
-						else if(is && _ws == L'>') { _xml++; break; }
-						else { is = false; _xml++; }
-					}
-					_skip_spc();
-				}
-				else
-				{
-					// новый тег
-					h = add_node(hp, _word(), nullptr);
-					while((_ws = *_xml))
-					{
-						// конец объявления тега?
-						if(_ws == L'>' || _null_ws == L'>')
-						{
-							if(_null_ws != L'>') _xml++;
-							make(h, _lev + 1);
-							break;
-						}
-						// завершение объявления тега?
-						else if(*(ssh_d*)_xml == 0x003e002f)
-						{
-							_xml += 2;
-							_skip_spc();
-							break;
-						}
-						else
-						{
-							// атрибут
-							_nm = _word();
-							if(*_xml == L'=') _xml++;
-							else if(_null_ws != L'=') SSH_THROW(L"Недопустимо задан атрибут <%s> тега <%s>, ожидается \'=\'.", _nm, get_name(h));
-							_skip_spc();
-							set_attr(h, _nm, _word());
-						}
-					}
-					if(!_ws) SSH_THROW(L"Тег <%s> не был завершен.", get_name(h));
-				}
-			}
-			else SSH_THROW(L"Неизвестная лексема \'%c\'.", _ws);
-		}
-		if(_lev > 0) SSH_THROW(L"Неожиданный конец XML!");
-	}
-
 	void Xml::save(const String& path)
 	{
 		SSH_TRACE;
@@ -325,7 +223,116 @@ namespace ssh
 		return str;
 	}
 }
+
 /*
+void Xml::_skip_spc()
+{
+while((*_xml <= L' ' && *_xml != 0)) { _xml++; }
+}
+
+static ssh_ws xml_chars[] =	L"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+L"szkzzzzzzzzzzzzzddddddddddzzzssz"
+L"zwwwwwwwwwwwwwwwwwwwwwwwwwwzzzzw"
+L"zwwwwwwwwwwwwwwwwwwwwwwwwwwzzzzz";
+
+ssh_ws* Xml::_word(int sub)
+{
+ssh_ws _w;
+bool is_s;
+_xml += sub;
+if((is_s = (*_xml == L'\"'))) _xml++;
+ssh_ws* _ws(_xml);
+_null_ws = 0;
+while((_w = *_xml++))
+{
+ssh_ws _ww(_w < 128 ? xml_chars[_w] : L'w');
+if((is_s && _ww != L'k') || (!is_s && (_ww == L'w' || (_ww == L'd' && (_ws != (_xml - 1)))))) continue;
+if(_ww == L's' || (is_s && _ww == L'k'))
+{
+_null_ws = _w;
+*(_xml - 1) = 0;
+_skip_spc();
+return _ws;
+}
+break;
+}
+*_xml = 0;
+SSH_THROW(L"Слово <%s> задано недопустимо.", _ws);
+}
+
+void Xml::make(HXML hp, ssh_u _lev)
+{
+ssh_ws _ws;
+ssh_ws* _nm;
+HXML h;
+_skip_spc();
+while((_ws = *_xml++))
+{
+if(_ws == L'\"')
+{
+// возможно значение тега?
+set_val(hp, _word(-1));
+}
+else if(_ws == L'<')
+{
+// может конец тега?
+if(*_xml == L'/')
+{
+if(get_name(hp) != (_nm = _word(1))) SSH_THROW(L"Начальный <%s> и завершающий <%s> теги не совпадают.", get_name(hp), _nm);
+return;
+}
+else if(*_xml == L'!')
+{
+// может комментарий?
+if(*(ssh_d*)++_xml != 0x002d002d) SSH_THROW(L"Недопустимо задан тег <!--.");
+_xml += 2;
+// пропустить все до -->
+bool is(false);
+while((_ws = *_xml))
+{
+if(*(ssh_d*)_xml == 0x002d002d) { is = true; _xml += 2; }
+else if(is && _ws == L'>') { _xml++; break; }
+else { is = false; _xml++; }
+}
+_skip_spc();
+}
+else
+{
+// новый тег
+h = add_node(hp, _word(), nullptr);
+while((_ws = *_xml))
+{
+// конец объявления тега?
+if(_ws == L'>' || _null_ws == L'>')
+{
+if(_null_ws != L'>') _xml++;
+make(h, _lev + 1);
+break;
+}
+// завершение объявления тега?
+else if(*(ssh_d*)_xml == 0x003e002f)
+{
+_xml += 2;
+_skip_spc();
+break;
+}
+else
+{
+// атрибут
+_nm = _word();
+if(*_xml == L'=') _xml++;
+else if(_null_ws != L'=') SSH_THROW(L"Недопустимо задан атрибут <%s> тега <%s>, ожидается \'=\'.", _nm, get_name(h));
+_skip_spc();
+set_attr(h, _nm, _word());
+}
+}
+if(!_ws) SSH_THROW(L"Тег <%s> не был завершен.", get_name(h));
+}
+}
+else SSH_THROW(L"Неизвестная лексема \'%c\'.", _ws);
+}
+if(_lev > 0) SSH_THROW(L"Неожиданный конец XML!");
+}
 
 namespace ostd
 {

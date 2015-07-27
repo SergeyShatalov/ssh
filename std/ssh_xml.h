@@ -111,7 +111,7 @@ namespace ssh
 		void _skip_spc();
 		// формирование дерева узлов
 		void make(regx* rx, HXML hp, ssh_u lev);
-		void make(HXML h, ssh_u _lev);
+		//void make(HXML h, ssh_u _lev);
 		// сохранение
 		String _save(HXML h, ssh_l level);
 		// дерево узлов

@@ -147,31 +147,9 @@ namespace ssh
 			return ((re = compile(pattern)) ? match(subject, -1, idx) : 0);
 		}
 		// вернуть подстроку по результатам последней операции
-		String substr(ssh_l idx)
-		{
-			String ret;
-			if(idx < result && idx >= 0 && vec(idx, 0) != -1)
-			{
-				ssh_u offs(vector[idx * 2 + 1]);
-				ssh_ws ws(subj[offs]);
-				subj[offs] = L'\0';
-				ret = (subj + vector[idx * 2]);
-				subj[offs] = ws;
-			}
-			return ret;
-		}
+		String substr(ssh_l idx);
 		// заменить без компил€ции паттерна
-		void replace(String& subject, ssh_wcs repl, ssh_u idx_ptrn = -1, ssh_l idx = 0)
-		{
-			ssh_l nWcs(wcslen(repl));
-			while(match(subject, idx_ptrn, idx) > 0)
-			{
-				idx = vector[0];
-				subject.remove(idx, vector[1] - idx);
-				subject.insert(idx, repl);
-				idx += nWcs;
-			}
-		}
+		void replace(String& subject, ssh_wcs repl, ssh_u idx_ptrn = -1, ssh_l idx = 0);
 		// заменить с компил€цией паттерна
 		void replace(String& subject, ssh_wcs pattern, ssh_wcs repl, ssh_l idx = 0)
 		{
