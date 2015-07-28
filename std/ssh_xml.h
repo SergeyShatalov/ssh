@@ -47,19 +47,19 @@ namespace ssh
 	{
 	public:
 		// конструкторы
-		Xml() : code(L"utf-8") { }
+		Xml() { }
 		// конструктор загрузки
-		Xml(const String& path, ssh_wcs cod) { open(path, cod); }
+		Xml(const String& path) { open(path); }
 		// конструктор из памяти
-		Xml(const Buffer<ssh_cs>& buf, ssh_wcs cod);
+		Xml(const Buffer<ssh_cs>& buf);
 		// деструктор
 		virtual ~Xml() { close(); }
 		// открыть
-		void open(const String& path, ssh_wcs cod);
+		void open(const String& path);
 		// закрыть
 		void close() { tree.reset(); }
 		// сохранить
-		void save(const String& path);
+		void save(const String& path, ssh_wcs cod);
 		// вернуть количество дочерних
 		ssh_u count(HXML h) const { return h->count; }
 		// установить имя узла
@@ -103,10 +103,17 @@ namespace ssh
 			return tree.add(h, new XmlNode(name, val));
 		}
 		// вернуть/добавить узел
-		HXML get_node(HXML h, ssh_wcs name, ssh_l index = -1) const
+		HXML node(HXML h, ssh_wcs name, ssh_l index = -1) const
 		{
 			if(name) return tree.findChild(h, name);
 			return tree.get_node(h, index);
+		}
+		static regx* get_regx()
+		{
+			static ssh_wcs ptrs[] = {LR"serg((?mUs)<(?:(?:([/]{0,1})([\w_]+[\w\d_-]*)>)|(!--.*-->)|(?:(\w+[\w\d_-]*)\s+(\w+.*)([/]{0,1})>)))serg", LR"serg((?sm)([\w_]+[\w\d_-]*)\s*=\s*(?:"(.*?)")\s*)serg",
+									 LR"serg((?ms)()?<=>"(.*?)")serg", LR"((?im)<\?xml\s+version=.+encoding=["]?(.*?)["]?\s*\?>)"};
+			static regx rx(ptrs, 4);
+			return &rx;
 		}
 	protected:
 		// декодировка
@@ -115,7 +122,7 @@ namespace ssh
 		ssh_w bom_coder() const;
 		// формирование дерева узлов
 		void _make(const Buffer<ssh_cs>& buf);
-		void make(regx* rx, HXML hp, ssh_u lev);
+		void make(HXML hp, ssh_u lev);
 		//void make(HXML h, ssh_u _lev);
 		// сохранение
 		String _save(HXML h, ssh_l level);
@@ -123,7 +130,5 @@ namespace ssh
 		Tree<XmlNode*, SSH_PTR> tree;
 		// указатель на текст при формировании дерева
 		static ssh_ws* _xml;
-		// выходная кодировка
-		String code;
 	};
 }

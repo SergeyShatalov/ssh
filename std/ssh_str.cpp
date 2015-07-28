@@ -263,13 +263,14 @@ namespace ssh
 		return *this;
 	}
 
-	const String& String::replace(ssh_wcs _old, ssh_wcs _new, ssh_u count)
+	const String& String::replace(ssh_wcs* _old, ssh_wcs _new)
 	{
 		SSH_TRACE;
-		for(ssh_u i = 0; i < count; i++)
+		ssh_u idx(0);
+		ssh_wcs o;
+		while((o = _old[idx++]))
 		{
-			if(_old[0]) replace(_old, _new);
-			_old += (wcslen(_old) + 1);
+			replace(o, _new);
 			_new += (wcslen(_new) + 1);
 		}
 		return *this;

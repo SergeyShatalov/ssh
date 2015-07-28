@@ -75,7 +75,7 @@ namespace ssh
 		const String& reverse() { _wcsrev(buf); return *this; }
 		const String& replace(ssh_wcs _old, ssh_wcs _new);
 		const String& replace(ssh_ws _old, ssh_ws _new);
-		const String& replace(ssh_wcs _old, ssh_wcs _new, ssh_u count);
+		const String& replace(ssh_wcs* _old, ssh_wcs _new);
 		const String& remove(ssh_wcs wcs);
 		const String& remove(ssh_ws ws);
 		const String& remove(ssh_u idx, ssh_u len = -1);
@@ -121,8 +121,14 @@ namespace ssh
 	class SSH regx
 	{
 	public:
+		// конструктор по умолчанию
 		regx() : result(0), re(nullptr), subj(nullptr) { memset(patterns, 0, sizeof(patterns)); }
-		regx(ssh_wcs pattern) : regx() { re = compile(pattern); }
+		// инициализирующий конструктор
+		regx(ssh_wcs* pattern, ssh_u count) : regx()
+		{
+			ssh_u idx(0);
+			while(idx < count) set_pattern(idx, pattern[idx]), idx++;
+		}
 		~regx()
 		{
 			if(re) regex_free(re);
@@ -158,9 +164,9 @@ namespace ssh
 		// вернуть количество найденных совпадений
 		ssh_l count() const { return result; }
 		// вернуть индекс в массике совпадений
-		ssh_l vec(ssh_l idx, int offs = 0) const { return ((idx < result && idx >= 0) ? vector[idx * 2 + offs] : -1); }
+		ssh_l vec(ssh_u idx, int offs = 0) const { return (idx < (ssh_u)result ? vector[idx * 2 + offs] : -1); }
 		// вернуть длину в массике совпадений
-		ssh_l len(ssh_l idx) const { return ((idx < result && idx >= 0) ? (vector[idx * 2 + 1] - vector[idx * 2]) : 0); }
+		ssh_l len(ssh_u idx) const { return (idx < (ssh_u)result ? (vector[idx * 2 + 1] - vector[idx * 2]) : 0); }
 	protected:
 		// компилировать
 		regex16* compile(ssh_wcs pattern)

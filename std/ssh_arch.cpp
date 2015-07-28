@@ -48,12 +48,12 @@ namespace ssh
 			// 4. добавить ресурсы из xml
 			if(!xml_list.is_empty())
 			{
-				Xml xml(xml_list, L"utf-8");
-				HXML hroot(xml.get_node(xml.root(), L"archive")), helem;
+				Xml xml(xml_list);
+				HXML hroot(xml.node(xml.root(), L"archive")), helem;
 				String dstMain(xml.attr<String>(hroot, L"dst", L""));
 				dstMain = hlp->slash_path(dstMain);
 				ssh_l index(0);
-				while((helem = xml.get_node(hroot, nullptr, index++)))
+				while((helem = xml.node(hroot, nullptr, index++)))
 				{
 					try
 					{

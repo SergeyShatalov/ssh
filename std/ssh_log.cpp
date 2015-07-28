@@ -43,13 +43,13 @@ namespace ssh
 	{
 		String tmp;
 		static ssh_wcs m_types[] = {L"INFO", L"ASSERT", L"EXCEPTION", L"TRACE"};
-		ssh_wcs rpl = L"$DT\0$fn\0$ln\0$fl\0$ms\0$tm\0$dt\0$us\0$cm\0$nm\0$tp\0\0";
+		static ssh_wcs rpl[] = {L"$DT", L"$fn", L"$ln", L"$fl", L"$ms", L"$tm", L"$dt", L"$us", L"$cm", L"$nm", L"$tp", nullptr};
 		tmp.fmt(L"%s\1%s\1%i\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1\1",
 				Time::current().fmt(L"$d.$m.$y"), fn, ln, fl, msg, Time::current().fmt(L"$h:$nm:$s"),
 				Time::current().fmt(L"$d $MN)+ $Y ($dW)"), hlp->get_system_info(Helpers::siUserName),
 				hlp->get_system_info(Helpers::siCompName), hlp->get_system_info(Helpers::siNameProg), m_types[tp]);
 		tmp.replace(L'\1', L'\0');
-		return templ.replace(rpl, tmp, 11);
+		return templ.replace(rpl, tmp);
 
 	}
 
@@ -289,12 +289,14 @@ namespace ssh
 
 	void StackTrace::output()
 	{
+#ifdef _DEBUG
 		String tmp;
 		log->add(tmp.fmt(L"\r\n\r\n-------------------------------------------------- Трассировка стека (%i вызовов) --------------------------------------------------\r\n\r\n", cdepth));
 		auto n(root);
 		while(n) { log->add(n->value); n = n->next; }
 		log->add(L"\r\n\r\n--------------------------------------------------------- Трассировка стека -------------------------------------------------------\r\n\r\n");
 		clear();
+#endif
 	}
 
 	Exception::Exception(ssh_wcs fn, ssh_wcs fl, int ln, ssh_wcs msg, ...)

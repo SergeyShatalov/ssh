@@ -1,6 +1,12 @@
 ﻿
 #include "stdafx.h"
 
+class Tmp
+{
+public:
+	Tmp() :y(0) {}
+	int y;
+};
 class Temp : public Base
 {
 	SSH_DYNCREATE(Temp);
@@ -28,32 +34,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		_lg->init(&_log);
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
-		Temp* tmp;
-		Temp* tmp1;
-		Temp* tmp2;
-		new(&tmp, L"sergey") Temp();
-		new(&tmp1, L"sergey") Temp();
-		new(&tmp2, L"sergey1") Temp();
-		SSH_REL(tmp);
-		SSH_REL(tmp1);
-		SSH_REL(tmp2);
-		char* buf(new char[10]);
-		delete[] buf;
-		Buffer<ssh_cs> _csss;
-		_csss = Buffer < ssh_cs>(100);
-		String timestamp = L"<1896.697170952@dbc.mtview.ca.us>vasinpass";
-		timestamp = ssh_md5(timestamp);
-
-		String _serg(L"windows-1251");
-		Buffer<ssh_cs> out(ssh_cnv(L"windows-1251", _serg, true));
-		regx rx;
-		//File _x(L"e:\\1.xml", File::open_read);
-		//String xml(_x.read(L"windows-1251", 0));
-		Xml _xml(L"e:\\1.xml", L"utf-8");
-		_xml.save(L"e:\\1+.xml");
+		Xml _xml(L"e:\\1.xml");
+		_xml.save(L"e:\\1+.xml", L"utf-8");
  		return 0;
-		String cmd;
-		String charset;
 //		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
 //		List<Mail::MAIL*> lst;
 //		mail_pop.imap(L"X-Priority", &lst, false);
@@ -66,9 +49,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		mail_smtp.add_attach(L"e:\\1.jpg");
 		mail_smtp.add_attach(L"e:\\2.jpg");
 		mail_smtp.smtp(L"Новое сообщение", L"Моё третье собственноручно отправленное письмо!!!");
-
-//		Xml xml(L"c:\\1.xml", Xml::_utf16be);
-//		xml.save(L"c:\\o.xml");
 	}
 	catch(const Exception& e) { e.add(L"главная процедура!"); }
 	return 0;

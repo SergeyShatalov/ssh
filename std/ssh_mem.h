@@ -24,7 +24,7 @@ namespace ssh
 			BlockFix* next;
 			Block arr[N];
 		};
-		MemArray() : free(nullptr), arrs(nullptr) {}
+		MemArray() : free(nullptr), arrs(nullptr), count(0) {}
 		~MemArray() { Reset(); }
 		
 		bool Valid() const
@@ -34,8 +34,11 @@ namespace ssh
 
 		void Reset()
 		{
-			SSH_DEL(arrs);
-			free = nullptr;
+			if(!count)
+			{
+				SSH_DEL(arrs);
+				free = nullptr;
+			}
 		}
 		T* Alloc()
 		{
@@ -49,6 +52,7 @@ namespace ssh
 					free = &(arrs->arr[i]);
 				}
 			}
+			count++;
 			Block* b(free);
 			free = free->next;
 			::new(((T*)b->t)) T();
@@ -60,7 +64,9 @@ namespace ssh
 			t->~T();
 			b->next = free;
 			free = b;
+			count--;
 		}
+		ssh_u count;
 		Block* free;
 		BlockFix* arrs;
 	};

@@ -15,15 +15,14 @@ namespace ssh
 	String Time::fmt(ssh_wcs str) const
 	{
 		String result(str), tmp;
-		// m - мес€ц
+		static ssh_wcs to[] = {L"$MN)+", L"$MN)", L"$MN+", L"$MN", L"$Mn", L"$m", L"$Y", L"$y", L"$dw", L"$dW", L"$dy", L"$d", L"$h", L"$H", L"$s", L"$nw", L"$nm", nullptr};
 		int _month(month() - 1), _year(year()), _dw(dayOfWeek()), _hour(hour());
-		ssh_wcs __month1 = L"$MN)+\0$MN)\0$MN+\0$MN\0$Mn\0$m\0$Y\0$y\0$dw\0$dW\0$dy\0$d\0$h\0$H\0$s\0$nw\0$nm\0\0";
 		tmp.fmt(L"%s\1%s\1%s\1%s\1%s\1%02i\1%02i\1%02i\1%s\1%s\1%02i\1%02i\1%02i\1%02i%s\1%02i\1%02i\1%02i\1\1",
 				m_month_big_smail_[_month], m_month_big_smail[_month], m_month_big_[_month], m_month_big[_month], m_month_small[_month],
 				_month + 1, _year, _year % 100, m_day_of_week_small[_dw], m_day_of_week_big[_dw], dayOfYear(), day(), _hour,
 				(_hour < 12 ? _hour : _hour - 12), (_hour < 12 ? L"pm" : L"am"), second(), weekOfYear(), minute());
 		tmp.replace(L'\1', L'\0');
-		return result.replace(__month1, tmp, 17);
+		return result.replace(to, tmp);
 	}
 
 	int	Time::dayOfWeek() const
