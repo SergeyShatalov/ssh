@@ -114,6 +114,7 @@
     <ClInclude Include="ssh_singl.h" />
     <ClInclude Include="ssh_sock.h" />
     <ClInclude Include="ssh_sql.h" />
+    <ClInclude Include="ssh_srlz.h" />
     <ClInclude Include="ssh_stack.h" />
     <ClInclude Include="ssh_str.h" />
     <ClInclude Include="ssh_time.h" />
@@ -138,6 +139,7 @@
     <ClCompile Include="ssh_mem.cpp" />
     <ClCompile Include="ssh_sock.cpp" />
     <ClCompile Include="ssh_sql.cpp" />
+    <ClCompile Include="ssh_srlz.cpp" />
     <ClCompile Include="ssh_str.cpp" />
     <ClCompile Include="ssh_time.cpp" />
     <ClCompile Include="ssh_xml.cpp" />
