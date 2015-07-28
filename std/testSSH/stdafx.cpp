@@ -26,7 +26,7 @@ public:
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
-			SCHEME_VAR(Temp, x, L"x", 0, L"1", nullptr)
+			SCHEME_VAR(Temp, x, L"x", 0, 1, L"1", nullptr, 0)
 		SCHEME_END(Temp);
 	}
 protected:
@@ -34,7 +34,7 @@ protected:
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openXml(L"dd", buf);
+		openXml(buf);
 	}
 };
 

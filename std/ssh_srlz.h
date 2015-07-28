@@ -10,19 +10,20 @@ struct SSH_2VAL
 };
 
 #define SC_NODE			0x0001// узел - ссылка на вложенный со схемой
-#define SC_VAR			0x0002// простой POD тип
+#define SC_OBJ			0x0002// класс или его переменная без схемы
 #define SC_ARRAY		0x0004// массив из POD типов
+// опции
 #define SC_ENUM			0x0008// перечисление
 #define SC_FLAGS		0x0010// флаги
-#define SC_OBJ			0x0020// класс или его переменная без схемы
+#define SC_T_HEX		0x0020// данные в hex
+#define SC_T_BOOL		0x0040// данные bool
 
 #define AOV(cls, offs) return asm_offset_var(#cls, &offs);
 #define SCHEME_BEGIN(cls) static SCHEME cls##_scheme[] = {
-#define SCHEME_END(cls) }; return cls##_scheme;
-#define SCHEME_VAR(cls, var, name, flgs, def, stk) {name, typeid(var).hash_code(), offsetof(cls, var), 1, flgs, def, stk, 0}
-#define SCHEME_ARR(cls, var, name, count, flgs, def, stk) {name, (SSH_2VAL)offset_val<decltype(var), cls>(&cls::var), count, flgs, def, stk, 0}
-#define SCHEME_NOD(cls, var, name) {name, (SSH_2VAL)offset_val<decltype(var), cls>(&cls::var), 1, SC_NODE, L"", nullptr, 0}
-#define SCHEME_CLS(cls, var, name, id) {name, (SSH_2VAL)offset_val<decltype(var), cls>(&cls::var), 1, SC_OBJ, L"", nullptr, id}
+#define SCHEME_END(cls) {nullptr, 0, 0, 1, 0, nullptr, nullptr, 0, 0}}; return cls##_scheme;
+#define SCHEME_VAR(cls, var, name, flgs, count, def, stk, id) {name, typeid(var).hash_code(), offsetof(cls, var), count, flgs, def, stk, id, sizeof(decltype(var))},
+#define SCHEME_NOD(cls, var, name) {name, typeid(var).hash_code(), offsetof(cls, var), 1, SC_NODE, nullptr, nullptr, 0, 0},
+#define SCHEME_OBJ(cls, var, name) {name, typeid(var).hash_code(), offsetof(cls, var), 1, SC_OBJ, nullptr, nullptr, 0, 0},
 
 namespace ssh
 {
@@ -32,9 +33,9 @@ namespace ssh
 		struct SCHEME
 		{
 			// имя (для простых - атрибута, для вложенных - узла)
-			String name;
-			// хэш типа
-			ssh_u hash;
+			ssh_wcs name;
+			// имя типа
+			ssh_u type;
 			// смещение переменной
 			ssh_u offs;
 			// количество элементов в переменной
@@ -42,45 +43,44 @@ namespace ssh
 			// доступ к переменной
 			ssh_u flags;
 			// значение по умолчанию
-			String def;
+			ssh_wcs def;
 			// структуры для преобразования флагов и перечислений
 			ENUM_DATA* stk;
 			// ID - для вложенных объектов без схемы(разделитель, если несколько вложенны друг в друга)
 			ssh_u ID;
+			// размер типа в байтах
+			ssh_u width;
 		};
 		Serialize() {}
 		virtual ~Serialize() {}
 		virtual SCHEME* get_scheme() const = 0;
-		void openXml(const String& tag, const Buffer<ssh_cs>& buf)
+		void openXml(const Buffer<ssh_cs>& buf)
 		{
 			Xml xml(buf);
-			get_scheme();
-			scheme_root.name = tag;
-			readXml(&xml, xml.root(), &scheme_root);
+			readXml(&xml, xml.root(), get_scheme());
 		}
 		void openBin(const Buffer<ssh_cs>& buf)
 		{
 			//readBin(buf);
 		}
-		void saveXml(const String& tag, const Buffer<ssh_cs>& buf, const String& path, ssh_wcs code)
+		void saveXml(const Buffer<ssh_cs>& buf, const String& path, ssh_wcs code)
 		{
 			Xml xml(buf);
-			scheme_root.name = tag;
-			writeXml(&xml, xml.root(), &scheme_root);
+			writeXml(&xml, xml.root(), get_scheme());
 			xml.save(path, code);
 		}
 		void saveBin(const String& path)
 		{
 		}
 	protected:
-		virtual void readXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
-		virtual void writeXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
+		String getVal(ssh_u flgs, ssh_u offs, SCHEME* sc);
+		virtual SCHEME* readXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
+		virtual SCHEME* writeXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
 		//virtual void writeBin(File* f, base_scheme::SCHEME_DESC* parent);
 		//virtual void readBin(BYTE* ptr, base_scheme::SCHEME_DESC* parent);
 		//virtual void specWriteXml(Xml* xml, HXML h, uint_t idx, uint_t id) {}
 		//virtual void specReadXml(Xml* xml, HXML h, uint_t idx, uint_t id) {}
 		//virtual void specWriteBin(File* f, uint_t idx, uint_t id) {}
 		//virtual void specReadBin(BYTE* ptr, uint_t idx, uint_t id) {}
-		static SCHEME scheme_root;
 	};
 }

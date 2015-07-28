@@ -265,15 +265,15 @@ namespace ssh
 			if(is_cont) bytes += L"...";
 			return bytes;
 		}
+		// преобразование строковых значений флагов в двоичные
+		ssh_u cnvValue(ssh_wcs str, ENUM_DATA* stk, ssh_u def) const;
+		// преобразование двоичных значений флагов в строковые
+		String cnvString(ssh_u flags, ENUM_DATA* stk, ssh_wcs def, bool enumerate = true) const;
 	protected:
 		// конструктор
 		Helpers();
 		// деструктор
 		virtual ~Helpers() {}
-		// преобразование строковых значений флагов в двоичные
-		ssh_u cnvValue(ssh_wcs str, ENUM_DATA* stk, ssh_u def) const;
-		// преобразование двоичных значений флагов в строковые
-		String cnvString(ssh_u flags, ENUM_DATA* stk, ssh_wcs def, bool enumerate = true) const;
 		// платформа
 		WindowsTypes platform;
 		// статус памяти
