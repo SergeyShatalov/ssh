@@ -75,7 +75,7 @@ namespace ssh
 		// открыть архив
 		void make(const String& path, const String& sign, const String& xml_list);
 		// закрытие
-		void close() { resources.free(); file.close(); }
+		void close() { resources.reset(); file.close(); }
 		// удалить из архива ресурс
 		void remove(const String& path);
 		// добавить новый ресурс

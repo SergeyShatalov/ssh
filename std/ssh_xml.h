@@ -9,19 +9,36 @@ namespace ssh
 	struct XmlNode
 	{
 		// конструктор
-		XmlNode(ssh_wcs name, ssh_wcs v) : nm(name), val(v) {}
+		XmlNode() : attrs(nullptr), next(nullptr) {}
+		XmlNode(ssh_wcs name, ssh_wcs v) : XmlNode() { nm = name; val = v; }
+		~XmlNode() { SSH_DEL(attrs); SSH_DEL(next); }
 		// вернуть атрибут по имени
-		XmlNode* attr(const String& name) const { auto n(attrs.find(name, name)); return (n ? n->value : nullptr); }
+		XmlNode* attr(const String& name) const
+		{
+			auto n(attrs);
+			while(n)
+			{
+				if(n->nm == name) return n;
+				n = n->next;
+			}
+			return nullptr;
+		}
+		void add_attr(XmlNode* n)
+		{
+			n->next = attrs;
+			attrs = n;
+		}
 		// вернуть имя
 		const String& name() const { return nm; }
-		// вернуть тип
 		const String& type() const { return nm; }
 		// имя узла/атрибута
 		String nm;
 		// значение узла/атрибута
 		String val;
 		// список атрибутов
-		List<XmlNode*> attrs;
+		XmlNode* attrs;
+		// следующий атрибут
+		XmlNode* next;
 	};
 
 	typedef Tree<XmlNode*>::Node* HXML;
@@ -30,7 +47,7 @@ namespace ssh
 	{
 	public:
 		// конструкторы
-		Xml() : code(L"utf-8") { init(); }
+		Xml() : code(L"utf-8") { }
 		// конструктор загрузки
 		Xml(const String& path, ssh_wcs cod) { open(path, cod); }
 		// конструктор из памяти
@@ -40,7 +57,7 @@ namespace ssh
 		// открыть
 		void open(const String& path, ssh_wcs cod);
 		// закрыть
-		void close() { init(); }
+		void close() { tree.reset(); }
 		// сохранить
 		void save(const String& path);
 		// вернуть количество дочерних
@@ -67,10 +84,10 @@ namespace ssh
 		template <typename T> void set_attr(HXML h, ssh_wcs name, const T& val) const
 		{
 			auto n(h->value->attr(name));
-			if(n) n->val = val; else h->value->attrs.add(new XmlNode(name, val));
+			if(n) n->val = val; else h->value->add_attr(new XmlNode(name, val));
 		}
 		// получить значение атрибута
-		template <typename T> T get_attr(HXML h, ssh_wcs name, const T& def) const
+		template <typename T> T attr(HXML h, ssh_wcs name, const T& def) const
 		{
 			auto n(h->value->attr(name));
 			return (n ? n->val : def);
@@ -92,8 +109,6 @@ namespace ssh
 			return tree.get_node(h, index);
 		}
 	protected:
-		// начальная инициализация
-		void init();
 		// декодировка
 		String encode(const Buffer<ssh_cs>& buf);
 		// вернуть BOM в зависимости от выходной кодировки
@@ -105,7 +120,7 @@ namespace ssh
 		// сохранение
 		String _save(HXML h, ssh_l level);
 		// дерево узлов
-		Tree<XmlNode*> tree;
+		Tree<XmlNode*, SSH_PTR> tree;
 		// указатель на текст при формировании дерева
 		static ssh_ws* _xml;
 		// выходная кодировка

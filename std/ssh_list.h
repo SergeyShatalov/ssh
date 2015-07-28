@@ -23,30 +23,28 @@ namespace ssh
 			TYPE value;
 		};
 		// конструктор
-		List() : ID(-1) {init();}
-		List(ssh_u _ID) : ID(_ID) { init(); }
+		List() : ID(-1) { clear(); }
+		List(ssh_u _ID) : ID(_ID) { clear(); }
 		// конструктор копии
-		List(ssh_u _ID, const List<TYPE, ops>& src) : ID(_ID) { init(); *this = src; }
+		List(ssh_u _ID, const List<TYPE, ops>& src) : ID(_ID) { clear(); *this = src; }
 		// конструктор переноса
-		List(List<TYPE, ops>&& src) { nroot = src.nroot; nlast = src.nlast; node = src.node; src.init(); }
+		List(List<TYPE, ops>&& src) { ID = src.ID; nroot = src.nroot; nlast = src.nlast; node = src.node; src.clear(); }
 		// деструктор
 		~List()
 		{
-			reset(true);
+			reset();
 			Node::get_MemArrayNode()->Reset(); 
 		}
 		// установить идентификатор
 		void setID(ssh_u _ID) { ID = _ID; }
 		// очистить
-		void clear() { init(); }
-		// освободить
-		void free() { reset(true); }
+		void clear() { nroot = nlast = node = nullptr; }
 		// приращение
 		const List& operator += (const List<TYPE, ops>& src) {auto n(src.root()); while(n = src.next()) add(n->value); return *this;}
 		const List& operator += (const TYPE& t) { add(t); return *this; }
 		// присваивание
-		const List& operator = (const List<TYPE, ops>& src) {reset(true); return (*this += src);}
-		const List& operator = (List<TYPE, ops>&& src) { reset(true); nroot = src.nroot; nlast = src.nlast; node = src.node; src.init(); return *this; }
+		const List& operator = (const List<TYPE, ops>& src) {reset(); return (*this += src);}
+		const List& operator = (List<TYPE, ops>&& src) { reset(); ID = src.ID; nroot = src.nroot; nlast = src.nlast; node = src.node; src.clear(); return *this; }
 		// добавление
 		Node* add(const TYPE& t)
 		{
@@ -104,26 +102,24 @@ namespace ssh
 			return node;
 		}
 		bool is_empty() const { return (nroot == nullptr); }
-	protected:
-		// инициализация
-		void init() { nroot = nlast = node = nullptr; }
 		// сброс
-		void reset(bool is_rel)
+		void reset()
 		{
 			if(Node::get_MemArrayNode()->Valid())
 			{
 				while(nroot)
 				{
 					auto nr(nroot);
-					if(is_rel) BaseNode<TYPE, ops>::release(nroot->value);
+					BaseNode<TYPE, ops>::release(nroot->value);
 					if(nr != nroot) continue;
 					auto n(nroot->next);
 					SSH_DEL(nroot);
 					nroot = n;
 				}
 			}
-			init();
+			clear();
 		}
+	protected:
 		// корень
 		Node* nroot;
 		// последний

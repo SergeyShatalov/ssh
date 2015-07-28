@@ -50,7 +50,7 @@ namespace ssh
 			{
 				Xml xml(xml_list, L"utf-8");
 				HXML hroot(xml.get_node(xml.root(), L"archive")), helem;
-				String dstMain(xml.get_attr<String>(hroot, L"dst", L""));
+				String dstMain(xml.attr<String>(hroot, L"dst", L""));
 				dstMain = hlp->slash_path(dstMain);
 				ssh_l index(0);
 				while((helem = xml.get_node(hroot, nullptr, index++)))
@@ -58,9 +58,9 @@ namespace ssh
 					try
 					{
 						String fmtPath, fmtName;
-						ssh_u count(xml.get_attr<ssh_u>(helem, L"frames", 1));
-						String dst(xml.get_attr<String>(helem, L"path", L""));
-						String name(xml.get_attr<String>(helem, L"name", L""));
+						ssh_u count(xml.attr<ssh_u>(helem, L"frames", 1));
+						String dst(xml.attr<String>(helem, L"path", L""));
+						String name(xml.attr<String>(helem, L"name", L""));
 						dst = dstMain + dst;
 						if(count == 1)
 						{

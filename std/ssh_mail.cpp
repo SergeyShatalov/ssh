@@ -427,8 +427,8 @@ namespace ssh
 	void Mail::default(bool is_recipient, bool is_attach)
 	{
 		SSH_TRACE;
-		if(is_recipient) recipients.free();
-		if(is_attach) attach.free();
+		if(is_recipient) recipients.reset();
+		if(is_attach) attach.reset();
 
 		login = L"ostrov_skal";
 		pass = L"IfnfkjdCthutq";

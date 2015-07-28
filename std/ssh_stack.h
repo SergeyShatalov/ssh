@@ -24,6 +24,7 @@ namespace ssh
 		};
 		// конструктор
 		Stack() : ID(-1), root(nullptr) {}
+		Stack(ssh_u _ID) : ID(_ID), root(nullptr) {}
 		// конструктор переноса
 		Stack(Stack&& src) { ID = src.ID; root = src.root; src.root = nullptr; }
 		// деструктор
@@ -53,8 +54,7 @@ namespace ssh
 		// освобождение стэка
 		void reset()
 		{
-			auto m(Node::get_MemArrayNode());
-			if(m->Valid())
+			if(Node::get_MemArrayNode()->Valid())
 			{
 				while(root)
 				{

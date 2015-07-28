@@ -14,17 +14,6 @@ namespace ssh
 		return 0;
 	}
 
-	void Xml::init()
-	{
-		SSH_TRACE;
-		tree.reset();
-		XmlNode* n(new XmlNode(L"?xml", L""));
-		n->attrs.add(new XmlNode(L"version", L"1.0"));
-		n->attrs.add(new XmlNode(L"encoding", code));
-		n->attrs.add(new XmlNode(L"?", L""));
-		tree.add(tree.get_root(), n);
-	}
-
 	Xml::Xml(const Buffer<ssh_cs>& buf, ssh_wcs cod)
 	{
 		try
@@ -100,7 +89,7 @@ namespace ssh
 	{
 		SSH_TRACE;
 		code.lower();
-		init();
+		tree.reset();
 		String tmp(encode(buf));
 		_xml = tmp.buffer();
 		regx rx;
@@ -201,36 +190,47 @@ namespace ssh
 	void Xml::save(const String& path)
 	{
 		SSH_TRACE;
-		String txt(_save(tree.get_root(), 0));
+		String txt;
+		txt.fmt(L"<?xml version=\"1.0\" encoding=\"%s\" ?>\r\n", code);
+		txt += _save(tree.get_root(), 0);
 		File f(path, File::create_write);
 		ssh_w bom(bom_coder());
 		if(bom) f.write(&bom, 2);
 		f.write(txt, code);
+		tree.reset();
 	}
 
 	String Xml::_save(HXML h, ssh_l level)
 	{
 		auto n(h->value);
-		String s(L'\t', level < 2 ? 0 : level - 1);
+		String s(L'\t', level);
 		String str(s + L"<" + n->nm);
 		// атрибуты узла
-		auto a(n->attrs.root());
-		while(a = n->attrs.next()) { auto v(a->value); str += L" " + ((h == tree.get_root() && v->nm == L"?") ? v->nm : v->nm + L"=\"" + v->val + L"\""); }
-		// начать обработку дочерних узлов
+		auto a(n->attrs);
+		while(a) { str += L" " + a->nm + L"=\"" + a->val + L"\""; a = a->next; }
+		// значение узла
 		auto ch(h->fchild);
 		bool is_child(ch != 0);
+		bool is_val(!n->val.is_empty());
+		if(!is_child && !is_val)
+		{
+			str += L"/>\r\n";
+		}
+		else if(is_val)
+		{
+			str += L">\"" + n->val + L"\"";
+		}
+		// начать обработку дочерних узлов
 		if(is_child)
 		{
-			str += L">\r\n";
+			if(!is_val) str += L'>';
+			str += "\r\n";
 			do { str += _save(ch, level + 1); } while(ch = ch->next);
 		}
-		// завершить обработку дочерних узлов
-		if(!is_child && n->val.is_empty()) str += L"/>\r\n";
-		else
+		if((is_val || is_child))
 		{
-			if(!n->val.is_empty()) str += L">\"" + n->val + L"\"";
 			if(is_child) str += s;
-			if(h != tree.get_root()) str = str + L"</" + n->name() + L">\r\n";
+			str += L"</" + n->nm + L">\r\n";
 		}
 		return str;
 	}

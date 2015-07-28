@@ -66,7 +66,7 @@ namespace ssh
 
 	static void __cdecl ssh_signal(int numSignal)
 	{
-		MemMgr::instance()->fault();
+//		MemMgr::instance()->fault();
 		signal(numSignal, SIG_DFL); // перепосылка сигнала
 		exit(3);
 	}

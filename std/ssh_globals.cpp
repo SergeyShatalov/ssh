@@ -254,7 +254,7 @@ namespace ssh
 			}
 			iconv_close(h);
 		}
-		return Buffer<ssh_cs>(out, BUFFER_COPY | BUFFER_RESET, out_c);
+		return Buffer<ssh_cs>(out, BUFFER_COPY | BUFFER_RESET, _out - out);
 	}
 	
 	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs)

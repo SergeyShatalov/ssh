@@ -143,9 +143,7 @@ translit_failed:
   return RET_ILUNI;
 }
 
-static size_t unicode_loop_convert(iconv_t icd,
-								   const char* * inbuf, size_t *inbytesleft,
-								   char* * outbuf, size_t *outbytesleft)
+static size_t unicode_loop_convert(iconv_t icd, const char* * inbuf, size_t *inbytesleft, char* * outbuf, size_t *outbytesleft)
 {
 	conv_t cd = (conv_t)icd;
 	size_t result = 0;
@@ -251,8 +249,7 @@ outcount_zero:
 	return result;
 }
 
-static size_t unicode_loop_reset(iconv_t icd,
-								 char* * outbuf, size_t *outbytesleft)
+static size_t unicode_loop_reset(iconv_t icd, char* * outbuf, size_t *outbytesleft)
 {
 	conv_t cd = (conv_t)icd;
 	if(outbuf == NULL || *outbuf == NULL)

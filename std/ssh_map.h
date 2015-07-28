@@ -38,22 +38,24 @@ namespace ssh
 		};
 	public:
 		// конструктор по умолчанию
-		Map() {clear();}
+		Map() : ID(-1) { clear(); }
+		Map(ssh_u _ID) : ID(_ID) { clear(); }
 		// конструктор копии
-		Map(const Map<TYPE, KEY, ops_val, ops_key>& src) { clear(); *this = src; }
+		Map(ssh_u _ID, const Map<TYPE, KEY, ops_val, ops_key>& src) : ID(_ID) { clear(); *this = src; }
 		// конструктор переноса
-		Map(Map<TYPE, KEY, ops_val, ops_key>&& src) { cells = src.cells; node = src.node; src.cells = src.node = nullptr; }
+		Map(Map<TYPE, KEY, ops_val, ops_key>&& src) { ID = src.ID; cells = src.cells; node = src.node; src.cells = src.node = nullptr; }
 		// деструктор
 		~Map()
 		{
-			reset(true);
+			reset();
 			Node::get_MemArrayNode()->Reset();
 		}
+		void setID(ssh_u _ID) { ID = _ID; }
 		// очистить
 		void clear() { cells = node = nullptr; }
 		// присваивание
-		const Map& operator = (const Map<TYPE, KEY, ops_val, ops_key>& src) { reset(true); return *this += src; }
-		const Map& operator = (Map<TYPE, KEY, ops_val, ops_key>&& src) { reset(true); cells = src.cells; node = src.node; src.cells = src.node = nullptr; return *this; }
+		const Map& operator = (const Map<TYPE, KEY, ops_val, ops_key>& src) { reset(); return *this += src; }
+		const Map& operator = (Map<TYPE, KEY, ops_val, ops_key>&& src) { reset(); ID = src.ID; cells = src.cells; node = src.node; src.cells = src.node = nullptr; return *this; }
 		// приращение
 		const Map& operator += (const Map<TYPE, KEY, ops_val, ops_key>& src)
 		{
@@ -129,18 +131,14 @@ namespace ssh
 		Node* next() const { return (node = node ? node->next : cells); }
 	protected:
 		// удаление всего
-		void reset(bool is_rel)
+		void reset()
 		{
-			auto m(Node::get_MemArrayNode());
-			if(m->Valid())
+			if(Node::get_MemArrayNode()->Valid())
 			{
 				while(cells)
 				{
-					if(is_rel)
-					{
-						BaseNode<TYPE, ops_val>::release(cells->value);
-						BaseNode<KEY, ops_key>::release(cells->key);
-					}
+					BaseNode<TYPE, ops_val>::release(cells->value);
+					BaseNode<KEY, ops_key>::release(cells->key);
 					auto n(cells->next);
 					delete cells;
 					cells = n;
@@ -159,5 +157,7 @@ namespace ssh
 		Node* cells;
 		// текущий элемент
 		mutable Node* node;
+		// идентификатор
+		ssh_u ID;
 	};
 }

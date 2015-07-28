@@ -54,7 +54,6 @@ namespace ssh
 			{
 				ssl = SSL_new(ctx);
 				SSL_set_fd(ssl, (int)h);
-//				SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
 			}
 			bool is_wouldblock(int err) const
 			{

@@ -51,7 +51,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		//String xml(_x.read(L"windows-1251", 0));
 		Xml _xml(L"e:\\1.xml", L"utf-8");
 		_xml.save(L"e:\\1+.xml");
-		return 0;
+ 		return 0;
 		String cmd;
 		String charset;
 //		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);

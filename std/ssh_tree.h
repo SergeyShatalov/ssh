@@ -29,16 +29,18 @@ namespace ssh
 			ssh_u count;
 		};
 		// конструктор
-		Tree() {clear(); }
+		Tree() : ID(-1) {clear(); }
+		Tree(ssh_u _ID) : ID(_ID) { clear(); }
 		// конструктор копии
 		Tree(const Tree<T, ops>& src) { clear(); *this = src; }
-		Tree(Tree<T, ops>&& src) {root = src.root; src.root = nullptr;}
+		Tree(Tree<T, ops>&& src) { ID = src.ID; root = src.root; src.root = nullptr; }
 		// деструктор
 		~Tree()
 		{
 			reset();
 			Node::get_MemArrayNode()->Reset();
 		}
+		void setID(ssh_u _ID) { ID = _ID; }
 		// очистить
 		void clear() { root = nullptr; }
 		// сброс
@@ -46,10 +48,11 @@ namespace ssh
 		{
 			if(Node::get_MemArrayNode()->Valid())
 				reset(root);
+			clear();
 		}
 		// присваивание
 		const Tree& operator = (const Tree<T, ops>& src) { reset(); return *this += src; }
-		const Tree& operator = (Tree<T, ops>&& src) { reset(root); root = src.root; src.root = nullptr; return *this; }
+		const Tree& operator = (Tree<T, ops>&& src) { reset(); ID = src.ID; root = src.root; src.root = nullptr; return *this; }
 		// приращение
 		const Tree& operator += (const Tree<T, ops>& src) { add(root, src); return *this; }
 		// удаление узла
@@ -153,5 +156,7 @@ namespace ssh
 		}
 		// корень
 		Node* root;
+		// идентификатор
+		ssh_u ID;
 	};
 }
