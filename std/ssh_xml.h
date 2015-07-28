@@ -29,23 +29,16 @@ namespace ssh
 	class SSH Xml
 	{
 	public:
-		enum Cod
-		{
-			_utf8 = 0,
-			_utf16le,
-			_utf16be,
-			_ansi
-		};
 		// конструкторы
-		Xml() { init(); }
+		Xml() : code(L"utf-8") { init(); }
 		// конструктор загрузки
-		Xml(const String& path, Cod cod) { open(path, cod); }
+		Xml(const String& path, ssh_wcs cod) { open(path, cod); }
 		// конструктор из памяти
-		Xml(const Buffer<ssh_cs>& buf, Cod cod);
+		Xml(const Buffer<ssh_cs>& buf, ssh_wcs cod);
 		// деструктор
 		virtual ~Xml() { close(); }
 		// открыть
-		void open(const String& path, Cod cod);
+		void open(const String& path, ssh_wcs cod);
 		// закрыть
 		void close() { init(); }
 		// сохранить
@@ -103,20 +96,19 @@ namespace ssh
 		void init();
 		// декодировка
 		String encode(const Buffer<ssh_cs>& buf);
-		// распарсить слово
-		ssh_ws* _word(int sub = 0);
-		// вернуть параметры кодировки при сохранении XML
-		ssh_wcs get_param_coder(ssh_w& bom);
-		// пропуск "пустых" символов
-		void _skip_spc();
+		// вернуть BOM в зависимости от выходной кодировки
+		ssh_w bom_coder() const;
 		// формирование дерева узлов
+		void _make(const Buffer<ssh_cs>& buf);
 		void make(regx* rx, HXML hp, ssh_u lev);
 		//void make(HXML h, ssh_u _lev);
 		// сохранение
 		String _save(HXML h, ssh_l level);
 		// дерево узлов
 		Tree<XmlNode*> tree;
+		// указатель на текст при формировании дерева
 		static ssh_ws* _xml;
-		Cod coder;
+		// выходная кодировка
+		String code;
 	};
 }

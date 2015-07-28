@@ -323,7 +323,7 @@ namespace ssh
 	String regx::substr(ssh_l idx)
 	{
 		String ret;
-		if(idx < result && idx >= 0 && vec(idx, 0) != -1)
+		if(idx < result && idx >= 0 && len(idx))
 		{
 			ssh_u offs(vector[idx * 2 + 1]);
 			ssh_ws ws(subj[offs]);

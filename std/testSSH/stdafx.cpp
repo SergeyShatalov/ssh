@@ -47,8 +47,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		String _serg(L"windows-1251");
 		Buffer<ssh_cs> out(ssh_cnv(L"windows-1251", _serg, true));
 		regx rx;
-		File _x(L"e:\\1.xml", File::open_read);
-		String eml(_x.read(L"windows-1251", 0));
+		//File _x(L"e:\\1.xml", File::open_read);
+		//String xml(_x.read(L"windows-1251", 0));
+		Xml _xml(L"e:\\1.xml", L"utf-8");
+		_xml.save(L"e:\\1+.xml");
+		return 0;
 		String cmd;
 		String charset;
 //		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);

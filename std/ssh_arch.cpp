@@ -48,7 +48,7 @@ namespace ssh
 			// 4. добавить ресурсы из xml
 			if(!xml_list.is_empty())
 			{
-				Xml xml(xml_list, Xml::_utf8);
+				Xml xml(xml_list, L"utf-8");
 				HXML hroot(xml.get_node(xml.root(), L"archive")), helem;
 				String dstMain(xml.get_attr<String>(hroot, L"dst", L""));
 				dstMain = hlp->slash_path(dstMain);

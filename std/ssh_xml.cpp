@@ -5,87 +5,47 @@
 namespace ssh
 {
 	ssh_ws* Xml::_xml(nullptr);
-	static ssh_ws _null_ws;
-	static ssh_ws* _exml;
 
-	ssh_wcs Xml::get_param_coder(ssh_w& bom)
+	ssh_w Xml::bom_coder() const
 	{
 		SSH_TRACE;
-		ssh_wcs _s;
-		bom = 0;
-		switch(coder)
-		{
-			default:
-				_s = cp_ansi;
-				break;
-			case Xml::_utf8:
-				_s = L"utf-8";
-				break;
-			case Xml::_utf16le:
-				bom = 0xfeff;
-				_s = cp_utf;
-				break;
-			case Xml::_utf16be:
-				bom = 0xfffe;
-				_s = L"utf-16be";
-				break;
-		}
-		return _s;
+		if(code == L"utf-16le") return 0xfeff;
+		else if(code == L"utf-16be") return 0xfffe;
+		return 0;
 	}
 
 	void Xml::init()
 	{
 		SSH_TRACE;
 		tree.reset();
-		ssh_w bom;
 		XmlNode* n(new XmlNode(L"?xml", L""));
 		n->attrs.add(new XmlNode(L"version", L"1.0"));
-		n->attrs.add(new XmlNode(L"encoding", get_param_coder(bom)));
+		n->attrs.add(new XmlNode(L"encoding", code));
 		n->attrs.add(new XmlNode(L"?", L""));
 		tree.add(tree.get_root(), n);
 	}
 
-	Xml::Xml(const Buffer<ssh_cs>& buf, Cod cod)
+	Xml::Xml(const Buffer<ssh_cs>& buf, ssh_wcs cod)
 	{
 		try
 		{
 			SSH_TRACE;
-			coder = cod;
-			init();
-			String tmp(encode(buf));
-			_xml = tmp.buffer();
-			regx rx;
-			// тег
-			rx.set_pattern(0, LR"serg(<(?mUs)([/]{0,1})([\w_]+[\w\d_-]*)(\s+.*")\s*([/]{0,1})>)serg");
-			// атрибуты
-			rx.set_pattern(1, LR"serg(\s+([\w_]+[\w\d_-]*)\s*=\s*"(.*?)")serg");
-			// значение тега
-			rx.set_pattern(2, LR"serg((?ms)"(.*?)")serg");
-			make(&rx, root(), 0);
+			code = cod;
+			_make(buf);
 		}
 		catch(const Exception& e) { e.add(L"Парсер XML!"); }
 	}
 
-	void Xml::open(const String& path, Cod cod)
+	void Xml::open(const String& path, ssh_wcs cod)
 	{
 		try
 		{
 			SSH_TRACE;
-			coder = cod;
-			init();
+			code = cod;
 			// 1. открываем файл
 			File f(path, File::open_read);
 			// 2. загружаем, декодируем и строим дерево
-			String tmp(encode(f.read<ssh_cs>()));
-			_xml = tmp.buffer();
-			regx rx;
-			// тег
-			rx.set_pattern(0, LR"serg(<(?mUs)([/]{0,1})([\w_]+[\w\d_-]*)(\s+.*")\s*([/]{0,1})>)serg");
-			// атрибуты
-			rx.set_pattern(1, LR"serg(\s+([\w_]+[\w\d_-]*)\s*=\s*"(.*?)")serg");
-			// значение тега
-			rx.set_pattern(2, LR"serg((?ms)"(.*?)")serg");
-			make(&rx, root(), 0);
+			_make(f.read<ssh_cs>());
 		}
 		catch(const Exception& e) { e.add(L"Парсер XML <%s>!", path); }
 	}
@@ -93,25 +53,65 @@ namespace ssh
 	String Xml::encode(const Buffer<ssh_cs>& buf)
 	{
 		SSH_TRACE;
-		String ret;
-		regx rx(LR"((?im)<\?xml\s+version=.+encoding=["]?(utf-\d\d(?:le|be))["]?\s*\?>)");
+		String ret, charset;
+		regx rx(LR"((?im)<\?xml\s+version=.+encoding=["]?(.*?)["]?\s*\?>)");
 		// проверить на BOM
 		ssh_b _0(buf[0]), _1(buf[1]), _2(buf[2]);
+		ssh_l pos, pos1;
 		bool bom16be(_0 == 0xfe && _1 == 0xff);
 		bool bom16le(_0 == 0xff && _1 == 0xfe);
-		bool bom8(_0 == 0xef && _1 == 0xbb && _2 == 0xbf);
-		if(bom8 || (strstr(buf, "encoding=\"utf-8\"") || strstr(buf, "encoding=\"UTF-8\""))) ret = ssh_cnv(L"utf-8", buf, 3 * bom8);
-		else if(rx.match(buf.to<ssh_ws>()) > 0)
+		if((bom16le || bom16be))
 		{
-			bool is(false);
-			String charset(rx.substr(1));
-			charset.lower();
-			if((charset == L"utf-16be") && bom16be) { is = true; }
-			else if((charset == L"utf-16le") && bom16le) { is = true; }
-			if(is) ret = ssh_cnv(charset, buf, 2);
+			if(rx.match(buf.to<ssh_ws>()) > 0)
+			{
+				// utf-16le или utf16-be
+				charset = rx.substr(1);
+				charset.lower();
+				if(((charset == L"utf-16be") && bom16be) || ((charset == L"utf-16le") && bom16le)) pos1 = rx.vec(0, 1); else charset.empty();
+			}
 		}
-		if(ret.is_empty()) ret = ssh_cnv(cp_ansi, buf, 0);
-		return ret.substr(ret.find(L'\n', ret.find(L"<?xml")) + 1);
+		else
+		{
+			// utf-8 или какая то однобайтовая
+			// <?xml .... ?>
+			// определить границы заголовка xml
+			if((pos = strstr(buf, "<?xml") - buf) < 0) SSH_THROW(L"");
+			if((pos1 = (strstr(buf + pos, "?>") - (buf + pos))) < 0) SSH_THROW(L"");
+			pos1 += 2;
+			ssh_cs _cs(buf[pos1]);
+			buf[pos1] = 0;
+			// вытащить заголовок и преобразовать его в utf-16le
+			String caption(ssh_cnv(L"utf-8", buf, pos));
+			buf[pos1] = _cs;
+			// вытащить реальную кодировку
+			if(rx.match(caption) > 0)
+			{
+				bool bom8(_0 == 0xef && _1 == 0xbb && _2 == 0xbf);
+				charset = rx.substr(1);
+				charset.lower();
+				if(bom8 && charset != L"utf-8") charset.empty();
+			}
+		}
+		if(charset.is_empty()) SSH_THROW(L"Неизвестная кодирока.");
+		return ssh_cnv(charset, buf, pos1);
+	}
+
+	void Xml::_make(const Buffer<ssh_cs>& buf)
+	{
+		SSH_TRACE;
+		code.lower();
+		init();
+		String tmp(encode(buf));
+		_xml = tmp.buffer();
+		regx rx;
+		// тег
+		rx.set_pattern(0, LR"serg((?mUs)<(?:(?:([/]{0,1})([\w_]+[\w\d_-]*)>)|(!--.*-->)|(?:(\w+[\w\d_-]*)\s+(\w+.*)([/]{0,1})>)))serg");
+		// атрибуты
+		rx.set_pattern(1, LR"serg((?sm)([\w_]+[\w\d_-]*)\s*=\s*(?:"(.*?)")\s*)serg");
+		// значение тега
+		rx.set_pattern(2, LR"serg((?ms)()?<=>"(.*?)")serg");
+		// формирование
+		make(&rx, root(), 0);
 	}
 
 	void Xml::make(regx* rx, HXML hp, ssh_u lev)
@@ -120,80 +120,92 @@ namespace ssh
 		{
 			if(rx->match(_xml, (ssh_u)0) > 0)
 			{
+				bool is_child(false);
+				HXML h;
+				ssh_ws* _x(_xml);
+				_xml += rx->vec(0, 1);
+				// это комментырий?
+				if(rx->len(3)) continue;
 				// это завершающий тег?
-				if(rx->vec(1, 0) != -1)
+				if(rx->len(1))
 				{
 					// </tag>
-					if(rx->vec(4, 0) != -1 || rx->vec(3, 0) != -1) SSH_THROW(L"");
-					_xml[rx->vec(2, 1)] = 0;
-					if(get_name(hp) != (_xml + rx->vec(2, 0))) SSH_THROW(L"");
-					_xml += rx->vec(0, 1) + 1;
+					_x[rx->vec(2, 1)] = 0;
+					if(get_name(hp) != (_x + rx->vec(2, 0))) SSH_THROW(L"");
 					return;
+				}
+				else if(rx->len(2))
+				{
+					// <tag>
+					is_child = true;
+					_x[rx->vec(2, 1)] = 0;
+					h = add_node(hp, _x + rx->vec(2, 0), L"");
+					_x[rx->vec(2, 1)] = L'>';
 				}
 				else
 				{
 					// это стартовый тег
-					bool is(rx->vec(4, 0) == -1);
-					_xml[rx->vec(2, 1)] = 0;
-					HXML h(add_node(hp, _xml + rx->vec(2, 0), L""));
-					// проверить атрибуты есть?
-					if(rx->vec(3, 0) != -1)
+					is_child = (rx->len(6) == 0);
+					_x[rx->vec(4, 1)] = 0;
+					h = add_node(hp, _x + rx->vec(4, 0), L"");
+					// атрибуты
+					_x[rx->vec(5, 1)] = 0;
+					ssh_ws* _ws(_x + rx->vec(5, 0));
+					while(rx->match(_ws, (ssh_u)1) == 3)
 					{
-						// <tag attr1=val1 ... />
-						// <tag attr1=val1 ... >
-						ssh_l idx(0);
-						String attrs(rx->substr(3));
-						ssh_ws* _ws(attrs.buffer());
-						while(rx->match(_ws, (ssh_u)1, idx) == 3)
+						// проверка на пространство между атрибутами
+						if(rx->vec(0, 0)) SSH_THROW(L"Недопустимо заданы атрибуты тега<%s>.", h->value->nm);
+						// добавить атрибут
+						_ws[rx->vec(2, 1)] = 0;
+						_ws[rx->vec(1, 1)] = 0;
+						set_attr(h, _ws + rx->vec(1, 0), _ws + rx->vec(2, 0));
+						_ws += rx->len(0);
+					}
+					// проверить после найденных атрибутов больше ничего нет?
+					if(*_ws != L'\0') SSH_THROW(L"");
+				}
+				if(is_child)
+				{
+					ssh_ws ws;
+					bool is(false);
+					// проверим на значение тега
+					while(ws = *_xml++)
+					{
+						if(ws == L'\"')
 						{
-							// проверка на пространство между атрибутами
-							_ws[rx->vec(1, 0) - 1] = 0;
-							ssh_ws ws;
-							while((ws = _ws[idx++])) { if(ws != L' ' || ws != L'\t') SSH_THROW(L""); }
-							// добавить атрибут
-							_ws[rx->vec(1, 1)] = 0;
-							_ws[rx->vec(2, 1)] = 0;
-							set_attr(h, _ws + rx->vec(1, 0), _ws + rx->vec(2, 0));
-							idx = rx->vec(2, 1) + 1;
+							if(is) break;
+							_x = _xml;
+							is = true;
 						}
-						// проверить после найденных атрибутов больше ничего нет?
-						if(_ws[idx] != L'\0') SSH_THROW(L"");
+						else if(ws == L'\\') _xml++;
+						else if(ws == L'<' && !is) { _xml--; break; }
 					}
-					else
-					{
-						// <tag>
-						if(!is) SSH_THROW(L"");
-					}
-					_xml += rx->vec(0, 1) + 1;
+					if(ws == 0) SSH_THROW(L"Неожиданный конец XML!");
 					if(is)
 					{
-						make(rx, h, lev + 1);
+						*(_xml - 1) = 0;
+						set_val(h, _x);
 					}
+					make(rx, h, lev + 1);
 				}
 			}
 			else
 			{
-				// может это значение тега?
-				if(rx->match(_xml, (ssh_u)2, 0) > 0)
-				{
-					set_val(hp, _xml);
-					_xml += rx->vec(0, 1) + 1;
-				}
-				else SSH_THROW(L"");
+				while(*_xml <= L' ' && *_xml != 0) _xml++;
+				if(*_xml != 0) SSH_THROW(L"Найдена неизвестная лексема!");
 			}
 		}
-		if(lev) SSH_THROW(L"");
+		if(lev) SSH_THROW(L"Неожиданный конец XML!");
 	}
 
 	void Xml::save(const String& path)
 	{
 		SSH_TRACE;
-		ssh_w bom(0xfeff);
 		String txt(_save(tree.get_root(), 0));
 		File f(path, File::create_write);
-		ssh_wcs _ws(get_param_coder(bom));
+		ssh_w bom(bom_coder());
 		if(bom) f.write(&bom, 2);
-		f.write(txt, _ws);
+		f.write(txt, code);
 	}
 
 	String Xml::_save(HXML h, ssh_l level)

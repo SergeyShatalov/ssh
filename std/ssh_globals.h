@@ -6,7 +6,7 @@
 namespace ssh
 {
 	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, const String& str, bool is_null);
-	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, int offs);
+	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs);
 	long SSH ssh_cpu_caps();
 	ssh_u SSH ssh_rand(ssh_u begin, ssh_u end);
 	ssh_u SSH ssh_hash(ssh_wcs wcs);

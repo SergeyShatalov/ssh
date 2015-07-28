@@ -257,7 +257,7 @@ namespace ssh
 		return Buffer<ssh_cs>(out, BUFFER_COPY | BUFFER_RESET, out_c);
 	}
 	
-	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, int offs)
+	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs)
 	{
 		iconv_t h;
 		String out(L'\0', in.count() * 4);

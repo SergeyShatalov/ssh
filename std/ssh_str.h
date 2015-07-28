@@ -159,6 +159,8 @@ namespace ssh
 		ssh_l count() const { return result; }
 		// вернуть индекс в массике совпадений
 		ssh_l vec(ssh_l idx, int offs = 0) const { return ((idx < result && idx >= 0) ? vector[idx * 2 + offs] : -1); }
+		// вернуть длину в массике совпадений
+		ssh_l len(ssh_l idx) const { return ((idx < result && idx >= 0) ? (vector[idx * 2 + 1] - vector[idx * 2]) : 0); }
 	protected:
 		// компилировать
 		regex16* compile(ssh_wcs pattern)

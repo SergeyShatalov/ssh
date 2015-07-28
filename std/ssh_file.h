@@ -9,7 +9,7 @@
 namespace ssh
 {
 	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, const String& str, bool is_null);
-	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, int offs);
+	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs);
 
 	class SSH File
 	{
