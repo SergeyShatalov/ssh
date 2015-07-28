@@ -1,30 +1,48 @@
 ﻿
 #include "stdafx.h"
 
-class Tmp
+size_t _Hash(ssh_wcs _First, size_t _Count)
 {
-public:
-	Tmp() :y(0) {}
-	int y;
-};
-class Temp : public Base
+	const size_t _FNV_offset_basis = 14695981039346656037ULL;
+	const size_t _FNV_prime = 1099511628211ULL;
+	size_t _Val = _FNV_offset_basis;
+	for(size_t _Next = 0; _Next < _Count; ++_Next)
+	{	// fold in another byte
+		_Val ^= (size_t)_First[_Next];
+		_Val *= _FNV_prime;
+	}
+	_Val ^= _Val >> 32;
+	return (_Val);
+}
+
+class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
 public:
 	Temp() : x(0) {}
+	Temp(ssh_wcs path) : x(0) { open(path); }
 	virtual ~Temp() {}
-	int x;
-	virtual void save(const String& path, bool is_xml)  {}
+	virtual void save(ssh_wcs path) override {}
+	virtual SCHEME* get_scheme() const override
+	{
+		SCHEME_BEGIN(Temp)
+			SCHEME_VAR(Temp, x, L"x", 0, L"1", nullptr)
+		SCHEME_END(Temp);
+	}
 protected:
-	// начальная инициализация
-	virtual void init() {}
-	// сброс
-	virtual void reset() {}
+	int x;
 	// сформировать из памяти
-	virtual void make(const Buffer<ssh_b>& buf) {}
+	virtual void make(const Buffer<ssh_cs>& buf) override
+	{
+		openXml(L"dd", buf);
+	}
 };
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	int x(0);
+	ssh_u i = typeid(x).hash_code();
+//	offsetof(Temp, x);
 	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
 	try
@@ -34,6 +52,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		_lg->init(&_log);
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
+		Temp* t;
+		new(&t, L"serg") Temp(L"e:\\1.eml");
 		Xml _xml(L"e:\\1.xml");
 		_xml.save(L"e:\\1+.xml", L"utf-8");
  		return 0;

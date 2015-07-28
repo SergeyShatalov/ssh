@@ -358,8 +358,8 @@ namespace ssh
 	public:
 		Zip() : next_in(nullptr), avail_in(0), total_in(0), next_out(nullptr), avail_out(0), total_out(0), adler(0) {}
 		~Zip() {}
-		Buffer<ssh_b> compress(const Buffer<ssh_b>& buf);
-		Buffer<ssh_b> decompress(const Buffer<ssh_b>& buf);
+		Buffer<ssh_cs> compress(const Buffer<ssh_cs>& buf);
+		Buffer<ssh_cs> decompress(const Buffer<ssh_cs>& buf);
 	protected:
 		static DWORD ostrov32(DWORD adler, const BYTE* buf, UINT len);
 		static DWORD crc32_big(DWORD crc, const BYTE* buf, UINT len);

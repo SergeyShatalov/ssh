@@ -6,17 +6,15 @@
 
 namespace ssh
 {
-	void Resource::open(const String& path)
+	void Resource::open(ssh_wcs path)
 	{
 		try
 		{
 			SSH_TRACE;
 			// устанавливаем критическую секцию
 			Section cs;
-			// инициализация ресурса
-			init();
 			// тип создания
-			if(path.is_empty())
+			if(!path)
 			{
 				// из архива
 				archive->get(this);
@@ -25,7 +23,7 @@ namespace ssh
 			{
 				// из файла
 				File f(path, File::open_read);
-				make(f.read<ssh_b>());
+				make(f.read<ssh_cs>());
 			}
 		}
 		catch(const Exception& e) { e.add(L""); }
@@ -144,14 +142,14 @@ namespace ssh
 		return result;
 	}
 
-	Buffer<ssh_b> Archive::get(const String& name)
+	Buffer<ssh_cs> Archive::get(const String& name)
 	{
 		SSH_TRACE;
 		RESOURCE* r;
 		if(!(r = find(name))) SSH_THROW(L"Не обнаружен ресурс <%s> в архиве!", name);
 		// загружаем и распаковываем
 		Zip zip;
-		return zip.decompress((file.read<ssh_b>(r->length_body, r->position + r->length_caption, SEEK_SET)));
+		return zip.decompress((file.read<ssh_cs>(r->length_body, r->position + r->length_caption, SEEK_SET)));
 	}
 
 	void Archive::get(Resource* res)
@@ -161,7 +159,7 @@ namespace ssh
 		if(!(r = find(res->name()))) SSH_THROW(L"Не обнаружен ресурс <%s> в архиве!", res->name());
 		// загружаем, распаковываем и формируем
 		Zip zip;
-		return res->make(zip.decompress((file.read<ssh_b>(r->length_body, r->position + r->length_caption, SEEK_SET))));
+		return res->make(zip.decompress((file.read<ssh_cs>(r->length_body, r->position + r->length_caption, SEEK_SET))));
 	}
 
 	void Archive::rename(const String& old_name, const String& new_name)
@@ -204,7 +202,7 @@ namespace ssh
 			// определяем дату файла
 			try { f.get_time(nullptr, nullptr, &tm); } catch(const Exception&) { tm = Time::current(); }
 			// читаем его и запаковываем
-			Buffer<ssh_b> buf(zip.compress(f.read<ssh_b>()));
+			Buffer<ssh_cs> buf(zip.compress(f.read<ssh_cs>()));
 			// ищем в списке ресурсов
 			auto r(find(name));
 			if(r)

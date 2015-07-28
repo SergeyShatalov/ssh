@@ -10,27 +10,22 @@
 
 #include "ssh_singl.h"
 #include "ssh_list.h"
+#include "ssh_srlz.h"
 
 namespace ssh
 {
 	class Archive;
-	class SSH Resource : public Base
+	class SSH Resource : public Base, public Serialize
 	{
 		friend class Archive;
 	public:
-		// конструктор по умолчанию
-		//Resource() {}
-		// сохранить
-		virtual void save(const String& path, bool is_xml) = 0;
-	protected:
 		// октрыть
-		virtual void open(const String& path);
-		// начальная инициализация
-		virtual void init() = 0;
-		// сброс
-		virtual void reset() = 0;
+		virtual void open(ssh_wcs path);
+		// сохранить
+		virtual void save(ssh_wcs path) = 0;
+	protected:
 		// сформировать из памяти
-		virtual void make(const Buffer<ssh_b>& buf) = 0;
+		virtual void make(const Buffer<ssh_cs>& buf) = 0;
 	};
 
 	class SSH Archive final
@@ -87,7 +82,7 @@ namespace ssh
 		// перечислить все доступные ресурсы
 		String enumerate(bool is_begin);
 		// вернуть неструктурированные данные
-		Buffer<ssh_b> get(const String& name);
+		Buffer<ssh_cs> get(const String& name);
 		// индекс для синглтона
 	protected:
 		// конструктор по умолчанию

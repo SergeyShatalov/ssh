@@ -137,31 +137,31 @@ namespace ssh
 		return (int)len;
 	}
 
-	Buffer<ssh_b> Zip::compress(const Buffer<ssh_b>& buf)
+	Buffer<ssh_cs> Zip::compress(const Buffer<ssh_cs>& buf)
 	{
 		Buffer<ZipDeflate> deflate(new ZipDeflate, 0, 1);
 		ssh_u lbuf(buf.count()), lret(lbuf * 2 + 32);
-		Buffer<ssh_b> ret(lret);
+		Buffer<ssh_cs> ret(lret);
 
-		next_out = (ret + sizeof(ssh_u));
+		next_out = (ssh_b*)(ret + sizeof(ssh_u));
 		avail_out = (UINT)lret;;
-		next_in = buf;
+		next_in = buf.to<ssh_b>();
 		avail_in = (UINT)lbuf;
 
 		lret = deflate->make(this, ZIP_FINISH);
-		*(ssh_u*)(ssh_b*)ret = lbuf;
-		return Buffer<ssh_b>(ret, BUFFER_COPY, lret + sizeof(ssh_u));
+		*(ssh_u*)(ssh_cs*)ret = lbuf;
+		return Buffer<ssh_cs>(ret, BUFFER_COPY, lret + sizeof(ssh_u));
 	}
 
-	Buffer<ssh_b> Zip::decompress(const Buffer<ssh_b>& buf)
+	Buffer<ssh_cs> Zip::decompress(const Buffer<ssh_cs>& buf)
 	{
 		Buffer<ZipInflate> inflate(new ZipInflate, 0, 1);
-		ssh_u lbuf(buf.count()), lret(*(ssh_u*)(ssh_b*)buf);
-		Buffer<ssh_b> ret(lret);
+		ssh_u lbuf(buf.count()), lret(*(ssh_u*)buf.to<ssh_cs>());
+		Buffer<ssh_cs> ret(lret);
 
 		avail_out = (UINT)lret;
-		next_in = (buf + sizeof(ssh_u));
-		next_out = ret;
+		next_in = (ssh_b*)(buf + sizeof(ssh_u));
+		next_out = ret.to<ssh_b>();
 		avail_in = (UINT)lbuf - sizeof(ssh_u);
 
 		if((inflate->make(this, ZIP_FINISH) != lret))
