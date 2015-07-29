@@ -33,7 +33,7 @@ namespace ssh
 		return sval;
 	}
 
-	Serialize::SCHEME* Serialize::readXml(Xml* xml, HXML hp, SCHEME* arr, ssh_u p_offs)
+	void Serialize::readXml(Xml* xml, HXML hp, SCHEME** arr, ssh_u p_offs)
 	{
 		/*
 		SCHEME* sc;
@@ -76,16 +76,15 @@ namespace ssh
 			xml->set_attr(h, sc->name, sval);
 		}
 		*/
-		return nullptr;
 	}
 
-	Serialize::SCHEME* Serialize::writeXml(Xml* xml, HXML hp, SCHEME* arr, ssh_u p_offs)
+	void Serialize::writeXml(Xml* xml, HXML hp, SCHEME** arr, ssh_u p_offs)
 	{
 		SCHEME* sc;
 		// создать узел
-		HXML h(xml->add_node(hp, arr->name, L""));
-		ssh_u _ID(arr++->ID);
-		while((sc = arr++))
+		HXML h(xml->add_node(hp, (*arr)->name, L""));
+		ssh_u _ID((*arr++)->ID);
+		while((sc = (*arr++)))
 		{
 			if(!sc->name) break;
 			ssh_u flg(sc->flags);
@@ -96,7 +95,7 @@ namespace ssh
 				// вложенный класс без своей схемы
 				if(sc->ID != _ID)
 				{
-					arr = writeXml(xml, h, sc, sc->offs);
+					writeXml(xml, h, arr, offs);
 					continue;
 				}
 			}
@@ -104,7 +103,8 @@ namespace ssh
 			{
 				// вложенный со своей схемой
 				Serialize* srlz((Serialize*)(this + sc->offs + p_offs));
-				srlz->writeXml(xml, h, srlz->get_scheme(), p_offs);
+				SCHEME* s(srlz->get_scheme());
+				srlz->writeXml(xml, h, &s, p_offs);
 				continue;
 			}
 			else if((flg & SC_ARRAY))
@@ -120,6 +120,56 @@ namespace ssh
 			sval += getVal(flg, offs, sc);
 			xml->set_attr(h, sc->name, sval);
 		}
-		return arr;
+	}
+
+	void Serialize::writeBin(File* f, SCHEME** arr, ssh_u p_offs)
+	{
+
+	}
+	
+	void Serialize::readBin(ssh_cs** buf, SCHEME** arr, ssh_u p_offs)
+	{
+
 	}
 }
+
+/*
+ssh_u hash1;
+int i(0);
+unsigned int ui(0);
+long l(0);
+unsigned long ul(0);
+char c(0);
+unsigned char uc(0);
+wchar_t w(0);
+short s(0);
+unsigned short us(0);
+ssh_l ll(0);
+ssh_u ull(0);
+String str(L"");
+ssh_wcs wcs;
+ssh_ccs ccs;
+float f(100.0);
+double d(0);
+Half h;
+Time t;
+
+hash1 = (typeid(t).hash_code());
+hash1 = (typeid(i).hash_code());
+hash1 = (typeid(ui).hash_code());
+hash1 = (typeid(l).hash_code());
+hash1 = (typeid(ul).hash_code());
+hash1 = (typeid(c).hash_code());
+hash1 = (typeid(uc).hash_code());
+hash1 = (typeid(w).hash_code());
+hash1 = (typeid(s).hash_code());
+hash1 = (typeid(us).hash_code());
+hash1 = (typeid(ll).hash_code());
+hash1 = (typeid(ull).hash_code());
+hash1 = (typeid(str).hash_code());
+hash1 = (typeid(wcs).hash_code());
+hash1 = (typeid(ccs).hash_code());
+hash1 = (typeid(f).hash_code());
+hash1 = (typeid(d).hash_code());
+hash1 = (typeid(h).hash_code());
+*/

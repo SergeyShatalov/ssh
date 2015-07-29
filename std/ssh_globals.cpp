@@ -6,9 +6,14 @@ namespace ssh
 {
 	ssh_u SSH ssh_hash(ssh_wcs wcs)
 	{
-		ssh_u hash(1315423911);
-		while(*wcs) hash ^= ((hash << 5) + (*wcs++) + (hash >> 2));
-		return hash;
+		ssh_u _val(14695981039346656037ULL);
+		while(*wcs)
+		{
+			_val ^= (ssh_u)*wcs++;
+			_val *= (ssh_u)1099511628211ULL;
+		}
+		_val ^= _val >> 32;
+		return _val;
 	};
 
 	ssh_u singltons[32];

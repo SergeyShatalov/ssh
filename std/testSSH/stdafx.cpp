@@ -22,10 +22,14 @@ public:
 	Temp() : x(0) {}
 	Temp(ssh_wcs path) : x(0) { open(path); }
 	virtual ~Temp() {}
-	virtual void save(ssh_wcs path) override {}
+	virtual void save(ssh_wcs path) override
+	{
+		saveXml(path, L"utf-8");
+	}
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
+			SCHEME_NOD(Temp, x, L"temp")
 			SCHEME_VAR(Temp, x, L"x", 0, 1, L"1", nullptr, 0)
 		SCHEME_END(Temp);
 	}
@@ -40,9 +44,7 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int x(0);
-	ssh_u i = typeid(x).hash_code();
-//	offsetof(Temp, x);
+	//	offsetof(Temp, x);
 	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
 	try
@@ -53,7 +55,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
 		Temp* t;
-		new(&t, L"serg") Temp(L"e:\\1.eml");
+		new(&t, L"serg") Temp();
+		t->save(L"e:\1.xml");
 		Xml _xml(L"e:\\1.xml");
 		_xml.save(L"e:\\1+.xml", L"utf-8");
  		return 0;

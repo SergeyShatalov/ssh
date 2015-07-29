@@ -57,30 +57,51 @@ namespace ssh
 		void openXml(const Buffer<ssh_cs>& buf)
 		{
 			Xml xml(buf);
-			readXml(&xml, xml.root(), get_scheme());
+			SCHEME* sc(get_scheme());
+			readXml(&xml, xml.root(), &sc);
 		}
 		void openBin(const Buffer<ssh_cs>& buf)
 		{
-			//readBin(buf);
+			SCHEME* sc(get_scheme());
+			ssh_cs* _buf(buf);
+			readBin(&_buf, &sc);
 		}
-		void saveXml(const Buffer<ssh_cs>& buf, const String& path, ssh_wcs code)
+		void saveXml(const String& path, ssh_wcs code)
 		{
-			Xml xml(buf);
-			writeXml(&xml, xml.root(), get_scheme());
+			Xml xml;
+			SCHEME* sc(get_scheme());
+			writeXml(&xml, xml.root(), &sc);
 			xml.save(path, code);
 		}
 		void saveBin(const String& path)
 		{
+			File f(path, File::create_write);
+			SCHEME* sc(get_scheme());
+			writeBin(&f, &sc);
 		}
 	protected:
 		String getVal(ssh_u flgs, ssh_u offs, SCHEME* sc);
-		virtual SCHEME* readXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
-		virtual SCHEME* writeXml(Xml* xml, HXML h, SCHEME* sc, ssh_u p_offs = 0);
-		//virtual void writeBin(File* f, base_scheme::SCHEME_DESC* parent);
-		//virtual void readBin(BYTE* ptr, base_scheme::SCHEME_DESC* parent);
-		//virtual void specWriteXml(Xml* xml, HXML h, uint_t idx, uint_t id) {}
-		//virtual void specReadXml(Xml* xml, HXML h, uint_t idx, uint_t id) {}
-		//virtual void specWriteBin(File* f, uint_t idx, uint_t id) {}
-		//virtual void specReadBin(BYTE* ptr, uint_t idx, uint_t id) {}
+		virtual void readXml(Xml* xml, HXML h, SCHEME** arr, ssh_u p_offs = 0);
+		virtual void writeXml(Xml* xml, HXML h, SCHEME** arr, ssh_u p_offs = 0);
+		virtual void writeBin(File* f, SCHEME** arr, ssh_u p_offs = 0);
+		virtual void readBin(ssh_cs** buf, SCHEME** arr, ssh_u p_offs = 0);
+		static const ssh_u _hash_string = 0x6a979454ce7cff60;
+		static const ssh_u _hash_int	= 0x2b9fff19004b3727;
+		static const ssh_u _hash_uint	= 0xbaaedcffb89ab934;
+		static const ssh_u _hash_long	= 0xcde8c9adbd39ae9e;
+		static const ssh_u _hash_ulong	= 0xa8aa3869cd5eb495;
+		static const ssh_u _hash_char	= 0xf2a39391f9f8ad2c;
+		static const ssh_u _hash_uchar	= 0xf9b6d9fdbc918e1b;
+		static const ssh_u _hash_short	= 0xf69155480110981d;
+		static const ssh_u _hash_ushort = 0x27a436e029489774;
+		static const ssh_u _hash_wchar	= 0xcd07488533365414;
+		static const ssh_u _hash_float	= 0xa00a62a9e2b863cc;
+		static const ssh_u _hash_double = 0xa0880a9c41b9d434;
+		static const ssh_u _hash_half	= 0x384de03da92b42f5;
+		static const ssh_u _hash_ll		= 0xf36f7584055d450a;
+		static const ssh_u _hash_ull	= 0x4422422121b2ac2a;
+		static const ssh_u _hash_wcs	= 0x667978a73e944305;
+		static const ssh_u _hash_ccs	= 0xb5f5c54e0cef1cc0;
+		static const ssh_u _hash_time	= 0x7f407f2070a5d6d0;
 	};
 }
