@@ -4,36 +4,38 @@
 
 namespace ssh
 {
+	Serialize::SCHEME* Serialize::_sc(nullptr);
 	String Serialize::getVal(ssh_u flg, ssh_u offs, SCHEME* sc)
 	{
 		String sval;
-		if(sc->type == 0) sval = *(String*)(this + offs);
-		else if(sc->width <= 8)
+		ssh_u val(0);
+		ssh_b* obj((ssh_b*)(this) + offs);
+		switch(sc->hash)
 		{
-			ssh_u val(0);
-			String sval;
-			memcpy(&val, (this + offs), sc->width);
-			if((flg & (SC_ENUM | SC_FLAGS)))
-			{
-				sval = hlp->cnvString(val, sc->stk, sc->def, ((flg & SC_ENUM) == SC_ENUM));
-			}
-			else
-			{
-				if((flg & SC_T_BOOL))
-				{
-					sval = (val == 0 ? L"false" : L"true");
-				}
-				else
-				{
-					sval = String(val, ((flg & SC_T_HEX) ? String::_hex : String::_dec));
-				}
-			}
+			case _hash_string:
+				sval = *(String*)obj;
+				break;
+			case _hash_char:
+				sval = *(ssh_cs*)obj;
+				break;
+			case _hash_wcs:
+				sval = *(ssh_wcs*)obj;
+				break;
+			case _hash_ccs:
+				sval = *(ssh_ccs*)obj;
+				break;
+			default:
+				memcpy(&val, obj, sc->width);
+				if(sc->hash == _hash_float || sc->hash == _hash_double) sval = String(val, String::_dbl);
+				else if((flg & (SC_ENUM | SC_FLAGS))) sval = hlp->cnvString(val, sc->stk, sc->def, ((flg & SC_ENUM) == SC_ENUM));
+				else if((flg & SC_T_BOOL)) sval = (val == 0 ? L"false" : L"true");
+				else sval = String(val, ((flg & SC_T_HEX) ? String::_hex : String::_dec));
+				break;
 		}
-		else SSH_THROW(L"Ќеизветный тип данных!");
 		return sval;
 	}
 
-	void Serialize::readXml(Xml* xml, HXML hp, SCHEME** arr, ssh_u p_offs)
+	void Serialize::readXml(Xml* xml, HXML hp, ssh_u p_offs)
 	{
 		/*
 		SCHEME* sc;
@@ -78,33 +80,43 @@ namespace ssh
 		*/
 	}
 
-	void Serialize::writeXml(Xml* xml, HXML hp, SCHEME** arr, ssh_u p_offs)
+	void Serialize::writeXml(Xml* xml, HXML hp, ssh_l p_offs)
 	{
 		SCHEME* sc;
 		// создать узел
-		HXML h(xml->add_node(hp, (*arr)->name, L""));
-		ssh_u _ID((*arr++)->ID);
-		while((sc = (*arr++)))
+		HXML h(xml->add_node(hp, _sc->name, L""));
+		ssh_u _ID(_sc++->ID);
+		while((sc = _sc++))
 		{
 			if(!sc->name) break;
 			ssh_u flg(sc->flags);
 			ssh_u offs(sc->offs + p_offs);
 			String sval;
-			if((flg & SC_OBJ))
+			if(_ID)
 			{
 				// вложенный класс без своей схемы
-				if(sc->ID != _ID)
+				if(!(flg & SC_OBJ))
 				{
-					writeXml(xml, h, arr, offs);
+					// выход из вложенного
+					_sc--;
+					return;
+				}
+				else if(sc->ID != _ID)
+				{
+					_sc--;
+					// другой ID - вложенный в этот вложенный
+					writeXml(xml, h, offs);
 					continue;
 				}
 			}
 			else if((flg & SC_NODE))
 			{
 				// вложенный со своей схемой
-				Serialize* srlz((Serialize*)(this + sc->offs + p_offs));
-				SCHEME* s(srlz->get_scheme());
-				srlz->writeXml(xml, h, &s, p_offs);
+				Serialize* srlz((Serialize*)((ssh_b*)(this) + sc->offs + p_offs));
+				SCHEME* __sc(_sc);
+				_sc = srlz->get_scheme();
+				srlz->writeXml(xml, h, p_offs);
+				_sc = __sc;
 				continue;
 			}
 			else if((flg & SC_ARRAY))
@@ -122,12 +134,12 @@ namespace ssh
 		}
 	}
 
-	void Serialize::writeBin(File* f, SCHEME** arr, ssh_u p_offs)
+	void Serialize::writeBin(File* f, ssh_u p_offs)
 	{
 
 	}
 	
-	void Serialize::readBin(ssh_cs** buf, SCHEME** arr, ssh_u p_offs)
+	void Serialize::readBin(ssh_cs** buf, ssh_u p_offs)
 	{
 
 	}

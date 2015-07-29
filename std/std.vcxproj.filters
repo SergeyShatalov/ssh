@@ -125,9 +125,6 @@
     <ClCompile Include="ssh_img.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="ssh_io.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="ssh_jpg.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
@@ -170,5 +167,15 @@
     <ClCompile Include="ssh_srlz.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="ssh_asm.asm">
+      <Filter>Файлы исходного кода</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ssh_def.def">
+      <Filter>Файлы исходного кода</Filter>
+    </None>
   </ItemGroup>
 </Project>

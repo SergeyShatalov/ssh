@@ -1,6 +1,12 @@
 
 #pragma once
 
+extern "C"
+{
+	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
+	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix);
+};
+
 namespace ssh
 {
 	template <typename T> class Range;
@@ -13,10 +19,12 @@ namespace ssh
 	public:
 		enum Radix : int
 		{
-			_bin = 2,
-			_oct = 8,
-			_dec = 10,
-			_hex = 16
+			_bin = 0,
+			_dec = 1,
+			_oct = 2,
+			_hex = 3,
+			_dbl = 4,
+			_flt = 5
 		};
 		// конструкторы
 		String() { init(); }
@@ -32,8 +40,8 @@ namespace ssh
 		// привидение типа
 		operator ssh_wcs() const { return buf; }
 		operator bool() const { return compare(L"true"); }
-		template <typename T> T toNum(ssh_u idx, int R = 10) const { return (T)_wcstoi64(buf + idx, nullptr, R); }
-		template <typename T> void fromNum(T v, int R = 10) { ssh_ws tmp[128]; _i64tow((ssh_u)v, tmp, R); *this = tmp; }
+		template <typename T> T toNum(ssh_u idx, int R = 10) const { return *(T*)asm_ssh_wton(buf + idx, R); }
+		template <typename T> void fromNum(T v, int R = 10) { *this = asm_ssh_ntow(&v, R); }
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
 		// операторы сравнения
 		friend bool operator == (const String& str1, const String& str2) { return (str1.hash() == str2.hash()); }

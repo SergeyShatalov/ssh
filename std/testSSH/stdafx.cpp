@@ -19,31 +19,42 @@ class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
 public:
-	Temp() : x(0) {}
+	Temp() : x(100), d(123.123) { v.x = 22.0f; v.y = 15.0f; }
 	Temp(ssh_wcs path) : x(0) { open(path); }
 	virtual ~Temp() {}
 	virtual void save(ssh_wcs path) override
 	{
-		saveXml(path, L"utf-8");
+		saveXml(path, L"utf-8", (ssh_b*)this);
 	}
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
-			SCHEME_NOD(Temp, x, L"temp")
-			SCHEME_VAR(Temp, x, L"x", 0, 1, L"1", nullptr, 0)
-		SCHEME_END(Temp);
+			SCHEME_NOD(Temp, x, L"sergey")
+			SCHEME_VAR(Temp, x, L"sergey_x", 0, 1, L"1", nullptr, 0)
+			SCHEME_OBJ(Temp, v, L"vector", 1)
+				SCHEME_OBJ_VAR(vec2, v, x, L"vec_x", SC_OBJ, 1, L"0.0", nullptr, 1)
+				SCHEME_OBJ_VAR(vec2, v, y, L"vec_y", SC_OBJ, 1, L"0.0", nullptr, 1)
+			SCHEME_VAR(Temp, d, L"sergey_d", 0, 1, L"0.0", nullptr, 0)
+			SCHEME_END(Temp);
 	}
 protected:
 	int x;
+	vec2 v;
+	double d;
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openXml(buf);
+		openXml(buf, (ssh_b*)this);
 	}
 };
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	String _num(L"1000");
+
+	double _ii = _num.toNum<double>(_num, String::_dbl);
+	float _dd = 100.123f;
+	void* pp(&_dd);
 	//	offsetof(Temp, x);
 	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
@@ -56,7 +67,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		SSH_LOG(L"Привет!");
 		Temp* t;
 		new(&t, L"serg") Temp();
-		t->save(L"e:\1.xml");
+		t->save(L"e:\\serg.xml");
 		Xml _xml(L"e:\\1.xml");
 		_xml.save(L"e:\\1+.xml", L"utf-8");
  		return 0;

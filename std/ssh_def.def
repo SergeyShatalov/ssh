@@ -1,0 +1,5 @@
+EXPORTS
+
+asm_ssh_ntow		@1
+asm_ssh_wton		@2
+

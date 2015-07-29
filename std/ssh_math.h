@@ -104,7 +104,7 @@ namespace ssh
 		// логические
 		bool operator == (const vec2& v) const {return ((fabs(x - v.x) + fabs(y - v.y)) < SSH_EPSILON);}
 		bool operator != (const vec2& v) const {return !(operator == (v));}
-		float operator[](ssh_u idx) const {return (idx < 2 ? flt[idx] : 0.0f);}
+//		float operator[](ssh_u idx) const {return (idx < 2 ? flt[idx] : 0.0f);}
 		// присваивание
 		const vec2& operator = (const vec2& v) {x = v.x ; y = v.y ; return *this;}
 		const vec2& operator = (float f) {x = f ; y = f ; return *this;}
@@ -124,11 +124,8 @@ namespace ssh
 		operator const float*() const {return (const float*)&x;}
 		operator float*() const {return (float*)&x;}
 		// члены
-		union
-		{
-			struct {float x, y;};
-			float flt[2];
-		};
+		float x;
+		float y;
 	};
 
 	class SSH vec3
