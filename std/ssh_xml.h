@@ -25,18 +25,20 @@ namespace ssh
 		}
 		void add_attr(XmlNode* n)
 		{
-			n->next = attrs;
-			attrs = n;
+			if(attrs) last->next = n; else attrs = n;
+			last = n;
 		}
 		// вернуть имя
 		const String& name() const { return nm; }
-		const String& type() const { return nm; }
+		//const String& type() const { return nm; }
 		// имя узла/атрибута
 		String nm;
 		// значение узла/атрибута
 		String val;
-		// список атрибутов
+		// список атрибутов - корень
 		XmlNode* attrs;
+		// последний в списке
+		XmlNode* last;
 		// следующий атрибут
 		XmlNode* next;
 	};

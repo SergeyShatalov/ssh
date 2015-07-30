@@ -33,6 +33,7 @@ is_hex		dw 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 
 ; ret - result of whar_t*
 asm_ssh_ntow proc public
 		push r10
+		push r11
 		mov r9, offset result + 126
 		add r9, 2
 		mov word ptr [r9], 0
@@ -46,6 +47,7 @@ asm_ssh_ntow proc public
 		mov rcx, [rdx + 16]
 		call qword ptr [rdx]
 @@:		mov rax, r9
+		pop r11
 		pop r10
 		ret
 tbl_radix dq nto_ohb, 1, 1, nto_dec, 0, 10, nto_ohb, 7, 3, nto_ohb, 15, 4, nto_dbl, 0, 10, nto_flt, 0, 10
@@ -79,9 +81,11 @@ nto_dec:; определяем знак
 		mov [r9], r10w
 @@:		ret
 nto_flt:movd xmm0, eax
+		mov r11, 4
 		cvtss2sd xmm0, xmm0
 		jmp @f
 nto_dbl:; read double from rax
+		mov r11, 8
 		movd xmm0, rax
 		; отбросим дробную часть
 @@:		cvttsd2si rax, xmm0
@@ -93,17 +97,20 @@ nto_dbl:; read double from rax
 		mov word ptr [rdx], '.'
 		add rdx, 2
 		; количество знаков после запятой
-		mov rcx, 4
+		mov rcx, r11
+		mov r10, rdx
 @@:		; дробная часть
 		subsd xmm0, xmm1
 		mulsd xmm0, qword ptr [r8]
 		cvttsd2si rax, xmm0
 		cvtsi2sd xmm1, rax
+		test rax, rax
+		cmovnz r10, rdx
 		add rax, 48
 		mov [rdx], ax
 		add rdx, 2
 		loop @b
-		mov word ptr [rdx], 0
+		mov word ptr [r10 + 2], 0
 		ret
 asm_ssh_ntow endp
 
@@ -193,8 +200,9 @@ wto_dbl:call wto_dec
 		test r13, r13
 		jz @f
 		cvtsd2ss xmm0, xmm0
-@@:		movsd qword ptr [result], xmm0
-		mov rax, qword ptr [result]
+@@:		movd rax, xmm0
+;		movsd qword ptr [result], xmm0
+;		mov rax, qword ptr [result]
 		ret
 asm_ssh_wton endp
 

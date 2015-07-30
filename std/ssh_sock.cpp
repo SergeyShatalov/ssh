@@ -134,7 +134,7 @@ namespace ssh
 		DWORD dw = true;
 		if(!(flgs & BLOCKED)) ioctlsocket(socks[0].h, FIONBIO, &dw);
 		socks[0].addr.sin_family = AF_INET;
-		socks[0].addr.sin_port = htons(host.toNum<ssh_w>(pos_dpt + 1));
+		socks[0].addr.sin_port = htons(host.toNum<ssh_w>(pos_dpt + 1, String::_dec));
 		// 3. если сервер, то:
 		if((flgs & SERVER))
 		{

@@ -38,7 +38,8 @@ namespace ssh
 	void* MemMgr::alloc(ssh_u sz)
 	{
 		Section cs;
-		ssh_b* p((ssh_b*)malloc(sz + sizeof(NodeMem*)));
+		
+		ssh_b* p((ssh_b*)_aligned_malloc(sz + sizeof(NodeMem*), 16));
 		if(!is_disabled)
 		{
 			is_disabled = true;

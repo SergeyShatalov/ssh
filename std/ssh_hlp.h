@@ -175,12 +175,12 @@ namespace ssh
 			return ((i = path.find_rev(L'.')) ? path.left(i) : path); 
 		}
 		// сгенерировать случайное имя
-		String gen_name(ssh_wcs nm) const
+		String gen_name(ssh_wcs nm, bool is_long = true) const
 		{
 			static ssh_u gen_count(0);
 			String message;
 			gen_count++;
-			return message.fmt(L"%s%I64X%016I64X", nm, gen_count, __rdtsc());
+			return (is_long ? message.fmt(L"%s%I64X%016I64X", nm, gen_count, __rdtsc()) : message.fmt(L"%s%I64X", nm, gen_count));
 		}
 		// преобразовать значение в ближайшую степень двойки
 		template <class T> T pow2(ssh_u val, bool nearest) const

@@ -3,27 +3,24 @@
 
 #include "ssh_xml.h"
 
-struct SSH_2VAL
-{
-	ssh_u hash;
-	ssh_u offs;
-};
-
 #define SC_NODE			0x0001// узел - ссылка на вложенный со схемой
 #define SC_OBJ			0x0002// класс или его переменная без схемы
-#define SC_ARRAY		0x0004// массив из POD типов
+//#define SC_ARRAY		0x0004// массив из POD типов
 // опции
 #define SC_ENUM			0x0008// перечисление
 #define SC_FLAGS		0x0010// флаги
-#define SC_T_HEX		0x0020// данные в hex
-#define SC_T_BOOL		0x0040// данные bool
+#define SC_HEX			0x0020// данные в hex
+#define SC_BOOL			0x0040// данные bool
+#define SC_BIN			0x0080// данные в bin
 
 #define SCHEME_BEGIN(cls) static SCHEME cls##_scheme[] = {
 #define SCHEME_END(cls) {nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0}}; return cls##_scheme;
-#define SCHEME_VAR(cls, var, name, flgs, count, def, stk, id) {name, def, stk, typeid(var).hash_code(), offsetof(cls, var), count, flgs, id, sizeof(decltype(cls::var))},
-#define SCHEME_OBJ_VAR(cls, cls_var, var, name, flgs,  count, def, stk, id) {name, def, stk, typeid(cls_var.var).hash_code(), offsetof(cls, var), count, flgs, id, sizeof(decltype(cls::var))},
-#define SCHEME_NOD(cls, var, name) {name, nullptr, nullptr, 0, offsetof(cls, var), 0, SC_NODE, 0, 0},
-#define SCHEME_OBJ(cls, var, name, id) {name, nullptr, nullptr, 0, offsetof(cls, var), 0, SC_OBJ, id, 0},
+#define SCHEME_VAR(cls, var, name, count, flgs, def, stk) {name, def, stk, typeid(var).hash_code(), offsetof(cls, var), count, flgs, 0, sizeof(decltype(cls::var))},
+#define SCHEME_OBJ_VAR(cls, cls_var, var, name, count, flgs, def, stk, id) {name, def, stk, typeid(cls_var.var).hash_code(), offsetof(cls, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls::var))},
+#define SCHEME_OBJ_VAR1(cls1, cls1_var, cls2, cls2_var, var, name, count, flgs, def, stk, id) {name, def, stk, typeid(cls1_var.cls2_var.var).hash_code(), offsetof(cls2, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls2::var))},
+#define SCHEME_NOD(cls, var, name, def, count) {name, def, nullptr, 0, offsetof(cls, var), count, SC_NODE, 0, 0},
+#define SCHEME_OBJ_BEGIN(cls, var, name, count, id) {name, nullptr, nullptr, 0, offsetof(cls, var), count, SC_OBJ, id, 0},
+#define SCHEME_OBJ_END() {L"<!-- -->", nullptr, nullptr, 0, 0, 0, 0, -1},
 
 namespace ssh
 {
@@ -47,45 +44,26 @@ namespace ssh
 			// доступ к переменной
 			ssh_w flags;
 			// ID - для вложенных объектов без схемы(разделитель, если несколько вложенны друг в друга)
-			ssh_w ID;
+			short ID;
 			// размер типа в байтах
 			ssh_w width;
 		};
 		Serialize() {}
 		virtual ~Serialize() {}
 		virtual SCHEME* get_scheme() const = 0;
-		void openXml(const Buffer<ssh_cs>& buf, ssh_b* srlz)
-		{
-			Xml xml(buf);
-			_sc = get_scheme();
-			readXml(&xml, xml.root(), srlz - (ssh_b*)this);
-		}
-		void openBin(const Buffer<ssh_cs>& buf, ssh_b* srlz)
-		{
-			SCHEME* sc(get_scheme());
-			_sc = get_scheme();
-			ssh_cs* _buf(buf);
-			readBin(&_buf, srlz - (ssh_b*)this);
-		}
-		void saveXml(const String& path, ssh_wcs code, ssh_b* srlz)
-		{
-			Xml xml;
-			_sc = get_scheme();
-			writeXml(&xml, xml.root(), srlz - (ssh_b*)this);
-			xml.save(path, code);
-		}
-		void saveBin(const String& path, ssh_b* srlz)
-		{
-			File f(path, File::create_write);
-			_sc = get_scheme();
-			writeBin(&f, srlz - (ssh_b*)this);
-		}
+		void openXml(const Buffer<ssh_cs>& buf, void* srlz);
+		void openBin(const Buffer<ssh_cs>& buf, void* srlz);
+		void saveXml(const String& path, ssh_wcs code, void* srlz);
+		void saveBin(const String& path, void* srlz);
 	protected:
 		String getVal(ssh_u flgs, ssh_u offs, SCHEME* sc);
-		virtual void readXml(Xml* xml, HXML h, ssh_u p_offs);
-		virtual void writeXml(Xml* xml, HXML h, ssh_l p_offs);
-		virtual void writeBin(File* f, ssh_u p_offs);
-		virtual void readBin(ssh_cs** buf, ssh_u p_offs);
+		void setVal(HXML h, ssh_u flg, ssh_u offs, SCHEME* sc);
+		void writeVal(ssh_u flg, ssh_u offs, SCHEME* sc);
+		//void readVal(ssh_u flg, ssh_u offs, SCHEME* sc);
+		virtual void readXml(HXML h, ssh_u p_offs);
+		virtual void writeXml(HXML h, ssh_l p_offs);
+		virtual void writeBin(ssh_u p_offs);
+		virtual void readBin(ssh_u p_offs);
 		static const ssh_u _hash_string = 0x6a979454ce7cff60;
 		static const ssh_u _hash_int	= 0x2b9fff19004b3727;
 		static const ssh_u _hash_uint	= 0xbaaedcffb89ab934;
@@ -105,5 +83,7 @@ namespace ssh
 		static const ssh_u _hash_ccs	= 0xb5f5c54e0cef1cc0;
 		static const ssh_u _hash_time	= 0x7f407f2070a5d6d0;
 		static SCHEME* _sc;
+		static Xml* _xml;
+		static File* _fl;
 	};
 }

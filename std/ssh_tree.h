@@ -101,7 +101,7 @@ namespace ssh
 			Node* nn;
 			while(n)
 			{
-				if(BaseNode<T, ops>::hash(n->value, true) == name.hash()) return n;
+				if(n->value->name() == name) return n;
 				if(n->fchild) { if((nn = findChild(n->fchild, name))) return nn; }
 				n = n->next;
 			}

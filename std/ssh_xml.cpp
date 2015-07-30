@@ -20,6 +20,7 @@ namespace ssh
 		try
 		{
 			SSH_TRACE;
+			close();
 			// 1. открываем файл
 			File f(path, File::open_read);
 			// 2. загружаем, декодируем и строим дерево

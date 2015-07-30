@@ -34,14 +34,24 @@ namespace ssh
 		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
 		String(const String& str) { init(); *this = str; }
 		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep)) _wcsset(buf, ws); }
-		template <typename T> String(T v, Radix r) { init(); fromNum(v, (int)r); }
+		template <typename T> String(T v, Radix r) { init(); fromNum(v, r); }
 		// деструктор
 		~String() { empty(); }
 		// привидение типа
 		operator ssh_wcs() const { return buf; }
-		operator bool() const { return compare(L"true"); }
-		template <typename T> T toNum(ssh_u idx, int R = 10) const { return *(T*)asm_ssh_wton(buf + idx, R); }
-		template <typename T> void fromNum(T v, int R = 10) { *this = asm_ssh_ntow(&v, R); }
+		operator ssh_u() const { return toNum<ssh_u>(0, _dec); }
+		operator ssh_d() const { return toNum<ssh_d>(0, _dec); }
+		operator int() const { return toNum<int>(0, _dec); }
+		operator unsigned int() const { return toNum<unsigned int>(0, _dec); }
+		operator long() const { return toNum<long>(0, _dec); }
+		operator ssh_w() const { return toNum<ssh_w>(0, _dec); }
+		operator short() const { return toNum<short>(0, _dec); }
+		operator ssh_b() const { return toNum<ssh_b>(0, _dec); }
+		operator double() const { return toNum<double>(0, _dbl); }
+		operator float() const { return toNum<float>(0, _flt); }
+		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(buf + idx, R); }
+		template <typename T> void fromNum(T v, Radix R = String::_dec) { *this = asm_ssh_ntow(&v, R); }
+		// вернуть по индексу
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
 		// операторы сравнения
 		friend bool operator == (const String& str1, const String& str2) { return (str1.hash() == str2.hash()); }

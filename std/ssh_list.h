@@ -28,7 +28,7 @@ namespace ssh
 		// конструктор копии
 		List(ssh_u _ID, const List<TYPE, ops>& src) : ID(_ID) { clear(); *this = src; }
 		// конструктор переноса
-		List(List<TYPE, ops>&& src) { ID = src.ID; nroot = src.nroot; nlast = src.nlast; node = src.node; src.clear(); }
+		List(List<TYPE, ops>&& src) { ID = src.ID; nroot = src.nroot; nlast = src.nlast; src.clear(); }
 		// деструктор
 		~List()
 		{
@@ -38,68 +38,71 @@ namespace ssh
 		// установить идентификатор
 		void setID(ssh_u _ID) { ID = _ID; }
 		// очистить
-		void clear() { nroot = nlast = node = nullptr; }
+		void clear() { nroot = nlast = nullptr; }
 		// приращение
-		const List& operator += (const List<TYPE, ops>& src) {auto n(src.root()); while(n = src.next()) add(n->value); return *this;}
+		const List& operator += (const List<TYPE, ops>& src) { auto n(src.root()); while(n) { add(n->value); n = n->next; } return *this; }
 		const List& operator += (const TYPE& t) { add(t); return *this; }
 		// присваивание
 		const List& operator = (const List<TYPE, ops>& src) {reset(); return (*this += src);}
-		const List& operator = (List<TYPE, ops>&& src) { reset(); ID = src.ID; nroot = src.nroot; nlast = src.nlast; node = src.node; src.clear(); return *this; }
+		const List& operator = (List<TYPE, ops>&& src) { reset(); ID = src.ID; nroot = src.nroot; nlast = src.nlast; src.clear(); return *this; }
 		// добавление
 		Node* add(const TYPE& t)
 		{
-			node = new Node(t, nlast, nullptr);
-			if(nroot) nlast->next = node; else nroot = node;
-			return (nlast = node);
+			auto n(new Node(t, nlast, nullptr));
+			if(nroot) nlast->next = n; else nroot = n;
+			return (nlast = n);
 		}
 		// вставка элемента
 		Node* insert(const TYPE& t, Node* n = nullptr)
 		{
-			n = (n ? node : nroot);
-			auto nn(n ? n->next : nullptr);
+			if(!n) n = nroot;
 			auto np(n ? n->prev : nullptr);
-			auto nd(new Node(t, np, nn));
-			if(nn) nn->prev = nd;
+			auto nd(new Node(t, np, n));
 			if(np) np->next = nd;
-			if(n == nroot || !n) nroot = nd;
+			if(n) n->prev = nd;
+			if(n == nroot) nroot = nd;
 			if(!nlast) nlast = nd;
+			return nd;
 		}
 		// удалить
-		Node* remove(Node* nd = nullptr)
+		Node* remove(Node* nd)
 		{
-			nd = (nd ? nd : node);
+			auto ret(nd);
 			if(nd)
 			{
-				Node* n(nd->next);
-				Node* p(nd->prev);
+				auto n(nd->next);
+				auto p(nd->prev);
 				if(nd == nroot) nroot = n;
 				if(nd == nlast) nlast = p;
 				if(n) n->prev = p;
 				if(p) p->next = n;
-				node = (n ? n : p);
+				ret = (n ? n : p);
 				BaseNode<TYPE, ops>::release(nd->value);
 				delete nd;
 			}
-			return node;
+			return ret;
 		}
-		// перейти в "корень"
-		Node* root() const { return (node = nullptr); }
-		// следующий
-		Node* next() const { return (node = (node ? node->next : nroot)); }
-		// предыдущий
-		Node* prev() const { return (node = (node ? node->prev : nlast)); }
+		// вернуть "корень"
+		Node* root() const { return nroot; }
+		// вернуть последний
+		Node* last() const { return nlast; }
 		// найти
-		Node* find(const TYPE& value) const { root(); while(next() && node->value != value) {} return node; }
+		Node* find(const TYPE& value) const
+		{
+			auto n(root());
+			while(n && n->value != value) n = n->next;
+			return n;
+		}
 		// найти по имени
 		Node* find(const String& name, const String& type) const
 		{
-			root();
-			while(next())
+			auto n(root());
+			while(n)
 			{
-				if(BaseNode<TYPE, ops>::hash(node->value, true) == name.hash())
-					if(BaseNode<TYPE, ops>::hash(node->value, false) == type.hash()) break;
+				if(n->value->name() == name && n->value->type() == type) break;
+				n = n->next;
 			}
-			return node;
+			return n;
 		}
 		bool is_empty() const { return (nroot == nullptr); }
 		// сброс
@@ -126,7 +129,5 @@ namespace ssh
 		Node* nlast;
 		// идентификатор
 		ssh_u ID;
-		// текущий
-		mutable Node* node;
 	};
 }

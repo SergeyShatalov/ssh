@@ -13,9 +13,9 @@ namespace ssh
 	template <typename T1, typename T2> class Box;
 
 	template <typename T, ssh_u type> struct BaseNode { static void release(const T& t) { SSH_THROW(L""); } };
-	template <typename T> struct BaseNode < T, SSH_TYPE > { static void release(const T& t) { t.~T(); } static T dummy() { return T(); } static ssh_u hash(const T& t, bool is) { return (is ? t.name().hash() : t.type().hash()); } };
-	template <typename T> struct BaseNode < T, SSH_PTR > { static void release(const T& t) { ::delete t; } static T dummy() { return nullptr; } static ssh_u hash(const T& t, bool is) { return (is ? t->name().hash() : t->type().hash()); } };
-	template <typename T> struct BaseNode < T, SSH_SPTR > { static void release(const T& t) { if(t) t->release(); } static T dummy() { return nullptr; } static ssh_u hash(const T& t, bool is) { return (is ? t->name().hash() : t->type().hash()); } };
+	template <typename T> struct BaseNode < T, SSH_TYPE > { static void release(const T& t) { t.~T(); } static T dummy() { return T(); } };
+	template <typename T> struct BaseNode < T, SSH_PTR > { static void release(const T& t) { ::delete t; } static T dummy() { return nullptr; } };
+	template <typename T> struct BaseNode < T, SSH_SPTR > { static void release(const T& t) { if(t) t->release(); } static T dummy() { return nullptr; } };
 
 	class SSH Base
 	{
@@ -49,10 +49,11 @@ namespace ssh
 			if(--ref == 0)
 			{
 				auto l(Base::objs());
-				if(l->find(this))
+				auto n(l->find(this));
+				if(n)
 				{
-					l->remove();
-					if(!l->nroot) List<Base*, SSH_SPTR>::Node::get_MemArrayNode()->Reset();
+					l->remove(n);
+					if(!l->root()) List<Base*, SSH_SPTR>::Node::get_MemArrayNode()->Reset();
 				}
 				delete this;
 			}

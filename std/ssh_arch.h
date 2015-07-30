@@ -92,7 +92,7 @@ namespace ssh
 		// возвращает ресурс из архива(по его имени)
 		void get(Resource* res);
 		// поиск ресурса
-		RESOURCE* find(const String& name) const;
+		List<RESOURCE, SSH_TYPE>::Node* find(const String& name) const;
 		// файл ресурса
 		File file;
 		// дерево ресурсов

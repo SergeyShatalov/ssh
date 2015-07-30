@@ -86,6 +86,12 @@ namespace ssh
 		attach.setID(206);
 		rx.set_pattern(0, LR"(^[a-z0-9\._-]+@[a-z0-9\._-]+\.[a-z]{2,4}$)");
 		rx.set_pattern(1, LR"((?m)^\d{3,3}[-|=|\s|\r\n])");
+		rx.set_pattern(2, LR"((?m)Date:[,\D]*(\d{1,2})\s+(\w\w\w\s)\s*([\d]+)\s+(\d{1,2}):(\d{1,2}):(\d{1,2}))");
+		rx.set_pattern(3, LR"(From:\s+(?:(?:\s*)|(["А-Яа-я\w\d\.\s_-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))\s*<([\w\d\._-]+@[\w\d\._-]+\.[\w]{2,4})>\r\n)");
+		rx.set_pattern(4, LR"((?m)X-Mailer: (?:([\w\d\.="\s-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))$)");
+		rx.set_pattern(5, LR"((?m)Subject: (?:([\w\d\.="\s-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))$)");
+		rx.set_pattern(6, LR"((?smi)Content-Type:.*multipart/mixed;.*boundary="(.*?))");
+		rx.set_pattern(7, LR"((?mis)Content-Type:.*text/([\w\d-]+);.*charset=["]?([\w\d-]+)["]?;.*Content-Transfer-Encoding: ([\d\w-]+))");
 		sock.setCallbacks(sock_receive, sock_connect, nullptr, nullptr, this);
 		hEvent = CreateEvent(nullptr, true, false, nullptr);
 		default(true, true);
@@ -118,7 +124,7 @@ namespace ssh
 		if(is_notify) header += cmd.fmt(L"Disposition-Notification-To: %s\r\n", (reply_to.mail.is_empty() ? sender.mail : reply_to.mail));
 		header += L"To: ";
 		auto n(recipients.root());
-		while((n = recipients.next())) header += cmd.fmt(L"%s %s%s", n->value.name, n->value.mail, (n->next ? L"," : L"\r\n"));
+		while(n) { header += cmd.fmt(L"%s %s%s", n->value.name, n->value.mail, (n->next ? L"," : L"\r\n")); n = n->next; }
 		header += cmd.fmt(L"Subject: %s\r\nMIME-Version: 1.0\r\n", cnv_rfc(subject));
 		if(!attach.is_empty()) header += cmd.fmt(L"Content-Type: multipart/mixed; boundary=\"%s\"\r\n\r\n--%s\r\n", msg_id, msg_id);
 		header += cmd.fmt(L"Content-type: text/%s; charset=\"%s\"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n", (is_html ? L"html" : L"plain"), charset);
@@ -127,7 +133,7 @@ namespace ssh
 
 	bool Mail::check_keyword(ssh_wcs keyword)
 	{
-		return (rx.match(caps, cmd.fmt(L"(?im)[-\\s=]+%s[\\s=]+", keyword)) > 0);
+		return (rx.match(caps, (ssh_wcs)cmd.fmt(L"(?im)[-\\s=]+%s[\\s=]+", keyword), (ssh_l)0) > 0);
 	}
 	
 	void Mail::send_cmd(ssh_u command, const Buffer<ssh_cs>& data, ssh_u flags)
@@ -199,7 +205,7 @@ namespace ssh
 					}
 					else code = 0;
 				}
-				else if(protocol == _smtp) code = ((rx.match(resp, (ssh_u)1) > 0) ? resp.toNum<ssh_l>(rx.vec(0)) : 0);
+				else if(protocol == _smtp) code = ((rx.match(resp, (ssh_u)1) > 0) ? resp.toNum<ssh_l>(rx.vec(0), String::_dec) : 0);
 				else SSH_THROW(L"UNKNOWN_PROTOCOL");
 			}
 			if(code != command_list[command].valid_code) SSH_THROW(command_list[command].error);
@@ -222,6 +228,7 @@ namespace ssh
 			for(ssh_u i = 1; i < count; i++)
 			{
 				MAIL* m(nullptr);
+				String cmd;
 				File f(cmd.fmt(L"%i.eml", i), File::open_read);
 				resp = f.read(L"windows-1251", 0);
 				if(!check_keyword(L"TOP"))
@@ -265,12 +272,12 @@ namespace ssh
 		if(check_keyword(L"APOP"))
 		{
 			String str(ssh_md5(timestamp + pass));
-			send_cmd(command_pop_APOP, L"APOP %s %s\r\n", login, str);
+			send_cmd(command_pop_APOP, L"APOP %s %s\r\n", 0, login, str);
 		}
 		else if(check_keyword(L"USER"))
 		{
-			send_cmd(command_pop_USER, L"USER %s\r\n", login);
-			send_cmd(command_pop_PASSWORD, L"PASS %s\r\n", pass);
+			send_cmd(command_pop_USER, L"USER %s\r\n", 0, login);
+			send_cmd(command_pop_PASSWORD, L"PASS %s\r\n", 0, pass);
 		}
 		else SSH_THROW(L"LOGIN_NOT_SUPPORTED");
 	}
@@ -314,7 +321,7 @@ namespace ssh
 			// ***** РАСЧЕТ РАЗМЕРА ВЛОЖЕНИЙ *****
 			ssh_u totalSize(0);
 			auto n(attach.root());
-			while((n = attach.next()))
+			while(n)
 			{
 				try
 				{
@@ -324,19 +331,20 @@ namespace ssh
 				}
 				catch(const Exception&) {}
 				if(totalSize > 5242880) SSH_THROW(L"Слишком большой размер вложений <%i> для отправки по почте!", totalSize);
+				n = n->next;
 			}
 			// ***** ОТПРАВКА ПОЧТЫ *****
 			if(recipients.is_empty()) SSH_THROW(L"UNDEF_RECIPIENTS");
 			if(sender.mail.is_empty()) SSH_THROW(L"UNDEF_MAIL_FROM");
 			send_cmd(command_smtp_MAILFROM, L"MAIL FROM: %s\r\n", 0, sender.mail);
 			auto nn(recipients.root());
-			while((nn = recipients.next())) send_cmd(command_smtp_RCPTTO, L"RCPT TO: %s\r\n", 0, nn->value.mail);
+			while(nn) { send_cmd(command_smtp_RCPTTO, L"RCPT TO: %s\r\n", 0, nn->value.mail); nn = nn->next; }
 			// DATA <CRLF>
 			send_cmd(command_smtp_DATA, L"DATA\r\n");
 			send_cmd(command_smtp_DATABLOCK, headers(subject, is_html, is_notify).buffer(), Mail::no_resp);
 			send_cmd(command_smtp_DATABLOCK, ssh_cnv(charset, body, false), Mail::no_resp);
 			n = attach.root();
-			while((n = attach.next()))
+			while(n)
 			{
 				String name(n->value);
 				ssh_l pos;
@@ -350,6 +358,7 @@ namespace ssh
 					f.close();
 				}
 				catch(const Exception& e) { e.add(L"Не удалось открыть файл вложений при отправке электронной почты!"); }
+				n = n->next;
 			}
 			if(!attach.is_empty()) send_cmd(command_smtp_DATABLOCK, L"\r\n--%s--\r\n", Mail::no_resp, msg_id);
 			send_cmd(command_smtp_DATAEND, L"\r\n.\r\n");
@@ -483,11 +492,11 @@ namespace ssh
 		{
 			// проверяем - это письмо - то что нам нужно?
 			// xcmd
-			if(rx.match(mail, cmd.fmt(LR"((?im)%s:(.+)$)", x)) <= 0) return nullptr;
+			if(rx.match(mail, (ssh_wcs)cmd.fmt(LR"((?im)%s:(.+)$)", x)) <= 0) return nullptr;
 			m = stk = new MAIL;
 			stk->xcmd = rx.substr(1);
 			// date
-			if(rx.match(mail, LR"((?m)Date:[,\D]*(\d{1,2})\s+(\w\w\w\s)\s*([\d]+)\s+(\d{1,2}):(\d{1,2}):(\d{1,2}))") > 0)
+			if(rx.match(mail, (ssh_u)2) > 0)
 			{
 				static String months(L"Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ");
 				int month((int)months.find(rx.substr(2)));
@@ -495,7 +504,7 @@ namespace ssh
 				stk->gmt_date = Time(mail.toNum<int>(rx.vec(3)), (int)month, mail.toNum<int>(rx.vec(1)),
 									 mail.toNum<int>(rx.vec(4)), mail.toNum<int>(rx.vec(5)), mail.toNum<int>(rx.vec(6)));
 			}
-			if(rx.match(mail, LR"(From:\s+(?:(?:\s*)|(["А-Яа-я\w\d\.\s_-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))\s*<([\w\d\._-]+@[\w\d\._-]+\.[\w]{2,4})>\r\n)") == 5)
+			if(rx.match(mail, (ssh_u)3) == 5)
 			{
 				// вся строка, имя, кодировка, имя, адрес
 				if(rx.vec(2) != -1) stk->sender.name = decode_string(rx.substr(2), rx.substr(3));
@@ -503,16 +512,16 @@ namespace ssh
 				stk->sender.mail = rx.substr(4);
 			}
 			// x_mailer
-			if(rx.match(mail, LR"((?m)X-Mailer: (?:([\w\d\.="\s-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))$)") > 0)
+			if(rx.match(mail, (ssh_u)4) > 0)
 				stk->xmailer = rx.vec(1) != -1 ? rx.substr(1) : decode_string(rx.substr(2), rx.substr(3));
 			// subject
-			if(rx.match(mail, LR"((?m)Subject: (?:([\w\d\.="\s-]+)|(?:=\?([\w\d-]+)\?B\?([\w\d+=]+)\?=))$)") > 0)
+			if(rx.match(mail, (ssh_u)5) > 0)
 				stk->subject = rx.vec(1) != -1 ? rx.substr(1) : decode_string(rx.substr(2), rx.substr(3));
 		}
 		if(is_body)
 		{
 			String msg_id;
-			if(rx.match(mail, LR"((?mi)Content-Type:.*multipart/mixed;.*boundary="(.*?))") > 0)
+			if(rx.match(mail, (ssh_u)6) > 0)
 				msg_id = rx.substr(1);
 			/*
 			// Content - type: text / plain; charset = "cp1251"
@@ -521,13 +530,13 @@ namespace ssh
 			// текст письма
 			*/
 			ssh_l idx(0);
-			if(rx.match(mail, LR"((?mis)Content-Type:.*text/([\w\d-]+);.*charset=["]?([\w\d-]+)["]?;.*Content-Transfer-Encoding: ([\d\w-]+))") > 0)
+			if(rx.match(mail, (ssh_u)7) > 0)
 			{
 				String charset(rx.substr(2).lower());
 				m->body_type = rx.substr(1).lower();
 				String coding_body(rx.substr(3).lower());
 				idx = rx.vec(3, 1);
-				if(rx.match(mail, cmd.fmt(LR"((?mis)(?:\r\n\r\n(.*)|(?:(--%s\r\n)|(\r\n\.\r\n)))", msg_id), idx) > 0)
+				if(rx.match(mail, (ssh_wcs)cmd.fmt(LR"((?mis)(?:\r\n\r\n(.*)|(?:(--%s\r\n)|(\r\n\.\r\n)))", msg_id), idx) > 0)
 				{
 					m->body = decode_string(charset, rx.substr(1), coding_body == L"base64");
 					idx = rx.vec(0, 1) + 1;
