@@ -56,7 +56,7 @@ namespace ssh
 		// приращение
 		const Tree& operator += (const Tree<T, ops>& src) { add(root, src); return *this; }
 		// удаление узла
-		void remove(Node* n) {remove(n, true);}
+		void remove(Node* n) { remove(n, true); }
 		// установить значение узла
 		void set(Node* n, const T& t) { BaseNode<T, ops>::release(n->value); n->value = t; }
 		// возможно ли перемещение узла? в первом случае p = перемещаемый узел->fchild

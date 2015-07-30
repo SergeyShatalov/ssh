@@ -15,12 +15,12 @@
 
 #define SCHEME_BEGIN(cls) static SCHEME cls##_scheme[] = {
 #define SCHEME_END(cls) {nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0}}; return cls##_scheme;
-#define SCHEME_VAR(cls, var, name, count, flgs, def, stk) {name, def, stk, typeid(var).hash_code(), offsetof(cls, var), count, flgs, 0, sizeof(decltype(cls::var))},
-#define SCHEME_OBJ_VAR(cls, cls_var, var, name, count, flgs, def, stk, id) {name, def, stk, typeid(cls_var.var).hash_code(), offsetof(cls, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls::var))},
-#define SCHEME_OBJ_VAR1(cls1, cls1_var, cls2, cls2_var, var, name, count, flgs, def, stk, id) {name, def, stk, typeid(cls1_var.cls2_var.var).hash_code(), offsetof(cls2, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls2::var))},
+#define SCHEME_VAR(cls, var, name, count, flgs, def, stk) {name, def, stk, ssh::ssh_hash_type(typeid(var).raw_name()), offsetof(cls, var), count, flgs, 0, (sizeof(decltype(cls::var)) / count)},
+#define SCHEME_OBJ_VAR(cls, cls_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls_var.var).raw_name()), offsetof(cls, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls::var))},
+#define SCHEME_OBJ_VAR1(cls1, cls1_var, cls2, cls2_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls1_var.cls2_var.var).raw_name()), offsetof(cls2, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls2::var))},
 #define SCHEME_NOD(cls, var, name, def, count) {name, def, nullptr, 0, offsetof(cls, var), count, SC_NODE, 0, 0},
 #define SCHEME_OBJ_BEGIN(cls, var, name, count, id) {name, nullptr, nullptr, 0, offsetof(cls, var), count, SC_OBJ, id, 0},
-#define SCHEME_OBJ_END() {L"<!-- -->", nullptr, nullptr, 0, 0, 0, 0, -1},
+#define SCHEME_OBJ_END() {L"<!-- -->", nullptr, nullptr, 0, 0, 1, 0, -1, 0},
 
 namespace ssh
 {

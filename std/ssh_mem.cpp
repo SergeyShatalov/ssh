@@ -81,6 +81,6 @@ namespace ssh
 			is_disabled = false;
 		}
 		// освобождаем память
-		::free(p);
+		_aligned_free(p);
 	}
 }

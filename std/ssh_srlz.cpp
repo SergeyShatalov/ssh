@@ -138,6 +138,7 @@ namespace ssh
 			ssh_u flg(sc->flags);
 			ssh_u offs(sc->offs + p_offs);
 			String sval;
+			bool is(false);
 			for(ssh_u i = 0; i < sc->count; i++)
 			{
 				if(_ID)
@@ -154,12 +155,14 @@ namespace ssh
 						_sc--;
 						// другой ID - вложенный в этот вложенный
 						writeXml(h, offs);
+						continue;
 					}
 				}
-				if((flg & SC_OBJ))
+				else if((flg & SC_OBJ))
 				{
 					_sc--;
 					writeXml(h, offs);
+					continue;
 				}
 				else if((flg & SC_NODE))
 				{
@@ -169,16 +172,15 @@ namespace ssh
 					_sc = srlz->get_scheme();
 					srlz->writeXml(h, 0);
 					_sc = __sc;
+					continue;
 				}
-				else
-				{
-					// простая переменная
-					if(!sval.is_empty() && sc->count) sval += L',';
-					sval += getVal(flg, offs, sc);
-				}
+				// простая переменная
+				if(!sval.is_empty() && sc->count) sval += L',';
+				sval += getVal(flg, offs, sc);
 				offs += sc->width;
+				is = true;
 			}
-			_xml->set_attr(h, sc->name, sval);
+			if(is) _xml->set_attr(h, sc->name, sval);
 		}
 	}
 

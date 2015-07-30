@@ -4,12 +4,31 @@
 
 namespace ssh
 {
+	ssh_u SSH ssh_hash_type(ssh_ccs nm)
+	{
+		ssh_cs* _cs((ssh_cs*)strstr(nm, " ["));
+		if(_cs) *_cs = 0;
+		return ssh_hash(nm);
+	}
+
 	ssh_u SSH ssh_hash(ssh_wcs wcs)
 	{
 		ssh_u _val(14695981039346656037ULL);
 		while(*wcs)
 		{
 			_val ^= (ssh_u)*wcs++;
+			_val *= (ssh_u)1099511628211ULL;
+		}
+		_val ^= _val >> 32;
+		return _val;
+	};
+
+	ssh_u SSH ssh_hash(ssh_ccs ccs)
+	{
+		ssh_u _val(14695981039346656037ULL);
+		while(*ccs)
+		{
+			_val ^= (ssh_u)*ccs++;
 			_val *= (ssh_u)1099511628211ULL;
 		}
 		_val ^= _val >> 32;

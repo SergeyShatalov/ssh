@@ -70,7 +70,7 @@ class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
 public:
-	Temp() : str(L"Шаталов"), x(100), d(123.123) { v.x = 22.0f; v.y = 15.0f; }
+	Temp() : str(L"Шаталов"), x(100) { v.x = 22.0f; v.y = 15.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3; }
 	Temp(ssh_wcs path) : x(0) { open(path); }
 	virtual ~Temp() {}
 	virtual void save(ssh_wcs path) override
@@ -91,18 +91,18 @@ public:
 				SCHEME_OBJ_VAR(vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_VAR(vec3, v3, z, L"z", 1, 0, L"0.0", nullptr, 2)
 			SCHEME_OBJ_END()
-			SCHEME_VAR(Temp, d, L"temp_d", 1, 0, L"0.0", nullptr)
+			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
 			SCHEME_VAR(Temp, str, L"string", 1, 0, L"Иванов", nullptr)
-			SCHEME_NOD(Temp, tmp, L"tmp", nullptr, 1)
+			SCHEME_NOD(Temp, tmp, L"tmp", nullptr, 2)
 			SCHEME_END(Temp);
 	}
 protected:
 	int x;
-	Temp2 tmp;
+	Temp2 tmp[2];
 	vec2 v;
 	vec3 v3;
 	String str;
-	double d;
+	double d[3];
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
@@ -110,9 +110,19 @@ protected:
 	}
 };
 
+ssh_ccs type_info(__type_info_node* ti)
+{
+	return nullptr;
+}
 int _tmain(int argc, _TCHAR* argv[])
 {
-//	void* _nm;
+	double d;
+	double d1[2];
+	double d2[3];
+//	ssh_u h1 = ssh_hash_type();
+	ssh_u h2 = ssh_hash_type(typeid(d1).name());
+	ssh_u h3 = ssh_hash_type(typeid(d2).raw_name());
+	//	void* _nm;
 //	_nm = __unDNameHelper(NULL, (_This->_M_d_name) + 1, 0, UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY)) == NULL)
 //	String _tp;
 //	_tp = typeid(argc).name();
