@@ -125,6 +125,7 @@
     <ClInclude Include="ssh_time.h" />
     <ClInclude Include="ssh_tree.h" />
     <ClInclude Include="ssh_types.h" />
+    <ClInclude Include="ssh_undname.h" />
     <ClInclude Include="ssh_xml.h" />
     <ClInclude Include="ssh_zip.h" />
     <ClInclude Include="stdafx.h" />
@@ -146,6 +147,7 @@
     <ClCompile Include="ssh_srlz.cpp" />
     <ClCompile Include="ssh_str.cpp" />
     <ClCompile Include="ssh_time.cpp" />
+    <ClCompile Include="ssh_undname.cpp" />
     <ClCompile Include="ssh_xml.cpp" />
     <ClCompile Include="ssh_zip.cpp" />
     <ClCompile Include="ssh_zipc.cpp" />

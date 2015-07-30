@@ -3,8 +3,11 @@
 
 struct vector
 {
-	vector() : var(-100)
+	vector()
 	{
+		//var[0] = -100;
+		//var[1] = -200;
+		var = -1000;
 		v2.x = 11.11f;
 		v2.y = 22.22f;
 		v3.x = 111.111f;
@@ -51,6 +54,8 @@ class Temp2 : public Serialize
 {
 public:
 	Temp2() :x(1), y(2), z(3) {}
+	Temp2(float _x, ssh_u _y, short _z) :x(_x), y(_y), z(_z) {}
+
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
@@ -70,9 +75,15 @@ class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
 public:
-	Temp() : str(L"Шаталов"), x(100) { v.x = 22.0f; v.y = 15.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3; }
-	Temp(ssh_wcs path) : x(0) { open(path); }
-	virtual ~Temp() {}
+//	Temp() : str(L"Шаталов"), x(100) { v.x = 22.0f; v.y = 15.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3; }
+	Temp()
+	{
+		_ws[0] = L'С'; _ws[1] = L'е'; _ws[2] = L'р'; _ws[3] = L'г'; _ws[4] = L'е'; _ws[5] = L'й'; _ws[6] = L' '; _ws[7] = L'Ш'; _ws[8] = L'С'; _ws[9] = L'В';
+		tmp[0] = Temp2(1, 2, 3);
+		tmp[1] = Temp2(10, 20, 30);
+		str[0] = L"Шаталов"; str[1] = L"Петров"; str[2] = L"Иванов"; x[0] = 1; x[1] = 2; v[0].x = 22.0f; v[0].y = 15.0f; v[1].x = 222.0f; v[1].y = 155.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3;
+	}
+	Temp(ssh_wcs path) { open(path); }
 	virtual void save(ssh_wcs path) override
 	{
 		saveXml(path, L"utf-8", (ssh_b*)this);
@@ -81,28 +92,31 @@ public:
 	{
 		SCHEME_BEGIN(Temp)
 			SCHEME_NOD(Temp, x, L"temp", L"value", 1)
-			SCHEME_VAR(Temp, x, L"x", 1, 0, L"1", nullptr)
-			SCHEME_OBJ_BEGIN(Temp, v, L"vector", 1, 1)
-				SCHEME_OBJ_VAR(vec2, v, x, L"x", 1, 0, L"0.0", nullptr, 1)
-				SCHEME_OBJ_VAR(vec2, v, y, L"y", 1, 0, L"0.0", nullptr, 1)
+			SCHEME_OBJ_BEGIN(Temp, v, L"vector", 3, 1)
+				SCHEME_OBJ_VAR(vec2, v[0], x, L"x", 1, 0, L"0.0", nullptr, 1)
+				SCHEME_OBJ_VAR(vec2, v[0], y, L"y", 1, 0, L"0.0", nullptr, 1)
 			SCHEME_OBJ_END()
+			SCHEME_VAR(Temp, x, L"x", 2, 0, L"1", nullptr)
+			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
 			SCHEME_OBJ_BEGIN(Temp, v3, L"vec3", 1, 2)
 				SCHEME_OBJ_VAR(vec3, v3, x, L"x", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_VAR(vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_VAR(vec3, v3, z, L"z", 1, 0, L"0.0", nullptr, 2)
 			SCHEME_OBJ_END()
-			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
-			SCHEME_VAR(Temp, str, L"string", 1, 0, L"Иванов", nullptr)
+			SCHEME_VAR(Temp, str, L"string", 3, 0, L"Иванов", nullptr)
+			SCHEME_VAR(Temp, _ws, L"ws", 10, 0, L"И", nullptr)
 			SCHEME_NOD(Temp, tmp, L"tmp", nullptr, 2)
 			SCHEME_END(Temp);
 	}
-protected:
-	int x;
-	Temp2 tmp[2];
-	vec2 v;
-	vec3 v3;
-	String str;
 	double d[3];
+protected:
+	virtual ~Temp() {}
+	ssh_ws _ws[10];
+	int x[2];
+	Temp2 tmp[2];
+	vec2 v[3];
+	vec3 v3;
+	String str[3];
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
@@ -110,18 +124,15 @@ protected:
 	}
 };
 
-ssh_ccs type_info(__type_info_node* ti)
-{
-	return nullptr;
-}
 int _tmain(int argc, _TCHAR* argv[])
 {
 	double d;
-	double d1[2];
-	double d2[3];
+	float d1[] = {0,1};
+	short d2[3];
+	String _vls;
 //	ssh_u h1 = ssh_hash_type();
-	ssh_u h2 = ssh_hash_type(typeid(d1).name());
-	ssh_u h3 = ssh_hash_type(typeid(d2).raw_name());
+	//ssh_u h2 = ssh_hash_type(typeid(d1).raw_name());
+	//ssh_u h3 = ssh_hash_type(typeid(d2).raw_name());
 	//	void* _nm;
 //	_nm = __unDNameHelper(NULL, (_This->_M_d_name) + 1, 0, UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY)) == NULL)
 //	String _tp;

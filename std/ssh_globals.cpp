@@ -1,14 +1,14 @@
 
 #include "stdafx.h"
 #include "ssh_globals.h"
+#include "ssh_undname.h"
 
 namespace ssh
 {
 	ssh_u SSH ssh_hash_type(ssh_ccs nm)
 	{
-		ssh_cs* _cs((ssh_cs*)strstr(nm, " ["));
-		if(_cs) *_cs = 0;
-		return ssh_hash(nm);
+		ssh_cs* _cs = ssh_undname(nm + 1, UNDNAME_NO_RETURN_CONSTABLES | UNDNAME_NO_RETURN_ARRAY | UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY);
+		return ssh_hash(_cs);
 	}
 
 	ssh_u SSH ssh_hash(ssh_wcs wcs)

@@ -137,9 +137,10 @@ namespace ssh
 			if(!sc->name) break;
 			ssh_u flg(sc->flags);
 			ssh_u offs(sc->offs + p_offs);
+			ssh_u count(sc->count);
 			String sval;
 			bool is(false);
-			for(ssh_u i = 0; i < sc->count; i++)
+			for(ssh_u i = 0; i < count; i++)
 			{
 				if(_ID)
 				{
@@ -162,20 +163,25 @@ namespace ssh
 				{
 					_sc--;
 					writeXml(h, offs);
+					if((i + 1) < count)
+					{
+						_sc = sc + 1;
+						offs += sc->width;
+					}
 					continue;
 				}
 				else if((flg & SC_NODE))
 				{
 					// вложенный со своей схемой
 					Serialize* srlz((Serialize*)((ssh_b*)(this) + offs));
-					SCHEME* __sc(_sc);
 					_sc = srlz->get_scheme();
 					srlz->writeXml(h, 0);
-					_sc = __sc;
+					_sc = sc + 1;
+					offs += sc->width;
 					continue;
 				}
 				// проста€ переменна€
-				if(!sval.is_empty() && sc->count) sval += L',';
+				if(!sval.is_empty() && count) sval += L',';
 				sval += getVal(flg, offs, sc);
 				offs += sc->width;
 				is = true;
