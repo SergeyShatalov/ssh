@@ -5,17 +5,21 @@ struct vector
 {
 	vector()
 	{
-		//var[0] = -100;
-		//var[1] = -200;
-		var = -1000;
-		v2.x = 11.11f;
-		v2.y = 22.22f;
+		var[0] = -100;
+		var[1] = -200;
+		//var = -1000;
+		v2[0].x = 11.11f;
+		v2[0].y = 22.22f;
+		v2[1].x = 111.11f;
+		v2[1].y = 222.22f;
+		v2[2].x = 1111.11f;
+		v2[2].y = 2222.22f;
 		v3.x = 111.111f;
 		v3.y = 222.222f;
 		v3.z = 333.333f;
 	}
-	ssh_u var;
-	vec2 v2;
+	ssh_u var[2];
+	vec2 v2[3];
 	vec3 v3;
 };
 class Temp3 : public Serialize
@@ -31,16 +35,16 @@ public:
 			SCHEME_VAR(Temp3, zz, L"zz", 1, 0, L"1", nullptr)
 			SCHEME_VAR(Temp3, str, L"str", 1, 0, L"", nullptr)
 			SCHEME_OBJ_BEGIN(Temp3, vv, L"stk_vector", 1, 1)
-				SCHEME_OBJ_BEGIN(vector, v2, L"vec2", 1, 2)
-					SCHEME_OBJ_VAR1(vector, vv, vec2, v2, x, L"x", 1, 0, L"0.0", nullptr, 2)
-					SCHEME_OBJ_VAR1(vector, vv, vec2, v2, y, L"y", 1, 0, L"0.0", nullptr, 2)
+				SCHEME_OBJ_BEGIN(vector, v2, L"vec2", 3, 2)
+					SCHEME_OBJ_VAR1(vector, vv, vec2, v2[0], x, L"x", 1, 0, L"0.0", nullptr, 2)
+					SCHEME_OBJ_VAR1(vector, vv, vec2, v2[0], y, L"y", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_END()
 				SCHEME_OBJ_BEGIN(vector, v3, L"vec3", 1, 3)
 					SCHEME_OBJ_VAR1(vector, vv, vec3, v3, x, L"x", 1, 0, L"0.0", nullptr, 3)
 					SCHEME_OBJ_VAR1(vector, vv, vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 3)
 					SCHEME_OBJ_VAR1(vector, vv, vec3, v3, z, L"z", 1, 0, L"0.0", nullptr, 3)
 				SCHEME_OBJ_END()
-				SCHEME_OBJ_VAR(vector, vv, var, L"var", 1, 0, L"0.0", nullptr, 1)
+				SCHEME_OBJ_VAR(vector, vv, var, L"var", 2, 0, L"0.0", nullptr, 1)
 			SCHEME_END(Temp);
 	}
 	vector vv;
@@ -71,6 +75,16 @@ public:
 	short z;
 	Temp3 tmp;
 };
+
+ENUM_DATA _stk[]=
+{
+	{L"ХУЙ", 1},
+	{L"ПИЗДА", 2},
+	{L"МАНДА", 4},
+	{L"ЕБЛО", 8},
+	{nullptr, 0}
+};
+
 class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
@@ -78,26 +92,31 @@ public:
 //	Temp() : str(L"Шаталов"), x(100) { v.x = 22.0f; v.y = 15.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3; }
 	Temp()
 	{
+		_wcs = L"Sergey";
+		_ccs = "Vlad";
 		_ws[0] = L'С'; _ws[1] = L'е'; _ws[2] = L'р'; _ws[3] = L'г'; _ws[4] = L'е'; _ws[5] = L'й'; _ws[6] = L' '; _ws[7] = L'Ш'; _ws[8] = L'С'; _ws[9] = L'В';
+//		_cs[0] = 'Ш'; _cs[1] = 'а'; _cs[2] = 'т'; _cs[3] = 'а'; _cs[4] = 'л'; _cs[5] = 'о'; _cs[6] = 'в'; _cs[7] = '!'; _cs[8] = '!'; _cs[9] = '!';
 		tmp[0] = Temp2(1, 2, 3);
 		tmp[1] = Temp2(10, 20, 30);
-		str[0] = L"Шаталов"; str[1] = L"Петров"; str[2] = L"Иванов"; x[0] = 1; x[1] = 2; v[0].x = 22.0f; v[0].y = 15.0f; v[1].x = 222.0f; v[1].y = 155.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3;
+		str[0] = L"Shatalov"; str[1] = L"Петров"; str[2] = L"Иванов"; x[0] = 14; x[1] = 15; v[0].x = 22.0f; v[0].y = 15.0f; v[1].x = 222.0f; v[1].y = 155.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3;
 	}
 	Temp(ssh_wcs path) { open(path); }
-	virtual void save(ssh_wcs path) override
+	virtual void save(ssh_wcs path, bool is_xml) override
 	{
-		saveXml(path, L"utf-8", (ssh_b*)this);
+		(is_xml ? saveXml(path, L"utf-8", this) : saveBin(path, this));
 	}
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
 			SCHEME_NOD(Temp, x, L"temp", L"value", 1)
+			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
+			SCHEME_VAR(Temp, _wcs, L"wсs", 1, 0, L"И", nullptr)
+			SCHEME_VAR(Temp, _ccs, L"cсs", 1, 0, L"И", nullptr)
 			SCHEME_OBJ_BEGIN(Temp, v, L"vector", 3, 1)
 				SCHEME_OBJ_VAR(vec2, v[0], x, L"x", 1, 0, L"0.0", nullptr, 1)
 				SCHEME_OBJ_VAR(vec2, v[0], y, L"y", 1, 0, L"0.0", nullptr, 1)
 			SCHEME_OBJ_END()
-			SCHEME_VAR(Temp, x, L"x", 2, 0, L"1", nullptr)
-			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
+			SCHEME_VAR(Temp, x, L"x", 2, SC_FLAGS, L"unknown", _stk)
 			SCHEME_OBJ_BEGIN(Temp, v3, L"vec3", 1, 2)
 				SCHEME_OBJ_VAR(vec3, v3, x, L"x", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_VAR(vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 2)
@@ -105,13 +124,17 @@ public:
 			SCHEME_OBJ_END()
 			SCHEME_VAR(Temp, str, L"string", 3, 0, L"Иванов", nullptr)
 			SCHEME_VAR(Temp, _ws, L"ws", 10, 0, L"И", nullptr)
+			SCHEME_VAR(Temp, _cs, L"сs", 1, 0, L"И", nullptr)
 			SCHEME_NOD(Temp, tmp, L"tmp", nullptr, 2)
 			SCHEME_END(Temp);
 	}
 	double d[3];
 protected:
 	virtual ~Temp() {}
+	ssh_wcs _wcs;
+	ssh_ccs _ccs;
 	ssh_ws _ws[10];
+	char _cs;
 	int x[2];
 	Temp2 tmp[2];
 	vec2 v[3];
@@ -120,7 +143,7 @@ protected:
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openXml(buf, (ssh_b*)this);
+		openXml(buf, this);
 	}
 };
 
@@ -154,8 +177,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
 		Temp* t;
-		new(&t, L"serg") Temp();
-		t->save(L"e:\\serg.xml");
+		new(&t, L"serg") Temp(L"e:\\serg.xml");
+		t->save(L"e:\\serg+.xml", true);
 		SSH_REL(t);
 //		Xml _xml(L"e:\\1.xml");
 //		_xml.save(L"e:\\1+.xml", L"utf-8");

@@ -23,6 +23,8 @@ namespace ssh
 	
 	void MemMgr::fault()
 	{
+		void* _pp = _pxcptinfoptrs;
+//		void** _pp(__pxcptinfoptrs());
 		log->add(L"fault!");
 	}
 

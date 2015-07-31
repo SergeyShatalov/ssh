@@ -219,24 +219,23 @@ namespace ssh
 		{
 			if(x.is_empty() || !lst) return false;
 			// ***** КОННЕКТ С СЕРВЕРОМ *****
-			//connect_pop3();
+			connect_pop3();
 			// ***** ПОЛУЧЕНИЕ СПИСКА ПИСЕМ *****
 			// определяем количество писем и их суммарнй размер в байтах
-			//send_cmd(command_pop_STAT, L"STAT\r\n");
-			ssh_u count(3);// (resp.toNum<ssh_u>(4, String::_dec));
+			send_cmd(command_pop_STAT, L"STAT\r\n");
+			ssh_u count(resp.toNum<ssh_u>(4, String::_dec));
 			// проходим циклом по все письмам
 			for(ssh_u i = 1; i < count; i++)
 			{
 				MAIL* m(nullptr);
-				String cmd;
-				File f(cmd.fmt(L"%i.eml", i), File::open_read);
-				resp = f.read(L"windows-1251", 0);
+//				File f(cmd.fmt(L"%i.eml", i), File::open_read);
+//				resp = f.read(L"windows-1251", 0);
 				if(!check_keyword(L"TOP"))
 				{
-					//send_cmd(command_pop_TOP, L"TOP %i 0\r\n", Mail::cont_resp, i);
+					send_cmd(command_pop_TOP, L"TOP %i 0\r\n", Mail::cont_resp, i);
 					if(!(m = parse_mail(resp, x, nullptr, false))) continue;
 				}
-				//send_cmd(command_pop_RETR, L"RETR %i\r\n", Mail::cont_resp, i);
+				send_cmd(command_pop_RETR, L"RETR %i\r\n", Mail::cont_resp, i);
 				if((m = parse_mail(resp, x, m, true)))
 				{
 					if(lst) lst->add(m);

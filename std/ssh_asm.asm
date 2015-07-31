@@ -50,7 +50,7 @@ asm_ssh_ntow proc public
 		pop r11
 		pop r10
 		ret
-tbl_radix dq nto_ohb, 1, 1, nto_dec, 0, 10, nto_ohb, 7, 3, nto_ohb, 15, 4, nto_dbl, 0, 10, nto_flt, 0, 10
+tbl_radix dq nto_dec, 0, 10, nto_ohb, 1, 1, nto_ohb, 7, 3, nto_ohb, 15, 4, nto_dbl, 0, 10, nto_flt, 0, 10
 nto_ohb:sub r9, 2
 		mov rdx, rax
 		and rdx, r10
@@ -144,7 +144,7 @@ _HEX	= 4
 _DEC	= 8
 tbl_hex dw 0, _HEX, _HEX, _HEX, _HEX, _HEX, _HEX, 0, 0, 0, 0, 0, 0, 0, 0, 0, _DEC + _BIN + _OCT + _HEX, _DEC + _BIN + _OCT + _HEX, _DEC + _OCT + _HEX, _DEC + _OCT + _HEX, _DEC + _OCT + _HEX
 		dw _DEC + _OCT + _HEX, _DEC + _OCT + _HEX, _DEC + _OCT + _HEX, _DEC + _HEX, _DEC + _HEX
-radix	dq wto_obh, 2, _BIN, wto_dec, 10, _DEC, wto_obh, 8, _OCT, wto_obh, 16, _HEX, wto_dbl, 10, _DEC, wto_flt, 10, _DEC
+radix	dq wto_dec, 10, _DEC, wto_obh, 2, _BIN, wto_obh, 8, _OCT, wto_obh, 16, _HEX, wto_dbl, 10, _DEC, wto_flt, 10, _DEC
 wto_obh:sub rcx, 2
 		mov rdx, offset tbl_hex
 @@:		add rcx, 2

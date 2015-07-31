@@ -56,19 +56,20 @@ namespace ssh
 	static void ssh_terminate()
 	{
 		SSH_LOG(L"Аварийное завершение сеанса!\r\n");
+		exit(-4);
 	}
 
 	static void __cdecl ssh_unexpected()
 	{
 		SSH_LOG(L"Аварийное завершение сеанса!\r\n");
-		exit(3);
+		exit(-3);
 	}
 
 	static void __cdecl ssh_signal(int numSignal)
 	{
-//		MemMgr::instance()->fault();
+		MemMgr::instance()->fault();
 		signal(numSignal, SIG_DFL); // перепосылка сигнала
-		exit(3);
+		exit(-5);
 	}
 
 	static void socket_receive(Socket* sock, Socket::SOCK* s, const Buffer<ssh_cs>& buf)
@@ -142,6 +143,7 @@ namespace ssh
 			sock.close();
 			_log._out = TypeOutput::Null;
 		}
+		//sigaction();
 		set_unexpected(ssh_unexpected);
 		set_terminate(ssh_terminate);
 		signal(SIGSEGV, ssh_signal);

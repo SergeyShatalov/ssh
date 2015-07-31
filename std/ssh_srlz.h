@@ -3,21 +3,23 @@
 
 #include "ssh_xml.h"
 
-#define SC_NODE			0x0001// узел - ссылка на вложенный со схемой
-#define SC_OBJ			0x0002// класс или его переменна€ без схемы
-//#define SC_ARRAY		0x0004// массив из POD типов
 // опции
-#define SC_ENUM			0x0008// перечисление
-#define SC_FLAGS		0x0010// флаги
-#define SC_HEX			0x0020// данные в hex
-#define SC_BOOL			0x0040// данные bool
-#define SC_BIN			0x0080// данные в bin
+#define SC_BIN			0x0001// данные в bin
+#define SC_OCT			0x0002// данные в bin
+#define SC_HEX			0x0003// данные в hex
+#define SC_BOOL			0x0004// данные bool
+#define SC_ENUM			0x0005// перечисление
+#define SC_FLAGS		0x0006// флаги
+// управл€ющие
+#define SC_NODE			0x0010// узел - ссылка на вложенный со схемой
+#define SC_OBJ			0x0020// класс или его переменна€ без схемы
+#define SC_VAR			0x0040// признак данных
 
 #define SCHEME_BEGIN(cls) static SCHEME cls##_scheme[] = {
 #define SCHEME_END(cls) {nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0}}; return cls##_scheme;
-#define SCHEME_VAR(cls, var, name, count, flgs, def, stk) {name, def, stk, ssh::ssh_hash_type(typeid(var).raw_name()), offsetof(cls, var), count, flgs, 0, (sizeof(decltype(cls::var)) / count)},
-#define SCHEME_OBJ_VAR(cls, cls_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls_var.var).raw_name()), offsetof(cls, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls::var))},
-#define SCHEME_OBJ_VAR1(cls1, cls1_var, cls2, cls2_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls1_var.cls2_var.var).raw_name()), offsetof(cls2, var), count, flgs | SC_OBJ, id, sizeof(decltype(cls2::var))},
+#define SCHEME_VAR(cls, var, name, count, flgs, def, stk) {name, def, stk, ssh::ssh_hash_type(typeid(var).raw_name()), offsetof(cls, var), count, flgs | SC_VAR, 0, (sizeof(decltype(cls::var)) / count)},
+#define SCHEME_OBJ_VAR(cls, cls_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls_var.var).raw_name()), offsetof(cls, var), count, flgs | SC_OBJ | SC_VAR, id, sizeof(decltype(cls::var)) / count},
+#define SCHEME_OBJ_VAR1(cls1, cls1_var, cls2, cls2_var, var, name, count, flgs, def, stk, id) {name, def, stk, ssh::ssh_hash_type(typeid(cls1_var.cls2_var.var).raw_name()), offsetof(cls2, var), count, flgs | SC_VAR | SC_OBJ, id, sizeof(decltype(cls2::var)) / count},
 #define SCHEME_NOD(cls, var, name, def, count) {name, def, nullptr, 0, offsetof(cls, var), count, SC_NODE, 0, sizeof(decltype(cls::var)) / count},
 #define SCHEME_OBJ_BEGIN(cls, var, name, count, id) {name, nullptr, nullptr, 0, offsetof(cls, var), count, SC_OBJ, id, sizeof(decltype(cls::var)) / count},
 #define SCHEME_OBJ_END() {L"<!-- -->", nullptr, nullptr, 0, 0, 1, 0, -1, 0},
@@ -56,14 +58,10 @@ namespace ssh
 		void saveXml(const String& path, ssh_wcs code, void* srlz);
 		void saveBin(const String& path, void* srlz);
 	protected:
-		String getVal(ssh_u flgs, ssh_u offs, SCHEME* sc);
-		void setVal(HXML h, ssh_u flg, ssh_u offs, SCHEME* sc);
-		void writeVal(ssh_u flg, ssh_u offs, SCHEME* sc);
-		//void readVal(ssh_u flg, ssh_u offs, SCHEME* sc);
-		virtual void readXml(HXML h, ssh_u p_offs);
+		virtual void readXml(HXML hp, ssh_l p_offs, ssh_l idx = 0);
 		virtual void writeXml(HXML h, ssh_l p_offs);
-		virtual void writeBin(ssh_u p_offs);
-		virtual void readBin(ssh_u p_offs);
+		virtual void writeBin(ssh_l p_offs);
+		virtual void readBin(ssh_l p_offs);
 		static const ssh_u _hash_string = 0x6a979454ce7cff60;
 		static const ssh_u _hash_int	= 0x2b9fff19004b3727;
 		static const ssh_u _hash_uint	= 0xbaaedcffb89ab934;
@@ -79,8 +77,8 @@ namespace ssh
 		static const ssh_u _hash_half	= 0x384de03da92b42f5;
 		static const ssh_u _hash_ll		= 0xf36f7584055d450a;
 		static const ssh_u _hash_ull	= 0x4422422121b2ac2a;
-		static const ssh_u _hash_wcs	= 0x667978a73e944305;
-		static const ssh_u _hash_ccs	= 0xb5f5c54e0cef1cc0;
+		static const ssh_u _hash_wcs	= 0x6332756bf3eb4142;
+		static const ssh_u _hash_ccs	= 0x0303de250da14208;
 		static const ssh_u _hash_time	= 0x7f407f2070a5d6d0;
 		static SCHEME* _sc;
 		static Xml* _xml;

@@ -19,8 +19,8 @@ namespace ssh
 	public:
 		enum Radix : int
 		{
-			_bin = 0,
-			_dec = 1,
+			_dec = 0,
+			_bin = 1,
 			_oct = 2,
 			_hex = 3,
 			_dbl = 4,

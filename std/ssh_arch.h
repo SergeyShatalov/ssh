@@ -22,7 +22,7 @@ namespace ssh
 		// октрыть
 		virtual void open(ssh_wcs path);
 		// сохранить
-		virtual void save(ssh_wcs path) = 0;
+		virtual void save(ssh_wcs path, bool is_xml) = 0;
 	protected:
 		// сформировать из памяти
 		virtual void make(const Buffer<ssh_cs>& buf) = 0;
