@@ -97,6 +97,6 @@ namespace ssh
 		bool is_close() const { return (h == 0); }
 	protected:
 		int h;
-		ssh_ws path[MAX_PATH];
+		String path;
 	};
 }

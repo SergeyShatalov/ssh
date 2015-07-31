@@ -25,7 +25,8 @@ struct vector
 class Temp3 : public Serialize
 {
 public:
-	Temp3() : str("Сергей Викторович"), xx(1), yy(2), zz(3) {}
+	//Temp3() : str("Сергей Викторович"), xx(1), yy(2), zz(3) {}
+	Temp3() {}
 	virtual SCHEME* get_scheme() const override
 	{
 		SCHEME_BEGIN(Temp)
@@ -44,8 +45,8 @@ public:
 					SCHEME_OBJ_VAR1(vector, vv, vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 3)
 					SCHEME_OBJ_VAR1(vector, vv, vec3, v3, z, L"z", 1, 0, L"0.0", nullptr, 3)
 				SCHEME_OBJ_END()
-				SCHEME_OBJ_VAR(vector, vv, var, L"var", 2, 0, L"0.0", nullptr, 1)
-			SCHEME_END(Temp);
+			SCHEME_OBJ_VAR(vector, vv, var, L"var", 2, 0, L"0.0", nullptr, 1)
+		SCHEME_END(Temp);
 	}
 	vector vv;
 	String str;
@@ -57,8 +58,9 @@ public:
 class Temp2 : public Serialize
 {
 public:
-	Temp2() :x(1), y(2), z(3) {}
-	Temp2(float _x, ssh_u _y, short _z) :x(_x), y(_y), z(_z) {}
+	//Temp2() :x(1), y(2), z(3) {}
+	//Temp2(float _x, ssh_u _y, short _z) :x(_x), y(_y), z(_z) {}
+	Temp2() {}
 
 	virtual SCHEME* get_scheme() const override
 	{
@@ -89,17 +91,19 @@ class Temp : public Resource
 {
 	SSH_DYNCREATE(Temp);
 public:
-//	Temp() : str(L"Шаталов"), x(100) { v.x = 22.0f; v.y = 15.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3; }
+	Temp() { _cs = 35; }
+	/*
 	Temp()
 	{
 		_wcs = L"Sergey";
 		_ccs = "Vlad";
-		_ws[0] = L'С'; _ws[1] = L'е'; _ws[2] = L'р'; _ws[3] = L'г'; _ws[4] = L'е'; _ws[5] = L'й'; _ws[6] = L' '; _ws[7] = L'Ш'; _ws[8] = L'С'; _ws[9] = L'В';
+		_ws[0] = L'С'; _ws[1] = L'е'; _ws[2] = L'р'; _ws[3] = L'г'; _ws[4] = L'е'; _ws[5] = L'й'; _ws[6] = L' '; _ws[7] = L'Ш'; _ws[8] = L'С'; _ws[9] = L'!';
 //		_cs[0] = 'Ш'; _cs[1] = 'а'; _cs[2] = 'т'; _cs[3] = 'а'; _cs[4] = 'л'; _cs[5] = 'о'; _cs[6] = 'в'; _cs[7] = '!'; _cs[8] = '!'; _cs[9] = '!';
 		tmp[0] = Temp2(1, 2, 3);
 		tmp[1] = Temp2(10, 20, 30);
 		str[0] = L"Shatalov"; str[1] = L"Петров"; str[2] = L"Иванов"; x[0] = 14; x[1] = 15; v[0].x = 22.0f; v[0].y = 15.0f; v[1].x = 222.0f; v[1].y = 155.0f; d[0] = 1.1; d[1] = 2.2; d[2] = 3.3;
 	}
+	*/
 	Temp(ssh_wcs path) { open(path); }
 	virtual void save(ssh_wcs path, bool is_xml) override
 	{
@@ -122,9 +126,9 @@ public:
 				SCHEME_OBJ_VAR(vec3, v3, y, L"y", 1, 0, L"0.0", nullptr, 2)
 				SCHEME_OBJ_VAR(vec3, v3, z, L"z", 1, 0, L"0.0", nullptr, 2)
 			SCHEME_OBJ_END()
-			SCHEME_VAR(Temp, str, L"string", 3, 0, L"Иванов", nullptr)
+			SCHEME_VAR(Temp, str, L"string", 3, SC_BASE64, L"Иванов", nullptr)
 			SCHEME_VAR(Temp, _ws, L"ws", 10, 0, L"И", nullptr)
-			SCHEME_VAR(Temp, _cs, L"сs", 1, 0, L"И", nullptr)
+			SCHEME_VAR(Temp, _cs, L"cs", 1, 0, L"И", nullptr)
 			SCHEME_NOD(Temp, tmp, L"tmp", nullptr, 2)
 			SCHEME_END(Temp);
 	}
@@ -143,12 +147,17 @@ protected:
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openXml(buf, this);
+		openBin(buf, this);
 	}
 };
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	ssh_u _szz = sizeof(Temp);
+	ssh_u _szz1 = sizeof(Temp2);
+	ssh_u _szz2 = sizeof(Temp3);
+	ssh_u _szz3 = sizeof(Xml);
+	ssh_u _szz4 = sizeof(File);
 	/*
 	String _num(L"10f00");
 	short _ii = _num;// .toNum<ssh_l>(_num, String::_dec);
@@ -165,8 +174,9 @@ int _tmain(int argc, _TCHAR* argv[])
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
 		Temp* t;
-		new(&t, L"serg") Temp(L"e:\\serg.xml");
-		t->save(L"e:\\serg+.xml", true);
+		new(&t, L"serg") Temp();
+		t->open(L"e:\\serg+.bin");
+		t->save(L"e:\\serg++.xml", true);
 		SSH_REL(t);
  		return 0;
 		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);

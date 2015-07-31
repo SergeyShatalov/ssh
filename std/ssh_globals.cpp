@@ -5,7 +5,7 @@
 
 namespace ssh
 {
-	static __ext_undname _und((__ext_undname)hlp->get_procedure(L"sshEXT", "ext_undname", true));
+	static __ext_undname _und((__ext_undname)hlp->get_procedure(L"sshEXT", "ext_undname"));
 	static __cnv_open _open((__cnv_open)hlp->get_procedure(L"sshCNV.dll", "iconv_open"));
 	static __cnv_close _close((__cnv_close)hlp->get_procedure(L"sshCNV.dll", "iconv_close"));
 	static __cnv_make _make((__cnv_make)hlp->get_procedure(L"sshCNV.dll", "iconv"));
@@ -191,9 +191,9 @@ namespace ssh
 		ssh_cs* f(strchr(buf, '='));
 		ssh_u i(0), j(0), in_(0), _ret(0), _c(buf.count()), in_len(f ? f - buf : _c);
 		ssh_cs char_array_4[4], char_array_3[3];
-		Buffer<ssh_cs> ret(_c / 4 * 3 - (_c - in_len));
+		ssh_u out_len(_c / 4 * 3 - (_c - in_len));
+		Buffer<ssh_cs> ret(out_len);
 		ssh_cs* ptr(ret);
-
 		while(in_len-- && is_base64(buf[in_]))
 		{
 			char_array_4[i++] = buf[in_++];
@@ -218,9 +218,9 @@ namespace ssh
 		return ret;
 	}
 
-	Buffer<ssh_cs> SSH ssh_to_base64(ssh_wcs charset, const String& str, bool is_str)
+	Buffer<ssh_cs> SSH ssh_to_base64(ssh_wcs charset, const String& str, bool to_str)
 	{
-		return ssh_to_base64(ssh_cnv(charset, str, false), is_str);
+		return ssh_to_base64(ssh_cnv(charset, str, false), to_str);
 	}
 
 	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf, bool is_str)
@@ -229,9 +229,9 @@ namespace ssh
 		ssh_u len_buf((len / 3 * 4) + ((len % 3) ? 4 : 0)), offs(1);
 		if(is_str) { len_buf = ((len_buf * 2) + 2); offs = 2; }
 		Buffer<ssh_cs> ret(len_buf);
-		memset(ret, 0, len_buf);
-		ssh_cs char_array_3[3], char_array_4[4];
 		ssh_cs* ptr(buf);
+		if(is_str) memset(ptr, 0, len_buf);
+		ssh_cs char_array_3[3], char_array_4[4];
 		while(len--)
 		{
 			char_array_3[i++] = *ptr++;

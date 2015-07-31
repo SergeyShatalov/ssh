@@ -101,7 +101,7 @@ namespace ssh
 		// вернуть ключь по значению
 		KEY get_key(const TYPE& value) const
 		{
-			Node* n(cells);
+			auto n(cells);
 			while(n) { if(n->value == value) return n->key; n = n->next; }
 			return BaseNode<KEY, ops_key>::dummy();
 		}

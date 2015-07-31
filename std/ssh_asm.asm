@@ -7,7 +7,8 @@ result		dw 256 dup(?)
 
 .data
 
-tbl_por		dq 1.0
+dbl_znak	dq 1.0, -1.0
+			dq 1.0
 			dq 10.0
 			dq 100.0
 			dq 1000.0
@@ -15,19 +16,15 @@ tbl_por		dq 1.0
 			dq 100000.0
 			dq 1000000.0
 			dq 10000000.0
-tbl_por2	dq -1.0
-			dq -10.0
-			dq -100.0
-			dq -1000.0
-			dq -10000.0
-			dq -100000.0
-			dq -1000000.0
-			dq -10000000.0
+			dq 100000000.0
+			dq 1000000000.0
+			dq 10000000000.0
+			dq 100000000000.0
 hex_sym		dw 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70
 is_hex		dw 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 .code
 
-; преобразовать число в строку, в зависимости от системы счисления (0-bin, 1-decimal, 2-oct, 3-hex, 4-double)
+; преобразовать число в строку, в зависимости от системы счисления 0-decimal, (1-bin, 2-oct, 3-hex, 4-float,5-double)
 ; rcx - число
 ; rdx - система счисления
 ; ret - result of whar_t*
@@ -93,7 +90,7 @@ nto_dbl:; read double from rax
 		; преобразуем целую часть в строку
 		call nto_dec
 		mov rdx, offset result + 128
-		mov r8, offset tbl_por + 8
+		mov r8, offset dbl_znak + 24
 		mov word ptr [rdx], '.'
 		add rdx, 2
 		; количество знаков после запятой
@@ -176,71 +173,35 @@ wto_dec:; определяем признак отрицательного значения
 		setz r12b
 		lea rcx, [rcx + r12 * 2]
 		call wto_obh
-		ret
+		test r12, r12
+		jz @f
+		neg rax
+@@:		ret
 wto_flt:inc r13
 wto_dbl:call wto_dec
 		mov r10, r11
-		mov rcx, r11
 		cvtsi2sd xmm0, rax
 		xorps xmm1, xmm1
-		cmp word ptr [rcx], '.'
+		cmp word ptr [r11], '.'
 		jnz @f
-		mov r8, 1
-		add rcx, 2
+		lea rcx, [r11 + 2]
+		mov r10, rcx
 		call wto_obh
 		cvtsi2sd xmm1, rax
 @@:		sub r11, r10
-		shr r11, 1
-		and r12, 7
-		mov r8, offset tbl_por
-		shl r12, 6
-		add r8, r12
-		divsd xmm1, qword ptr [r8]
+		mov rcx, 22
+		cmp r11, rcx
+		cmova r11, rcx
+		mov r8, offset dbl_znak
+		shl r12, 1
+		divsd xmm1, qword ptr [r8 + r11 * 4 + 16]
 		addsd xmm0, xmm1
+		mulsd xmm0, qword ptr [r8 + r12 * 8]
 		test r13, r13
 		jz @f
 		cvtsd2ss xmm0, xmm0
 @@:		movd rax, xmm0
-;		movsd qword ptr [result], xmm0
-;		mov rax, qword ptr [result]
 		ret
 asm_ssh_wton endp
 
 end
-
-asmAtoF proc public USES rdi rsi rbx
-; целая часть
-		mov r9, offset tbl_por
-		xorps xmm1, xmm1
-		mov r8, rcx
-		push rcx
-		push 0
-		call atol
-		cvtsi2sd xmm0, rax
-; найти разделяющую точку (если есть)
-		mov rsi, r8
-_snova:	lodsb
-		test al, al
-		jz _fin
-		cmp al, '.'
-		jnz _snova
-		mov rdi, rsi
-		dec rsi
-		sub rsi, r8
-		cmp rsi, len_val
-		jnz _fin
-; дробная часть
-		push rdi
-		push 1
-		call atol
-		cvtsi2sd xmm1, rax
-		mov rdx, znak_val
-		shl rdx, 6
-		add r9, rdx
-		mov rcx, len_val
-		and rcx, 7
-		divsd xmm1, qword ptr [rcx * 8 + r9]
-_fin:	addsd xmm0, xmm1
-		ret
-asmAtoF endp
-

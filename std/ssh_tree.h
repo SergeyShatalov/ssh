@@ -82,27 +82,35 @@ namespace ssh
 		// вставить другое дерево
 		Node* insert(Node* n, const Tree<T, ops>& src) { return insert(n, src.get_root()); }
 		// вернуть узел по индексу
-		Node* get_node(Node* n, ssh_u idx) const { while(n) { if(--idx < 0) return n; n = n->next; } return nullptr; }
+		Node* get_node_index(Node* n, ssh_l idx) const
+		{
+			while(n)
+			{
+				if(--idx < 0) return n;
+				n = n->next;
+			}
+			return nullptr;
+		}
 		// найти дочерний по значению
-		Node* findChild(Node* n, const T& t) const
+		Node* get_node_value(Node* n, const T& t) const
 		{
 			Node* nn;
 			while(n)
 			{
 				if(n->value == t) return n;
-				if(n->fchild) {if((nn = findChild(n->fchild, t))) return nn;}
+				if(n->fchild) { if((nn = get_node_value(n->fchild, t))) return nn; }
 				n = n->next;
 			}
 			return nullptr;
 		}
 		// найти дочерний по имени
-		Node* findChild(Node* n, const String& name) const
+		Node* get_node_hash(Node* n, ssh_u name) const
 		{
 			Node* nn;
 			while(n)
 			{
-				if(n->value->name() == name) return n;
-				if(n->fchild) { if((nn = findChild(n->fchild, name))) return nn; }
+				if(n->value->name().hash() == name) return n;
+				if(n->fchild) { if((nn = get_node_hash(n->fchild, name))) return nn; }
 				n = n->next;
 			}
 			return nullptr;

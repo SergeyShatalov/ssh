@@ -6,6 +6,7 @@
 namespace ssh
 {
 	static ssh_wcs wrong_lexem = L",#\"?&^%$:;\'|~<>/!{}[]";
+	Map<HMODULE, String, SSH_TYPE, SSH_TYPE>* Helpers::dlls(nullptr);
 
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
@@ -150,7 +151,7 @@ namespace ssh
 		if(result.length() > range)
 		{
 			String strs[32];
-			ssh_u pf(0), pl(split(L"\\", result, strs, 32, L"") - 1), pll(pl);
+			ssh_u pf(0), pl(split(L'\\', 0, result, strs, 32, L"") - 1), pll(pl);
 			if(pl)
 			{
 				String resultF, resultL;
@@ -203,17 +204,18 @@ namespace ssh
 		SetCurrentDirectory(dir);
 	}
 
-	ssh_u Helpers::split(ssh_wcs split, const String& src, String* dst, ssh_u count_dst, ssh_wcs def) const
+	ssh_u Helpers::split(ssh_ws split, ssh_l skip, const String& src, String* dst, ssh_u count_dst, ssh_wcs def) const
 	{
 		SSH_TRACE;
 		ssh_ws* _wcs(src.buffer());
 		ssh_ws* t;
-		ssh_u i(0), j(wcslen(split));
+		ssh_u i(0), j;
 		while(i < count_dst)
 		{
-			if((t = wcsstr(_wcs, split))) *t = 0;
-			dst[i++] = (is_null(_wcs) ? def : _wcs);
-			if(t) { *t = *split; _wcs = t + j; } else break;
+			if((t = wcschr(_wcs, split))) *t = 0;
+			if(skip <= 0) dst[i++] = (is_null(_wcs) ? def : _wcs);
+			if(t) { *t = split; _wcs = t + 1; } else break;
+			skip--;
 		}
 		j = i;
 		// заполняем значениями по умолчанию
@@ -542,5 +544,22 @@ namespace ssh
 				}
 			}
 		}
+	}
+
+	void* Helpers::get_procedure(const String& dll, ssh_ccs proc, ssh_wcs _suffix)
+	{
+		HMODULE hdll;
+		String module(file_path_title(dll));
+		if(!dlls) dlls = new Map<HMODULE, String, SSH_TYPE, SSH_TYPE>(1000);
+#ifdef _DEBUG
+		if(_suffix) module += _suffix;
+#endif
+		module += (file_ext(dll, true));
+		if(!(hdll = (*dlls)[module]))
+		{
+			if(!(hdll = LoadLibrary(module))) return nullptr;
+			(*dlls)[module] = hdll;
+		}
+		return GetProcAddress(hdll, proc);
 	}
 }

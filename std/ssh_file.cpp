@@ -25,7 +25,8 @@ namespace ssh
 	{
 		if((h = _wopen(name, opens[flags & 7].flag | (flags & (~7) | _O_BINARY), opens[flags & 7].mode)) == -1)
 			SSH_THROW(L"Не удалось открыть файл (%s)", name);
-		memcpy(path, name, wcslen(name) * 2 + 2);
+		path = name;
+//		memcpy(path, name, wcslen(name) * 2 + 2);
 	}
 
 	void File::get_time(Time* create, Time* access, Time* write) const

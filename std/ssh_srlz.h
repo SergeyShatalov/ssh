@@ -14,6 +14,7 @@
 #define SC_NODE			0x0010// узел - ссылка на вложенный со схемой
 #define SC_OBJ			0x0020// класс или его переменная без схемы
 #define SC_VAR			0x0040// признак данных
+#define SC_BASE64		0x0080// кодировать значение атрибута в base64
 
 #define SCHEME_BEGIN(cls) static SCHEME cls##_scheme[] = {
 #define SCHEME_END(cls) {nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0}}; return cls##_scheme;
@@ -80,8 +81,5 @@ namespace ssh
 		static const ssh_u _hash_wcs	= 0x6332756bf3eb4142;
 		static const ssh_u _hash_ccs	= 0x0303de250da14208;
 		static const ssh_u _hash_time	= 0x7f407f2070a5d6d0;
-		static SCHEME* _sc;
-		static Xml* _xml;
-		static File* _fl;
 	};
 }

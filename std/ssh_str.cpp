@@ -26,11 +26,7 @@ namespace ssh
 	String::String(ssh_wcs wcs, ssh_u len)
 	{
 		init();
-		if(wcs)
-		{
-			ssh_u t(SSH_STRLEN(wcs));
-			make(wcs, len > t ? t : len);
-		}
+		if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); }
 	}
 	
 	String::String(ssh_ccs ccs, ssh_u len)

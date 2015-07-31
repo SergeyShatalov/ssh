@@ -13,12 +13,13 @@ namespace ssh
 		XmlNode(ssh_wcs name, ssh_wcs v) : XmlNode() { nm = name; val = v; }
 		~XmlNode() { SSH_DEL(attrs); SSH_DEL(next); }
 		// вернуть атрибут по имени
-		XmlNode* attr(const String& name) const
+		XmlNode* attr(ssh_wcs name) const
 		{
+			auto h(ssh_hash(name));
 			auto n(attrs);
 			while(n)
 			{
-				if(n->nm == name) return n;
+				if(n->nm.hash() == h) return n;
 				n = n->next;
 			}
 			return nullptr;
@@ -107,8 +108,8 @@ namespace ssh
 		// вернуть/добавить узел
 		HXML node(HXML h, ssh_wcs name, ssh_l index = -1) const
 		{
-			if(name) return tree.findChild(h, name);
-			return tree.get_node(h, index);
+			if(name) return tree.get_node_hash(h, ssh_hash(name));
+			return tree.get_node_index(h->fchild, index);
 		}
 		static regx* get_regx()
 		{
@@ -123,9 +124,8 @@ namespace ssh
 		// вернуть BOM в зависимости от выходной кодировки
 		ssh_w bom_coder() const;
 		// формирование дерева узлов
-		void _make(const Buffer<ssh_cs>& buf);
 		void make(HXML hp, ssh_u lev);
-		//void make(HXML h, ssh_u _lev);
+		void _make(const Buffer<ssh_cs>& buf);
 		// сохранение
 		String _save(HXML h, ssh_l level);
 		// дерево узлов
