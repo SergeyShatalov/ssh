@@ -1,14 +1,21 @@
 
 #include "stdafx.h"
 #include "ssh_globals.h"
-#include "ssh_undname.h"
+#include <Common\ssh_ext.h>
 
 namespace ssh
 {
+	static __ext_undname _und((__ext_undname)hlp->get_procedure(L"sshEXT", "ext_undname", true));
+	static __cnv_open _open((__cnv_open)hlp->get_procedure(L"sshCNV.dll", "iconv_open"));
+	static __cnv_close _close((__cnv_close)hlp->get_procedure(L"sshCNV.dll", "iconv_close"));
+	static __cnv_make _make((__cnv_make)hlp->get_procedure(L"sshCNV.dll", "iconv"));
+
 	ssh_u SSH ssh_hash_type(ssh_ccs nm)
 	{
-		ssh_cs* _cs = ssh_undname(nm + 1, UNDNAME_NO_RETURN_CONSTABLES | UNDNAME_NO_RETURN_ARRAY | UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY);
-		return ssh_hash(_cs);
+		static ssh_cs out[256];
+		ssh_cs* _cs;
+		if(_und) _cs = _und(out, nm + 1, 256, UNDNAME_NO_RETURN_CONSTABLES | UNDNAME_NO_RETURN_ARRAY | UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY);
+		return (_und ? ssh_hash(_cs) : 0);
 	}
 
 	ssh_u SSH ssh_hash(ssh_wcs wcs)
@@ -270,13 +277,16 @@ namespace ssh
 		ssh_u out_c(out.count());
 		ssh_ccs _in((ssh_ccs)str.buffer());
 		ssh_cs* _out(out);
-		if((h = iconv_open(to, cp_utf)) != (iconv_t)-1)
+		if(_open && _close && _make)
 		{
-			while(in_c > 0)
+			if((h = _open(to, cp_utf)) != (iconv_t)-1)
 			{
-				if(iconv(h, &_in, &in_c, &_out, &out_c) == -1) { out_c = 0; break; }
+				while(in_c > 0)
+				{
+					if(_make(h, &_in, &in_c, &_out, &out_c) == -1) { out_c = 0; break; }
+				}
+				_close(h);
 			}
-			iconv_close(h);
 		}
 		return Buffer<ssh_cs>(out, BUFFER_COPY | BUFFER_RESET, _out - out);
 	}
@@ -289,13 +299,16 @@ namespace ssh
 		ssh_u out_c(out.length());
 		ssh_ccs _in(in + offs);
 		ssh_cs* _out((ssh_cs*)out.buffer());
-		if((h = iconv_open(cp_utf, from)) != (iconv_t)-1)
+		if(_open && _close && _make)
 		{
-			while(in_c > 0)
+			if((h = _open(cp_utf, from)) != (iconv_t)-1)
 			{
-				if(iconv(h, &_in, &in_c, &_out, &out_c) == -1) { out_c = 0; break; }
+				while(in_c > 0)
+				{
+					if(_make(h, &_in, &in_c, &_out, &out_c) == -1) { out_c = 0; break; }
+				}
+				_close(h);
 			}
-			iconv_close(h);
 		}
 		return String(out);
 	}

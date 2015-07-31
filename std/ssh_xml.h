@@ -112,7 +112,7 @@ namespace ssh
 		}
 		static regx* get_regx()
 		{
-			static ssh_wcs ptrs[] = {LR"serg((?mUs)<(?:(?:([/]{0,1})([\w_]+[\w\d_-]*)>)|(!--.*-->)|(?:(\w+[\w\d_-]*)\s+(\w+.*)([/]{0,1})>)))serg", LR"serg((?sm)([\w_]+[\w\d_-]*)\s*=\s*(?:"(.*?)")\s*)serg",
+			static ssh_wcs ptrs[] = {LR"serg((?mUs)<(?:(?:([/]{0,1})([\w_]+[\w\d_-]*)>)|(!--.*-->)|(?:([A-Za-zР-пр-џ_]+[A-Za-zР-пр-џ\d_-]*)\s+([A-Za-zР-пр-џ_]+.*)([/]{0,1})>)))serg", LR"serg((?sm)([A-Za-zР-пр-џ_]+[A-Za-zР-пр-џ\d_]*)\s*=\s*(?:"(.*?)")\s*)serg",
 									 LR"serg((?ms)()?<=>"(.*?)")serg", LR"((?im)<\?xml\s+version=.+encoding=["]?(.*?)["]?\s*\?>)"};
 			static regx rx(ptrs, 4);
 			return &rx;

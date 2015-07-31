@@ -7,7 +7,10 @@
 #define	gnew new(heap, 0)
 #define	rnew new(heap, 1)
 
-ssh_cs*	ssh_undname(ssh_ccs name, ssh_d disableFlags);
+extern "C"
+{
+	EXT ssh_cs*	ext_undname(ssh_cs* out, ssh_ccs name, int len_out, ssh_d disableFlags);
+};
 
 enum Tokens
 {

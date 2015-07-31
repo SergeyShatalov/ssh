@@ -149,9 +149,12 @@ namespace ssh
 		}
 		~regx()
 		{
-			if(re) regex_free(re);
-			for(ssh_u i = 0; i < 32; i++)
-				if(patterns[i]) regex_free(patterns[i]);
+			if(_free)
+			{
+				if(re) _free(re);
+				for(ssh_u i = 0; i < 32; i++)
+					if(patterns[i]) _free(patterns[i]);
+			}
 		}
 		// запомнить паттерн в массиве
 		bool set_pattern(ssh_u idx, ssh_wcs pattern)
@@ -163,7 +166,7 @@ namespace ssh
 		ssh_l match(ssh_wcs subject, ssh_u idx_ptrn = -1, ssh_l idx = 0)
 		{
 			subj = (ssh_ws*)subject;
-			return (result = regex16_exec((idx_ptrn == -1 ? re : patterns[idx_ptrn]), subject, wcslen(subject), idx, 0, vector, 256));
+			return (result = _exec((idx_ptrn == -1 ? re : patterns[idx_ptrn]), subject, wcslen(subject), idx, 0, vector, 256));
 		}
 		// найти совпадени€ с компил€цией паттерна
 		ssh_l match(ssh_wcs subject, ssh_wcs pattern, ssh_l idx = 0)
@@ -190,8 +193,8 @@ namespace ssh
 		regex16* compile(ssh_wcs pattern)
 		{
 			result = 0;
-			if(re) { regex_free(re); re = nullptr; }
-			return regex16_compile(pattern, 0);
+			if(re && _free) { _free(re); re = nullptr; }
+			return (_compile ? (regex16*)_compile(pattern, 0) : nullptr);
 		}
 		ssh_ws* subj;
 		// найденные позиции
@@ -202,5 +205,9 @@ namespace ssh
 		regex16* re;
 		// откомрилированные паттерны
 		regex16* patterns[32];
+		// процедуры из библиотеки sshREGX
+		static __regx_compile _compile;
+		static __regx_exec _exec;
+		static __regx_free _free;
 	};
 }

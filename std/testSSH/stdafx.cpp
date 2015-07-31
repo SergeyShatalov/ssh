@@ -110,8 +110,8 @@ public:
 		SCHEME_BEGIN(Temp)
 			SCHEME_NOD(Temp, x, L"temp", L"value", 1)
 			SCHEME_VAR(Temp, d, L"temp_d", 3, 0, L"0.0", nullptr)
-			SCHEME_VAR(Temp, _wcs, L"wсs", 1, 0, L"И", nullptr)
-			SCHEME_VAR(Temp, _ccs, L"cсs", 1, 0, L"И", nullptr)
+			SCHEME_VAR(Temp, _wcs, L"wcs", 1, 0, L"И", nullptr)
+			SCHEME_VAR(Temp, _ccs, L"ccs", 1, 0, L"И", nullptr)
 			SCHEME_OBJ_BEGIN(Temp, v, L"vector", 3, 1)
 				SCHEME_OBJ_VAR(vec2, v[0], x, L"x", 1, 0, L"0.0", nullptr, 1)
 				SCHEME_OBJ_VAR(vec2, v[0], y, L"y", 1, 0, L"0.0", nullptr, 1)
@@ -149,20 +149,8 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	double d;
-	float d1[] = {0,1};
-	short d2[3];
-	String _vls;
-//	ssh_u h1 = ssh_hash_type();
-	//ssh_u h2 = ssh_hash_type(typeid(d1).raw_name());
-	//ssh_u h3 = ssh_hash_type(typeid(d2).raw_name());
-	//	void* _nm;
-//	_nm = __unDNameHelper(NULL, (_This->_M_d_name) + 1, 0, UNDNAME_32_BIT_DECODE | UNDNAME_TYPE_ONLY)) == NULL)
-//	String _tp;
-//	_tp = typeid(argc).name();
 	/*
 	String _num(L"10f00");
-
 	short _ii = _num;// .toNum<ssh_l>(_num, String::_dec);
 	float _dd = 100.123f;
 	void* pp(&_dd);
@@ -180,13 +168,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		new(&t, L"serg") Temp(L"e:\\serg.xml");
 		t->save(L"e:\\serg+.xml", true);
 		SSH_REL(t);
-//		Xml _xml(L"e:\\1.xml");
-//		_xml.save(L"e:\\1+.xml", L"utf-8");
  		return 0;
-//		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
-//		List<Mail::MAIL*> lst;
-//		mail_pop.imap(L"X-Priority", &lst, false);
-//		return 0;
+		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
+		List<Mail::MAIL*> lst;
+		mail_pop.pop3(L"X-Priority", &lst, false);
+		mail_pop.imap(L"X-Priority", &lst, false);
+		return 0;
 		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
 		mail_smtp.set_charset(L"koi8-r");
 		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");

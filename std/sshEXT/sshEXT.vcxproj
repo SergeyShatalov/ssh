@@ -11,10 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4C11C10E-A3FB-40D4-83F5-A59C50CC261A}</ProjectGuid>
+    <ProjectGuid>{2B404DE2-3849-47B2-9A5E-4FC9A9B6AA1E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>std</RootNamespace>
-    <ProjectName>stdSSH</ProjectName>
+    <RootNamespace>sshEXT</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -32,7 +31,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -44,30 +42,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>e:\Разработка\Bin\</OutDir>
-    <IntDir>e:\Разработка\tmp\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>e:\Разработка\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>e:\Разработка\Bin\</OutDir>
-    <IntDir>e:\Разработка\tmp\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>e:\Разработка\tmp\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SSH_MEM;SSH_EXPORT;_DEBUG;_WINDOWS;_USRDLL;STD_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>e:\Разработка\Движок\;c:\OPENSSL-WIN64\Include\</AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>EXT_EXPORT;_DEBUG;_WINDOWS;_USRDLL;SSHEXT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>e:\Разработка\Движок\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>e:\Разработка\Lib\</AdditionalLibraryDirectories>
       <ImportLibrary>e:\Разработка\Lib\$(TargetName).lib</ImportLibrary>
-      <ModuleDefinitionFile>ssh_def.def</ModuleDefinitionFile>
-      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -77,15 +72,14 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>SSH_MEM;SSH_EXPORT;NDEBUG;_WINDOWS;_USRDLL;STD_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>e:\Разработка\Движок\;c:\OPENSSL-WIN64\Include\</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>EXT_EXPORT;NDEBUG;_WINDOWS;_USRDLL;SSHEXT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>e:\Разработка\Движок\</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -94,78 +88,23 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>e:\Разработка\Lib\</AdditionalLibraryDirectories>
       <ImportLibrary>e:\Разработка\Lib\$(TargetName).lib</ImportLibrary>
-      <ModuleDefinitionFile>ssh_def.def</ModuleDefinitionFile>
-      <LargeAddressAware>true</LargeAddressAware>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Common\ssh_config.h" />
-    <ClInclude Include="ssh_arch.h" />
-    <ClInclude Include="ssh_array.h" />
-    <ClInclude Include="ssh_buf.h" />
-    <ClInclude Include="ssh_file.h" />
-    <ClInclude Include="ssh_globals.h" />
-    <ClInclude Include="ssh_hlp.h" />
-    <ClInclude Include="ssh_img.h" />
-    <ClInclude Include="ssh_io.h" />
-    <ClInclude Include="ssh_jpg.h" />
-    <ClInclude Include="ssh_list.h" />
-    <ClInclude Include="ssh_log.h" />
-    <ClInclude Include="ssh_mail.h" />
-    <ClInclude Include="ssh_map.h" />
-    <ClInclude Include="ssh_math.h" />
-    <ClInclude Include="ssh_mem.h" />
-    <ClInclude Include="ssh_rtti.h" />
-    <ClInclude Include="ssh_singl.h" />
-    <ClInclude Include="ssh_sock.h" />
-    <ClInclude Include="ssh_sql.h" />
-    <ClInclude Include="ssh_srlz.h" />
-    <ClInclude Include="ssh_stack.h" />
-    <ClInclude Include="ssh_str.h" />
-    <ClInclude Include="ssh_time.h" />
-    <ClInclude Include="ssh_tree.h" />
-    <ClInclude Include="ssh_types.h" />
-    <ClInclude Include="ssh_xml.h" />
-    <ClInclude Include="ssh_zip.h" />
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ext_undname.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ssh_arch.cpp" />
-    <ClCompile Include="ssh_file.cpp" />
-    <ClCompile Include="ssh_gamepad.cpp" />
-    <ClCompile Include="ssh_globals.cpp" />
-    <ClCompile Include="ssh_hlp.cpp" />
-    <ClCompile Include="ssh_img.cpp" />
-    <ClCompile Include="ssh_jpg.cpp" />
-    <ClCompile Include="ssh_log.cpp" />
-    <ClCompile Include="ssh_mail.cpp" />
-    <ClCompile Include="ssh_math.cpp" />
-    <ClCompile Include="ssh_mem.cpp" />
-    <ClCompile Include="ssh_sock.cpp" />
-    <ClCompile Include="ssh_sql.cpp" />
-    <ClCompile Include="ssh_srlz.cpp" />
-    <ClCompile Include="ssh_str.cpp" />
-    <ClCompile Include="ssh_time.cpp" />
-    <ClCompile Include="ssh_xml.cpp" />
-    <ClCompile Include="ssh_zip.cpp" />
-    <ClCompile Include="ssh_zipc.cpp" />
-    <ClCompile Include="ssh_zipd.cpp" />
+    <ClCompile Include="ext_undname.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <MASM Include="ssh_asm.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ssh_def.def" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

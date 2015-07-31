@@ -109,6 +109,22 @@ namespace ssh
 			siCompName,
 			siCustom
 		};
+		// вернуть адрес процедуры из dll
+		void* get_procedure(const String& dll, ssh_ccs proc, bool is_debug = true)
+		{
+			HMODULE hdll;
+			String module(file_path_title(dll));
+#ifdef _DEBUG
+			if(is_debug) module += L'd';
+#endif
+			module += (file_ext(dll, true));
+			if(!(hdll = dlls[module]))
+			{
+				if(!(hdll = LoadLibrary(module))) return nullptr;
+				dlls[module] = hdll;
+			}
+			return GetProcAddress(hdll, proc);
+		}
 		// удалить комментарии из текста
 		void remove_comments(String* lst, ssh_u count, bool is_simple);
 		// вернуть системные папки
@@ -288,6 +304,8 @@ namespace ssh
 		OS_VERSION osVersion;
 		// индекс сиглтона
 		static const ssh_u singl_idx = SSH_SINGL_HELPER;
+		// хэндлы загруженных dll
+		Map<HMODULE, String, SSH_TYPE, SSH_TYPE> dlls;
 	};
 
 #define hlp		Singlton<Helpers>::Instance()
