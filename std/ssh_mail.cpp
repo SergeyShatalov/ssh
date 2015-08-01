@@ -477,7 +477,7 @@ namespace ssh
 
 	String Mail::decode_string(String charset, const String& subj, bool is_base64)
 	{
-		Buffer<ssh_cs> buf((is_base64 ? ssh_from_base64(ssh_cnv(cp_ansi, subj, false)) : ssh_cnv(cp_ansi, subj, false)));
+		Buffer<ssh_cs> buf((is_base64 ? ssh_from_base64(subj) : ssh_cnv(cp_ansi, subj, false)));
 		return ssh_cnv(charset, buf, 0);
 	}
 

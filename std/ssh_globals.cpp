@@ -186,17 +186,24 @@ namespace ssh
 		return (isalnum(c) || (c == '+') || (c == '/'));
 	}
 
-	Buffer<ssh_cs> SSH ssh_from_base64(const Buffer<ssh_cs>& buf)
+	Buffer<ssh_cs> SSH ssh_from_base64(const String& str)
+	{
+		return ssh_from_base64(str, true);
+	}
+
+	Buffer<ssh_cs> SSH ssh_from_base64(const Buffer<ssh_cs>& buf, bool from_str)
 	{
 		ssh_cs* f(strchr(buf, '='));
-		ssh_u i(0), j(0), in_(0), _ret(0), _c(buf.count()), in_len(f ? f - buf : _c);
+		ssh_u i(0), j(0), offs(1), in_(0), _ret(0), _c(buf.count());
+		if(from_str) offs = 2, _c /= 2;
+		ssh_u in_len(f ? f - buf : _c);
 		ssh_cs char_array_4[4], char_array_3[3];
 		ssh_u out_len(_c / 4 * 3 - (_c - in_len));
-		Buffer<ssh_cs> ret(out_len);
+		Buffer<ssh_cs> ret(out_len + from_str * 2);
 		ssh_cs* ptr(ret);
 		while(in_len-- && is_base64(buf[in_]))
 		{
-			char_array_4[i++] = buf[in_++];
+			char_array_4[i++] = buf[in_]; in_ += offs;
 			if(i == 4)
 			{
 				for(i = 0; i < 4; i++) char_array_4[i] = (ssh_cs)(strchr(base64_chars, char_array_4[i]) - base64_chars);
