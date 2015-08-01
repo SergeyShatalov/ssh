@@ -1,10 +1,82 @@
 
 #include "stdafx.h"
 #include "ssh_log.h"
+#include <new.h>
+#include <stdlib.h>
 
 namespace ssh
 {
 	bool StackTrace::is_disabled = true;
+
+	static void __cdecl ssh_signal_handler(int numSignal)
+	{
+		SSH_FAULT(numSignal, (EXCEPTION_POINTERS*)_pxcptinfoptrs);
+		exit(1);
+	}
+
+	static LONG WINAPI Win32UnhandledExceptionFilter(EXCEPTION_POINTERS* except)
+	{
+		SSH_FAULT(UNHANDLED_EXCEPTION, except);
+		exit(1);
+	}
+
+	static void __cdecl ssh_terminate_handler()
+	{
+		SSH_FAULT(TERMINATE_CALL, nullptr);
+		exit(2);
+	}
+
+	static void __cdecl ssh_unexp_handler()
+	{
+		SSH_FAULT(UNEXPECTED_CALL, nullptr);
+		exit(3);
+	}
+
+	static void __cdecl ssh_purecall_handler()
+	{
+		SSH_FAULT(PURE_CALL, nullptr);
+		exit(4);
+	}
+
+	static void __cdecl ssh_security_handler(int code, void *x)
+	{
+		SSH_FAULT(SECURITY_ERROR, nullptr);
+		exit(5);
+	}
+
+	static void __cdecl ssh_invalid_parameter_handler(ssh_wcs expression, ssh_wcs function, ssh_wcs file, unsigned int line, uintptr_t pReserved)
+	{
+		MemMgr::instance()->fault(INVALID_PARAMETER_ERROR, function, file, line, nullptr, expression);
+		exit(6);
+	}
+
+	static int __cdecl ssh_new_handler(ssh_u size)
+	{
+		SSH_FAULT(NEW_OPERATOR_ERROR, nullptr);
+		exit(6);
+	}
+
+	static void ssh_set_exceptionHandlers()
+	{
+		// установить фильтр исключений
+		SetUnhandledExceptionFilter(Win32UnhandledExceptionFilter);
+		// установить режимы отчета библиотеки времени выполнения
+		//_CrtSetReportMode(_CRT_ERROR, 0);
+		_CrtSetReportMode(_CRT_ASSERT, 0);
+
+		set_terminate(ssh_terminate_handler);
+		set_unexpected(ssh_unexp_handler);
+		_set_purecall_handler(ssh_purecall_handler);
+		_set_invalid_parameter_handler(ssh_invalid_parameter_handler);
+		_set_new_handler(ssh_new_handler);
+//		_set_security_error_handler(ssh_security_handler);
+		signal(SIGABRT, ssh_signal_handler);
+		signal(SIGINT, ssh_signal_handler);
+		signal(SIGTERM, ssh_signal_handler);
+		signal(SIGFPE, ssh_signal_handler);
+		signal(SIGILL, ssh_signal_handler);
+		signal(SIGSEGV, ssh_signal_handler);
+	}
 
 	Log::LOG::LOG()
 	{
@@ -13,9 +85,9 @@ namespace ssh
 		string_finish = L"\r\n------------------------------ Завершение сеанса - $nm ($dt - $tm) ------------------------------\r\n\r\n";
 		string_continue = L"\r\n------------------------------ Продолжение сеанса - $nm ($dt - $tm) ------------------------------\r\n\r\n";
 		// вывод на экран
-		screen_template =	L"\r\n-------------------- [$tp] --------------------\r\n"
-							L"Функция: $fn\r\n\r\nФайл: $fl\r\n\r\nСтрока: $ln\r\n\r\nПричина: $ms\r\n\r\n\r\nПродолжить выполнение программы?\r\n\r\n"
-							L"\r\n-------------------- [$tp] --------------------\r\n";
+		screen_template = L"\r\n-------------------- [$tp] --------------------\r\n"
+			L"Функция: $fn\r\n\r\nФайл: $fl\r\n\r\nСтрока: $ln\r\n\r\nПричина: $ms\r\n\r\n\r\nПродолжить выполнение программы?\r\n\r\n"
+			L"\r\n-------------------- [$tp] --------------------\r\n";
 		// вывод в окно отладчика
 		debug_template = L"[$tp] $DT-$tm\t$fn\t - \t($fl: $ln) - [$ms]\r\n";
 		// вывод на почту
@@ -51,25 +123,6 @@ namespace ssh
 		tmp.replace(L'\1', L'\0');
 		return templ.replace(rpl, tmp);
 
-	}
-
-	static void ssh_terminate()
-	{
-		SSH_LOG(L"Аварийное завершение сеанса!\r\n");
-		exit(-4);
-	}
-
-	static void __cdecl ssh_unexpected()
-	{
-		SSH_LOG(L"Аварийное завершение сеанса!\r\n");
-		exit(-3);
-	}
-
-	static void __cdecl ssh_signal(int numSignal)
-	{
-		MemMgr::instance()->fault();
-		signal(numSignal, SIG_DFL); // перепосылка сигнала
-		exit(-5);
 	}
 
 	static void socket_receive(Socket* sock, Socket::SOCK* s, const Buffer<ssh_cs>& buf)
@@ -143,12 +196,11 @@ namespace ssh
 			sock.close();
 			_log._out = TypeOutput::Null;
 		}
-		//sigaction();
-		set_unexpected(ssh_unexpected);
-		set_terminate(ssh_terminate);
-		signal(SIGSEGV, ssh_signal);
-
+		// установть обработчики нестандартных исключительных ситуаций
+		ssh_set_exceptionHandlers();
+		// старт трассировщика
 		tracer.start();
+		// старт менеджера памяти
 		MemMgr::instance()->start();
 	}
 

@@ -51,7 +51,7 @@ public:
 	virtual	ssh_cs*	getString(ssh_cs*, int) const PURE;
 	DNameNode* clone();
 	DNameNode* nextNode() const { return next; }
-	DNameNode&	operator += (DNameNode* pNode)
+	DNameNode& operator += (DNameNode* pNode)
 	{
 		if(pNode)
 		{

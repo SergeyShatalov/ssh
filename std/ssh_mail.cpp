@@ -135,7 +135,8 @@ namespace ssh
 	{
 		return (rx.match(caps, (ssh_wcs)cmd.fmt(L"(?im)[-\\s=]+%s[\\s=]+", keyword), (ssh_l)0) > 0);
 	}
-	
+
+	/*
 	void Mail::send_cmd(ssh_u command, const Buffer<ssh_cs>& data, ssh_u flags)
 	{
 		resp.empty();
@@ -150,6 +151,7 @@ namespace ssh
 		}
 		if(!log->is_email_blocked()) SSH_LOG(L"Ошибка при отправке!");
 	}
+	*/
 
 	void Mail::send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags, ...)
 	{
@@ -341,7 +343,7 @@ namespace ssh
 			// DATA <CRLF>
 			send_cmd(command_smtp_DATA, L"DATA\r\n");
 			send_cmd(command_smtp_DATABLOCK, headers(subject, is_html, is_notify).buffer(), Mail::no_resp);
-			send_cmd(command_smtp_DATABLOCK, ssh_cnv(charset, body, false), Mail::no_resp);
+			send_cmd(command_smtp_DATABLOCK, String(ssh_cnv(charset, body, true)), Mail::add_crlf | Mail::no_resp);
 			n = attach.root();
 			while(n)
 			{
@@ -351,9 +353,9 @@ namespace ssh
 				{
 					if((pos = name.find_rev(L'\\')) < 0) continue;
 					File f(name, File::open_read);
-					name.fmt(L"=?%s?B?%s?=", charset, ssh_to_base64(charset, name.substr(pos + 1), true).to<ssh_ws>());
+					name.fmt(L"=?%s?B?%s?=", charset, ssh_base64(charset, name.substr(pos + 1)));
 					send_cmd(command_smtp_DATABLOCK, L"--%s\r\nContent-Type: application/x-msdownload; name=\"%s\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n", Mail::no_resp, msg_id, name, name);
-					send_cmd(command_smtp_DATABLOCK, ssh_to_base64(f.read<ssh_cs>(), false), Mail::add_crlf | Mail::no_resp);
+					send_cmd(command_smtp_DATABLOCK, ssh_base64(f.read<ssh_cs>()), Mail::add_crlf | Mail::no_resp);
 					f.close();
 				}
 				catch(const Exception& e) { e.add(L"Не удалось открыть файл вложений при отправке электронной почты!"); }
@@ -388,13 +390,13 @@ namespace ssh
 			{
 				cmd = login + L'\1' + login + L'\1' + pass;
 				cmd.replace(L'\1', L'\0');
-				send_cmd(command_smtp_AUTHPLAIN, L"AUTH PLAIN %s\r\n", 0, ssh_to_base64(cp_ansi, cmd, true).to<ssh_ws>());
+				send_cmd(command_smtp_AUTHPLAIN, L"AUTH PLAIN %s\r\n", 0, ssh_base64(cp_ansi, cmd));
 			}
 			else if(check_keyword(L"LOGIN"))
 			{
 				send_cmd(command_smtp_AUTHLOGIN, L"AUTH LOGIN");
-				send_cmd(command_smtp_USER, ssh_to_base64(cp_ansi, login, false));
-				send_cmd(command_smtp_PASSWORD, ssh_to_base64(cp_ansi, pass, false));
+				send_cmd(command_smtp_USER, L"%s\r\n", 0, ssh_base64(cp_ansi, login));
+				send_cmd(command_smtp_PASSWORD, L"%s\r\n", 0, ssh_base64(cp_ansi, pass));
 			}
 			else SSH_THROW(L"LOGIN_NOT_SUPPORTED");
 		}
@@ -466,7 +468,7 @@ namespace ssh
 	String Mail::cnv_rfc(const String& str)
 	{
 		SSH_TRACE;
-		return cmd.fmt(L"=?%s?B?%s?=", charset, ssh_to_base64(charset, str, true).to<ssh_ws>());
+		return cmd.fmt(L"=?%s?B?%s?=", charset, ssh_base64(charset, str));
 	}
 
 	Mail::MAIL_NAME Mail::makeNameMail(const String& name, const String& mail)
@@ -477,8 +479,7 @@ namespace ssh
 
 	String Mail::decode_string(String charset, const String& subj, bool is_base64)
 	{
-		Buffer<ssh_cs> buf((is_base64 ? ssh_from_base64(subj) : ssh_cnv(cp_ansi, subj, false)));
-		return ssh_cnv(charset, buf, 0);
+		return ssh_cnv(charset, (is_base64 ? ssh_base64(subj, false) : ssh_cnv(cp_ansi, subj, false)), 0);
 	}
 
 	Mail::MAIL* Mail::parse_mail(const String& mail, const String& x, MAIL* m, bool is_body)
@@ -568,7 +569,7 @@ namespace ssh
 					// filename
 					attach->filename = decode_string(rx.substr(4), rx.substr(5));
 					// file_body
-					attach->obj = ssh_from_base64(rx.substr(6));
+					attach->obj = ssh_base64(rx.substr(6), false);
 					// add mail
 					m->attached.add(attach);
 					// correct idx

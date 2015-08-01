@@ -2,14 +2,15 @@
 /*
 *	Автор:		Шаталов С. В.
 *	Создано:	Владикавказ, 19 июля 2015, 1:26
-*	Модификация:--
-*	Описание:	Классы для операций ввода/вывода
+*	Модификация:1 августа 2015 - убрал привязку к либе xinput1_3.dll
+*	Описание:	Классы для операций ввода/вывода и геймпада
 */
 
 #pragma once
 
 #include "ssh_singl.h"
 #include "ssh_map.h"
+#include <Xinput.h>
 
 #define IS_KEY(vk)			keyboard->is_keyPressed(vk)
 #define GET_KEY				keyboard->getKey()
@@ -241,8 +242,8 @@ namespace ssh
 		// установка скорости вибрации
 		virtual void vibration(ssh_d idx, Side side, ssh_w speed) const;
 	protected:
-		Gamepad() { XInputEnable(true); }
-		virtual ~Gamepad() { XInputEnable(false); }
+		Gamepad();
+		virtual ~Gamepad();
 		GAMEPAD _pad[MAX_CONTROLLERS];
 		// индекс синглота
 		static ssh_u const singl_idx = SSH_SINGL_GAMEPAD;

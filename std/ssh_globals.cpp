@@ -5,6 +5,11 @@
 
 namespace ssh
 {
+	typedef ssh_cs* (CALLBACK* __ext_undname)(ssh_cs* out, ssh_ccs name, int len_out, ssh_d flags);
+	typedef void* (CALLBACK* __cnv_open)(ssh_wcs to, ssh_wcs from);
+	typedef int (CALLBACK* __cnv_close)(void* h);
+	typedef size_t(CALLBACK* __cnv_make)(void* cd, const char** inbuf, size_t* inbytesleft, char** outbuf, size_t* outbytesleft);
+
 	static __ext_undname _und((__ext_undname)hlp->get_procedure(L"sshEXT", "ext_undname"));
 	static __cnv_open _open((__cnv_open)hlp->get_procedure(L"sshCNV.dll", "iconv_open"));
 	static __cnv_close _close((__cnv_close)hlp->get_procedure(L"sshCNV.dll", "iconv_close"));
@@ -170,15 +175,6 @@ namespace ssh
 		return mtx(flt);
 	}
 
-	void SSH ssh_be_le(ssh_cs* _cs)
-	{
-		while(*(ssh_ws*)_cs)
-		{
-			_cs[0] ^= _cs[1], _cs[1] ^= _cs[0], _cs[0] ^= _cs[1];
-			_cs += 2;
-		}
-	}
-
 	static ssh_ccs base64_chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
 	static inline bool is_base64(ssh_cs c)
@@ -186,24 +182,18 @@ namespace ssh
 		return (isalnum(c) || (c == '+') || (c == '/'));
 	}
 
-	Buffer<ssh_cs> SSH ssh_from_base64(const String& str)
+	Buffer<ssh_cs> SSH ssh_base64(const String& str, bool is_null)
 	{
-		return ssh_from_base64(str, true);
-	}
-
-	Buffer<ssh_cs> SSH ssh_from_base64(const Buffer<ssh_cs>& buf, bool from_str)
-	{
-		ssh_cs* f(strchr(buf, '='));
-		ssh_u i(0), j(0), offs(1), in_(0), _ret(0), _c(buf.count());
-		if(from_str) offs = 2, _c /= 2;
-		ssh_u in_len(f ? f - buf : _c);
+		ssh_l pos(str.find(L'='));
+		ssh_u i(0), j(0), _c(str.length()), in_len(pos >= 0 ? pos : _c);
 		ssh_cs char_array_4[4], char_array_3[3];
 		ssh_u out_len(_c / 4 * 3 - (_c - in_len));
-		Buffer<ssh_cs> ret(out_len + from_str * 2);
+		Buffer<ssh_cs> ret(out_len + (is_null * 2));
 		ssh_cs* ptr(ret);
-		while(in_len-- && is_base64(buf[in_]))
+		ssh_ws* buf(str.buffer());
+		while(in_len-- && is_base64((ssh_cs)*buf))
 		{
-			char_array_4[i++] = buf[in_]; in_ += offs;
+			char_array_4[i++] = (ssh_cs)*buf++;
 			if(i == 4)
 			{
 				for(i = 0; i < 4; i++) char_array_4[i] = (ssh_cs)(strchr(base64_chars, char_array_4[i]) - base64_chars);
@@ -222,23 +212,23 @@ namespace ssh
 			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 			for(j = 0; (j < i - 1); j++) *ptr++ = char_array_3[j];
 		}
+		if(is_null) *(ssh_ws*)ptr = 0;
 		return ret;
 	}
 
-	Buffer<ssh_cs> SSH ssh_to_base64(ssh_wcs charset, const String& str, bool to_str)
+	String SSH ssh_base64(ssh_wcs charset, const String& str)
 	{
-		return ssh_to_base64(ssh_cnv(charset, str, false), to_str);
+		return ssh_base64(ssh_cnv(charset, str, false));
 	}
 
-	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf, bool is_str)
+	String SSH ssh_base64(const Buffer<ssh_cs>& buf)
 	{
 		ssh_u i = 0, j = 0, _ret(0), pos(0), len(buf.count());
-		ssh_u len_buf((len / 3 * 4) + ((len % 3) ? 4 : 0)), offs(1);
-		if(is_str) { len_buf = ((len_buf * 2) + 2); offs = 2; }
-		Buffer<ssh_cs> ret(len_buf);
-		ssh_cs* ptr(buf);
-		if(is_str) memset(ptr, 0, len_buf);
+		ssh_u len_buf((len / 3 * 4) + ((len % 3) ? 4 : 0));
+		String ret(L'\0', len_buf + 1);
 		ssh_cs char_array_3[3], char_array_4[4];
+		ssh_cs* ptr(buf);
+		ssh_ws* _ws(ret.buffer());
 		while(len--)
 		{
 			char_array_3[i++] = *ptr++;
@@ -248,7 +238,7 @@ namespace ssh
 				char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
 				char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 				char_array_4[3] = char_array_3[2] & 0x3f;
-				for(i = 0; i < 4; i++) ret[_ret] = (ssh_cs)base64_chars[char_array_4[i]], _ret += offs;
+				for(i = 0; i < 4; i++) *_ws++ = base64_chars[char_array_4[i]];
 				i = 0;
 			}
 		}
@@ -260,8 +250,8 @@ namespace ssh
 			char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
 			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 			char_array_4[3] = char_array_3[2] & 0x3f;
-			for(j = 0; (j < i + 1); j++) ret[_ret] = (ssh_cs)base64_chars[char_array_4[j]], _ret += offs;
-			while((i++ < 3)) ret[_ret] = '=', _ret += offs;
+			for(j = 0; (j < i + 1); j++) *_ws++ = base64_chars[char_array_4[j]];
+			while((i++ < 3)) *_ws++ = '=';
 		}
 		return ret;
 	}
@@ -279,8 +269,8 @@ namespace ssh
 	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, const String& str, bool is_null)
 	{
 		iconv_t h;
-		Buffer<ssh_cs> out(str.length() * 2);
-		ssh_u in_c(str.length() * 2 + (is_null * 2));
+		Buffer<ssh_cs> out(str.length() * 2 + (is_null * 2));
+		ssh_u in_c(str.length() * 2 + 2);
 		ssh_u out_c(out.count());
 		ssh_ccs _in((ssh_ccs)str.buffer());
 		ssh_cs* _out(out);

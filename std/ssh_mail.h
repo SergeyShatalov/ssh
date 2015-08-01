@@ -180,7 +180,7 @@ namespace ssh
 		void connect_smtp();
 		// отправка данных
 		void send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags = 0, ...);
-		void send_cmd(ssh_u command, const Buffer<ssh_cs>& base64, ssh_u flags = 0);
+		//void send_cmd(ssh_u command, const Buffer<ssh_cs>& base64, ssh_u flags = 0);
 		// получить ответ
 		void recv_resp(ssh_u command, ssh_u flags = 0);
 		// формирование связки имя <адрес>

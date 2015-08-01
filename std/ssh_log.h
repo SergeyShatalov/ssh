@@ -7,6 +7,20 @@
 #include "ssh_singl.h"
 #include "ssh_mail.h"
 
+#define SIGNAL_INTERRUPT		SIGINT
+#define SIGNAL_INSTRUCTION		SIGILL
+#define SIGNAL_FLOATING			SIGFPE
+#define SIGNAL_FAULT			SIGSEGV
+#define SIGNAL_TERMINATE		SIGTERM
+#define SIGNAL_ABORT			SIGABRT
+#define	UNHANDLED_EXCEPTION		0x8000
+#define	TERMINATE_CALL			0x4000
+#define	UNEXPECTED_CALL			0x2000
+#define	PURE_CALL				0x1000
+#define	SECURITY_ERROR			0x0800
+#define	NEW_OPERATOR_ERROR		0x0400
+#define	INVALID_PARAMETER_ERROR 0x0200
+
 namespace ssh
 {
 	class SSH Exception

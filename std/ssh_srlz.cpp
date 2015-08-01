@@ -55,20 +55,20 @@ namespace ssh
 			ssh_u flg(sc->flags);
 			ssh_l offs(sc->offs + p_offs);
 			ssh_u count(sc->count);
-			ssh_b* obj((ssh_b*)(this) + offs);
 			String sval;
-			for(ssh_u i = 0; i < count; i++)
+			while(count--)
 			{
 				if(_ID)
 				{
 					if(!(flg & SC_OBJ) || sc->ID == -1) { if(sc->ID != -1) _sc--; return; }
-					if(sc->ID != _ID) { _sc--; writeXml(h, offs); if(i + 1 < count) _sc = sc + 1; }
+					if(sc->ID != _ID) { _sc--; writeXml(h, offs); if(count) _sc = sc + 1; }
 				}
-				else if((flg & SC_OBJ)) { _sc--; writeXml(h, offs); if(i + 1 < count) _sc = sc + 1; }
+				else if((flg & SC_OBJ)) { _sc--; writeXml(h, offs); if(count) _sc = sc + 1; }
 				else if((flg & SC_NODE)) { Serialize* srlz((Serialize*)((ssh_b*)(this) + offs)); _sc = srlz->get_scheme(); srlz->writeXml(h, 0); _sc = sc + 1; }
 				if((flg & SC_VAR))
 				{
-					if(!sval.is_empty() && count) sval += L',';
+					if(!sval.is_empty()) sval += L',';
+					ssh_b* obj((ssh_b*)(this) + offs);
 					ssh_u val(0);
 					switch(sc->hash)
 					{
@@ -95,9 +95,8 @@ namespace ssh
 					}
 				}
 				offs += sc->width;
-				obj += sc->width;
 			}
-			if((flg & SC_VAR)) _xml->set_attr(h, sc->name, sval);
+			if((flg & SC_VAR)) _xml->set_attr(h, sc->name, ((flg & SC_BASE64) ? ssh_base64(cp_utf, sval) : sval));
 		}
 	}
 
@@ -105,29 +104,28 @@ namespace ssh
 	{
 		SCHEME* sc;
 		ssh_u _ID(_sc++->ID);
+		String sval;
 		while((sc = _sc++))
 		{
 			if(!sc->name) break;
 			ssh_u flg(sc->flags);
 			ssh_l offs(sc->offs + p_offs);
 			ssh_u count(sc->count);
-			String sval;
-			for(ssh_u i = 0; i < count; i++)
+			while(count--)
 			{
 				if(_ID)
 				{
 					// вложенный класс без своей схемы
 					if(!(flg & SC_OBJ) || sc->ID == -1) { if(sc->ID != -1) _sc--; return; }
-					if(sc->ID != _ID) { _sc--; writeBin(offs); if(i + 1 < count) _sc = sc + 1; }
+					if(sc->ID != _ID) { _sc--; writeBin(offs); if(count) _sc = sc + 1; }
 				}
-				else if((flg & SC_OBJ)) { _sc--; writeBin(offs); if(i + 1 < count) _sc = sc + 1; }
+				else if((flg & SC_OBJ)) { _sc--; writeBin(offs); if(count) _sc = sc + 1; }
 				else if((flg & SC_NODE)) { Serialize* srlz((Serialize*)((ssh_b*)(this) + offs)); _sc = srlz->get_scheme(); srlz->writeBin(0); _sc = sc + 1; }
 				if((flg & SC_VAR))
 				{
 					ssh_b* obj((ssh_b*)(this) + offs);
 					ssh_cs* _cs;
 					ssh_u len(0);
-					String sval;
 					switch(sc->hash)
 					{
 						case _hash_wcs:
@@ -161,12 +159,12 @@ namespace ssh
 			ssh_u flg(sc->flags);
 			ssh_l offs(sc->offs + p_offs);
 			ssh_l count(sc->count);
-			ssh_b* obj((ssh_b*)(this) + offs);
 			ssh_u val, pos(0);
 			ssh_ws* _ws;
 			if((flg & SC_VAR))
 			{
 				sval = _xml->attr<String>(h, sc->name, sc->def);
+				if((flg & SC_BASE64)) sval = ssh_base64(sval, true). to<ssh_ws>();
 				_ws = sval.buffer();
 			}
 			for(i = 0; i < count; i++)
@@ -174,18 +172,14 @@ namespace ssh
 				if(_ID)
 				{
 					if(!(flg & SC_OBJ) || sc->ID == -1) { if(sc->ID != -1) _sc--; return; }
-					if(sc->ID != _ID) { _sc--; readXml(h, offs, i); if(i + 1 < count) _sc = sc + 1; }
+					if(sc->ID != _ID) { _sc--; readXml(h, offs, i); if((i + 1) < count) _sc = sc + 1; }
 				}
-				else if((flg & SC_OBJ)) { _sc--; readXml(h, offs, i); if(i + 1 < count) _sc = sc + 1; }
-				else if((flg & SC_NODE))
-				{
-					Serialize* srlz((Serialize*)((ssh_b*)(this) + offs));
-					_sc = srlz->get_scheme();
-					srlz->readXml(h, 0, i); _sc = sc + 1;
-				}
+				else if((flg & SC_OBJ)) { _sc--; readXml(h, offs, i); if((i + 1) < count) _sc = sc + 1; }
+				else if((flg & SC_NODE)) { Serialize* srlz((Serialize*)((ssh_b*)(this) + offs)); _sc = srlz->get_scheme(); srlz->readXml(h, 0, i); _sc = sc + 1; }
 				if((flg & SC_VAR))
 				{
 					ssh_ws* _nws(nullptr);
+					ssh_b* obj((ssh_b*)(this) + offs);
 					if(*_ws && count > 1)
 					{
 						pos = (_ws - sval.buffer());
@@ -218,7 +212,6 @@ namespace ssh
 					else if(*_ws) pos = sval.length(), _ws = (sval.buffer() + pos);
 				}
 				offs += sc->width;
-				obj += sc->width;
 			}
 		}
 	}
@@ -233,15 +226,14 @@ namespace ssh
 			ssh_u flg(sc->flags);
 			ssh_l offs(sc->offs + p_offs);
 			ssh_l count(sc->count);
-			String sval;
-			for(ssh_l i = 0; i < count; i++)
+			while(count--)
 			{
 				if(_ID)
 				{
 					if(!(flg & SC_OBJ) || sc->ID == -1) { if(sc->ID != -1) _sc--; return; }
-					if(sc->ID != _ID) { _sc--; readBin(offs); if(i + 1 < count) _sc = sc + 1; }
+					if(sc->ID != _ID) { _sc--; readBin(offs); if(count) _sc = sc + 1; }
 				}
-				else if((flg & SC_OBJ)) { _sc--; readBin(offs); if(i + 1 < count) _sc = sc + 1; }
+				else if((flg & SC_OBJ)) { _sc--; readBin(offs); if(count) _sc = sc + 1; }
 				else if((flg & SC_NODE)) { Serialize* srlz((Serialize*)((ssh_b*)(this) + offs)); _sc = srlz->get_scheme(); srlz->readBin(0); _sc = sc + 1; }
 				if((flg & SC_VAR))
 				{

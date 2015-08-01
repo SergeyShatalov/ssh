@@ -13,10 +13,9 @@ namespace ssh
 	ssh_u SSH ssh_hash(ssh_ccs ccs);
 	ssh_u SSH ssh_hash_type(ssh_ccs nm);
 	String SSH ssh_md5(const String& str);
-	Buffer<ssh_cs> SSH ssh_to_base64(ssh_wcs charset, const String& str, bool to_str);
-	Buffer<ssh_cs> SSH ssh_to_base64(const Buffer<ssh_cs>& buf, bool to_str);
-	Buffer<ssh_cs> SSH ssh_from_base64(const String& str);
-	Buffer<ssh_cs> SSH ssh_from_base64(const Buffer<ssh_cs>& buf, bool from_str);
+	String SSH ssh_base64(ssh_wcs charset, const String& str);
+	String SSH ssh_base64(const Buffer<ssh_cs>& buf);
+	Buffer<ssh_cs> SSH ssh_base64(const String& str, bool is_null);
 	vec3 SSH ssh_vec3_mtx(const vec3& v, const mtx& m);
 	vec4 SSH ssh_vec4_mtx(const vec4& v, const mtx& m);
 	vec3 SSH ssh_mtx_vec3(const mtx& m, const vec3& v);

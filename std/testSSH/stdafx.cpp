@@ -147,17 +147,22 @@ protected:
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openBin(buf, this);
+		openXml(buf, this);
 	}
 };
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	String _b64 = L"Sergey";
+	String _1, _2 = ssh_base64(cp_utf, _b64);
+	_1 = ssh_base64(_2, false).to<ssh_ws>();
+	_2 = ssh_base64(_2, true).to<ssh_ws>();
 	ssh_u _szz = sizeof(Temp);
 	ssh_u _szz1 = sizeof(Temp2);
 	ssh_u _szz2 = sizeof(Temp3);
 	ssh_u _szz3 = sizeof(Xml);
 	ssh_u _szz4 = sizeof(File);
+
 	/*
 	String _num(L"10f00");
 	short _ii = _num;// .toNum<ssh_l>(_num, String::_dec);
@@ -171,12 +176,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		Log::LOG _log;
 		_log._out = Log::TypeOutput::Debug;
 		_lg->init(&_log);
+//		raise(SIGSEGV);
+		ssh_b* fff = 0;
+		*fff = 0;
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
 		Temp* t;
 		new(&t, L"serg") Temp();
-		t->open(L"e:\\serg+.bin");
-		t->save(L"e:\\serg++.xml", true);
+		t->open(L"e:\\serg++.xml");
+		t->save(L"e:\\serg.xml", true);
 		SSH_REL(t);
  		return 0;
 		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);

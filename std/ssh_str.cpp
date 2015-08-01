@@ -8,6 +8,7 @@
 namespace ssh
 {
 	ssh_wcs String::_empty = L"\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
 	__regx_compile regx::_compile((__regx_compile)hlp->get_procedure(L"sshREGX.dll", "regex16_compile"));
 	__regx_exec regx::_exec((__regx_exec)hlp->get_procedure(L"sshREGX.dll", "regex16_exec"));
 	__regx_free regx::_free((__regx_free)hlp->get_procedure(L"sshREGX.dll", "regex_free"));

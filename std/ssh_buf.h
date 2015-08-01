@@ -55,7 +55,7 @@ namespace ssh
 		// интерпретация содержимого буфера
 		template<typename TYPE> TYPE* to() const  { return (TYPE*)data; }
 	protected:
-		void release() { if(data && is_owner) delete[] data; data = nullptr; }
+		void release() { if(data && is_owner) delete data; data = nullptr; }
 		void move(T* p)
 		{
 			if(!is_owner) data = p;

@@ -3,6 +3,8 @@
 
 #include "ssh_list.h"
 
+typedef void(__cdecl * _ssh_signal)(int);
+
 namespace ssh
 {
 	template <typename T, ssh_u N> class MemArray
@@ -95,7 +97,7 @@ namespace ssh
 			return &mem;
 		}
 		// вернуть дамп всей используемой памяти
-		void fault();
+		bool fault(int type, ssh_wcs fn, ssh_wcs fl, int ln, EXCEPTION_POINTERS* except = nullptr, ssh_wcs msg_ex = nullptr);
 		// вернуть информацию об сеансе работы менеджера
 		void output();
 		// выделение памяти
@@ -123,6 +125,7 @@ namespace ssh
 
 		// вернуть массив не освобожденных узлов
 		void leaks();
+		int dump(ssh_ccs path, EXCEPTION_POINTERS* except);
 		// максиму выделенных
 		ssh_u max_alloc;
 		// выделено блоков

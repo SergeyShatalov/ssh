@@ -7,6 +7,10 @@ extern "C"
 	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix);
 };
 
+typedef void* (CALLBACK* __regx_compile)(ssh_wcs pattern, ssh_l options);
+typedef ssh_l(CALLBACK* __regx_exec)(const void* re, ssh_wcs subj, ssh_l len_subj, ssh_l idx, ssh_l options, ssh_l* vec, ssh_l count_vec);
+typedef ssh_l(CALLBACK* __regx_free)(void* p);
+
 namespace ssh
 {
 	template <typename T> class Range;
