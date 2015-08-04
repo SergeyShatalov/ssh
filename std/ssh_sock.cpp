@@ -272,16 +272,17 @@ namespace ssh
 
 	bool Socket::receive(SOCK* s)
 	{
-		Buffer<ssh_cs> _recv(16384);
-		ssh_u size(0);
+		Buffer<ssh_cs> _recv;
+		static ssh_cs _tmp[4096];
+		ssh_u size(0), _size(0);
 		bool is(true);
 		while(is)
 		{
-			switch((err = ((s->ssl) ? SSL_read(s->ssl, _recv + size, 4096) : recv(s->h, _recv + size, 4096, 0))))
+			switch((err = ((s->ssl) ? SSL_read(s->ssl, _tmp + _size, 1024) : recv(s->h, _tmp + _size, 1024, 0))))
 			{
 				case SOCKET_ERROR:
 					// или ждем, или ошибка, или все прин€ли
-					if(!size && is_wouldblock(s->ssl, err)) break;
+					if(!_size && is_wouldblock(s->ssl, err)) break;
 					is = false;
 					break;
 				case 0:
@@ -289,16 +290,20 @@ namespace ssh
 					break;
 				default:
 					// данные прин€ты
-					if((size + err + 4096) >= _recv.size())
+					if((_size + err + 1024) >= 4096)
 					{
-						Buffer<ssh_cs> buf(size + err + 16384);
+						Buffer<ssh_cs> buf(size + err);
 						memcpy(buf, _recv, size);
-						_recv = buf;
+						memcpy(buf + size, _tmp, _size);
+						size += _size;
+						_size = 0;
+						_recv = Buffer<ssh_cs>(buf, BUFFER_COPY | BUFFER_RESET, size);
 					}
 					size += err;
 					break;
 			}
 		}
+		// ????
 		if(size)
 		{
 			if(m_receive) m_receive(this, s, Buffer<ssh_cs>(_recv, 0, size));

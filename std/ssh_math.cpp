@@ -2,6 +2,77 @@
 #include "stdafx.h"
 #include "ssh_math.h"
 
+SSH float* ssh_vec3_mtx(const float* v, const float* m)
+{
+	__m128 _v[4];
+	_v[0] = _mm_set_ss(v[0]);
+	_v[1] = _mm_set_ss(v[1]);
+	_v[2] = _mm_set_ss(v[2]);
+	_v[3] = _mm_set_ss(1.0f);
+	for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(_mm_shuffle_ps(_v[i], _v[i], 0), *(__m128*)&m[i * 4]);
+	static __m128 ret(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]));
+	return ret.m128_f32;
+}
+
+SSH float* ssh_vec4_mtx(const float* v, const float* m)
+{
+	__m128 _v[4];
+	_v[0] = _mm_set_ss(v[0]);
+	_v[1] = _mm_set_ss(v[1]);
+	_v[2] = _mm_set_ss(v[2]);
+	_v[3] = _mm_set_ss(v[3]);
+	for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(_mm_shuffle_ps(_v[i], _v[i], 0), *(__m128*)&m[i * 4]);
+	static __m128 ret(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]));
+	return ret.m128_f32;
+}
+
+SSH float* ssh_mtx_vec3(const float* m, const float* v)
+{
+	__m128 _v[4];
+	_v[0] = _mm_set_ss(v[0]);
+	_v[1] = _mm_set_ss(v[1]);
+	_v[2] = _mm_set_ss(v[2]);
+	_v[3] = _mm_set_ss(1.0f);
+	for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(*(__m128*)&m[i * 4], _mm_shuffle_ps(_v[i], _v[i], 0));
+	static __m128 ret(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]));
+	return ret.m128_f32;
+}
+
+SSH float* ssh_mtx_vec4(const float* m, const float* v)
+{
+	__m128 _v[4];
+	_v[0] = _mm_set_ss(v[0]);
+	_v[1] = _mm_set_ss(v[1]);
+	_v[2] = _mm_set_ss(v[2]);
+	_v[3] = _mm_set_ss(v[3]);
+	for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(*(__m128*)&m[i * 4], _mm_shuffle_ps(_v[i], _v[i], 0));
+	static __m128 ret(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]));
+	return ret.m128_f32;
+}
+
+SSH float* ssh_mtx_mtx(const float* m1, const float* m2)
+{
+	static float flt[16];
+
+	__m128 _m[4];
+
+	_m[0] = _mm_set_ps(m2[0], m2[4], m2[8], m2[12]);
+	_m[1] = _mm_set_ps(m2[1], m2[5], m2[9], m2[13]);
+	_m[2] = _mm_set_ps(m2[2], m2[6], m2[10], m2[14]);
+	_m[3] = _mm_set_ps(m2[3], m2[7], m2[11], m2[15]);
+
+	for(ssh_u i = 0; i < 4; i++)
+	{
+		for(ssh_u j = 0; j < 4; j++)
+		{
+			__m128 _tmp(_mm_mul_ps(*(__m128*)&m1[i * 4], _m[j]));
+			_tmp = _mm_hadd_ps(_tmp, _tmp);
+			flt[i * 4 + j] = _mm_hadd_ps(_tmp, _tmp).m128_f32[0];
+		}
+	}
+	return flt;
+}
+
 namespace ssh
 {
 	bool sphere::intersects(const bbox& box) const

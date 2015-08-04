@@ -26,8 +26,8 @@ namespace ssh
 			except->ContextRecord = new CONTEXT;
 			except->ExceptionRecord = new EXCEPTION_RECORD;
 
-			memset(&except->ContextRecord, 0, sizeof(CONTEXT));
-			memset(&except->ExceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+			memset(except->ContextRecord, 0, sizeof(CONTEXT));
+			memset(except->ExceptionRecord, 0, sizeof(EXCEPTION_RECORD));
 
 			RtlCaptureContext(except->ContextRecord);
 		

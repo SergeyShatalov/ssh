@@ -108,73 +108,6 @@ namespace ssh
 		return begin + (tmp % ((end - begin) + 1));
 	}
 
-	vec3 SSH ssh_vec3_mtx(const vec3& v, const mtx& m)
-	{
-		__m128 _v[4];
-		_v[0] = _mm_load_ss(&v.x);
-		_v[1] = _mm_load_ss(&v.y);
-		_v[2] = _mm_load_ss(&v.z);
-		_v[3] = _mm_set_ss(1.0f);
-		for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(_mm_shuffle_ps(_v[i], _v[i], 0), m.xmm[i]);
-		return vec3(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]).m128_f32);
-	}
-
-	vec4 SSH ssh_vec4_mtx(const vec4& v, const mtx& m)
-	{
-		__m128 _v[4];
-		_v[0] = _mm_load_ss(&v.x);
-		_v[1] = _mm_load_ss(&v.y);
-		_v[2] = _mm_load_ss(&v.z);
-		_v[3] = _mm_load_ss(&v.w);
-		for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(_mm_shuffle_ps(_v[i], _v[i], 0), m.xmm[i]);
-		return vec4(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]).m128_f32);
-	}
-
-	vec3 SSH ssh_mtx_vec3(const mtx& m, const vec3& v)
-	{
-		__m128 _v[4];
-		_v[0] = _mm_load_ss(&v.x);
-		_v[1] = _mm_load_ss(&v.y);
-		_v[2] = _mm_load_ss(&v.z);
-		_v[3] = _mm_set_ss(1.0f);
-		for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(m.xmm[i], _mm_shuffle_ps(_v[i], _v[i], 0));
-		return vec3(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]).m128_f32);
-	}
-
-	vec4 SSH ssh_mtx_vec4(const mtx& m, const vec4& v)
-	{
-		__m128 _v[4];
-		_v[0] = _mm_load_ss(&v.x);
-		_v[1] = _mm_load_ss(&v.y);
-		_v[2] = _mm_load_ss(&v.z);
-		_v[3] = _mm_load_ss(&v.w);
-		for(ssh_u i = 0; i < 4; i++) _v[i] = _mm_mul_ps(m.xmm[i], _mm_shuffle_ps(_v[i], _v[i], 0));
-		return vec4(_mm_add_ps(_mm_add_ps(_mm_add_ps(_v[1], _v[2]), _v[3]), _v[4]).m128_f32);
-	}
-
-	mtx SSH ssh_mtx_mtx(const mtx& m1, const mtx& m2)
-	{
-		float flt[16];
-
-		__m128 _m[4];
-
-		_m[0] = _mm_set_ps(m2._11, m2._21, m2._31, m2._41);
-		_m[1] = _mm_set_ps(m2._12, m2._22, m2._32, m2._42);
-		_m[2] = _mm_set_ps(m2._13, m2._23, m2._33, m2._43);
-		_m[3] = _mm_set_ps(m2._14, m2._24, m2._34, m2._44);
-
-		for(ssh_u i = 0; i < 4; i++)
-		{
-			for(ssh_u j = 0; j < 4; j++)
-			{
-				__m128 _tmp(_mm_mul_ps(m1.xmm[i], _m[j]));
-				_tmp = _mm_hadd_ps(_tmp, _tmp);
-				flt[i * 4 + j] = _mm_hadd_ps(_tmp, _tmp).m128_f32[0];
-			}
-		}
-		return mtx(flt);
-	}
-
 	static ssh_ccs base64_chars("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
 	static inline bool is_base64(ssh_cs c)
@@ -270,7 +203,7 @@ namespace ssh
 	{
 		iconv_t h;
 		Buffer<ssh_cs> out(str.length() * 2 + (is_null * 2));
-		ssh_u in_c(str.length() * 2 + 2);
+		ssh_u in_c(str.length() * 2 + (is_null * 2));
 		ssh_u out_c(out.count());
 		ssh_ccs _in((ssh_ccs)str.buffer());
 		ssh_cs* _out(out);

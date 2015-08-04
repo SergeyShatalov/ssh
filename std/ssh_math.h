@@ -12,6 +12,15 @@
 
 #include "ssh_hlp.h"
 
+extern "C"
+{
+	SSH float* ssh_vec3_mtx(const float* v, const float* m);
+	SSH float* ssh_vec4_mtx(const float* v, const float* m);
+	SSH float* ssh_mtx_vec3(const float* m, const float* v);
+	SSH float* ssh_mtx_vec4(const float* m, const float* v);
+	SSH float* ssh_mtx_mtx(const float* m1, const float* m2);
+};
+
 namespace ssh
 {
 	inline long loop(long x, long y)
@@ -61,12 +70,6 @@ namespace ssh
 	class sphere;
 	class bbox;
 	class obox;
-
-	vec3 SSH ssh_vec3_mtx(const vec3& v, const mtx& m);
-	vec4 SSH ssh_vec4_mtx(const vec4& v, const mtx& m);
-	vec3 SSH ssh_mtx_vec3(const mtx& m, const vec3& v);
-	vec4 SSH ssh_mtx_vec4(const mtx& m, const vec4& v);
-	mtx SSH ssh_mtx_mtx(const mtx& m1, const mtx& m2);
 
 	class SSH vec2
 	{

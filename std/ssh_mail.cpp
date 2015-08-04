@@ -448,7 +448,7 @@ namespace ssh
 		x_ostrov.mail = L"";
 		charset = L"windows-1251";
 		sender = makeNameMail(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
-		reply_to = makeNameMail(L"", L"ostrov_skal@mail.ru");
+		reply_to = makeNameMail(sender.name, sender.mail);
 		x_msg = L"Создано Шаталовым С.В. в системе stdSSH";
 		host = L"smtp.mail.ru:465";
 		sock_flags = (Socket::OPENSSL | Socket::METHOD_SSLv23);

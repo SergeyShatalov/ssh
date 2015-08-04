@@ -9,10 +9,10 @@ namespace ssh
 	typedef ssh_d(CALLBACK* _ssh_xsstate)(ssh_d idx, XINPUT_VIBRATION* state);
 	typedef ssh_d(CALLBACK* _ssh_xcaps)(ssh_d idx, ssh_d flags, XINPUT_CAPABILITIES* caps);
 	
-	static _ssh_xenable _enable((_ssh_xenable)hlp->get_procedure(L"xinput1_3.dll", "XInputEnable", L''));
-	static _ssh_xgstate _gstate((_ssh_xgstate)hlp->get_procedure(L"xinput1_3.dll", "XInputGetState", L''));
-	static _ssh_xsstate _sstate((_ssh_xsstate)hlp->get_procedure(L"xinput1_3.dll", "XInputSetState", L''));
-	static _ssh_xcaps _caps((_ssh_xcaps)hlp->get_procedure(L"xinput1_3.dll", "XInputGetCapabilities", L''));
+	static _ssh_xenable _enable((_ssh_xenable)hlp->get_procedure(L"xinput1_3.dll", "XInputEnable", 0));
+	static _ssh_xgstate _gstate((_ssh_xgstate)hlp->get_procedure(L"xinput1_3.dll", "XInputGetState", 0));
+	static _ssh_xsstate _sstate((_ssh_xsstate)hlp->get_procedure(L"xinput1_3.dll", "XInputSetState", 0));
+	static _ssh_xcaps _caps((_ssh_xcaps)hlp->get_procedure(L"xinput1_3.dll", "XInputGetCapabilities", 0));
 
 	Gamepad::Gamepad()
 	{

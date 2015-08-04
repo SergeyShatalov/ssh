@@ -153,7 +153,10 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	float mtx[16];
+	ssh_mtx_mtx(mtx, mtx);
 	String _b64 = L"Sergey";
+	char16_t _u16[] = u"sergey";
 	String _1, _2 = ssh_base64(cp_utf, _b64);
 	_1 = ssh_base64(_2, false).to<ssh_ws>();
 	_2 = ssh_base64(_2, true).to<ssh_ws>();
@@ -176,11 +179,17 @@ int _tmain(int argc, _TCHAR* argv[])
 		Log::LOG _log;
 		_log._out = Log::TypeOutput::Debug;
 		_lg->init(&_log);
-//		raise(SIGSEGV);
-		ssh_b* fff = 0;
-		*fff = 0;
 		Singlton<Gamepad> _gp;
 		SSH_LOG(L"Привет!");
+		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
+		mail_smtp.set_charset(L"koi8-r");
+		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
+		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov-skal@yandex.ru");
+		mail_smtp.set_sender(L"Влад", L"ostrov-skal@yandex.ru");
+		mail_smtp.add_attach(L"e:\\1.jpg");
+		//mail_smtp.add_attach(L"e:\\2.jpg");
+		mail_smtp.smtp(L"Привет!", L"новое письмецо!!!");
+		return 0;
 		Temp* t;
 		new(&t, L"serg") Temp();
 		t->open(L"e:\\serg++.xml");
@@ -192,14 +201,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		mail_pop.pop3(L"X-Priority", &lst, false);
 		mail_pop.imap(L"X-Priority", &lst, false);
 		return 0;
-		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
-		mail_smtp.set_charset(L"koi8-r");
-		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
-		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov-skal@yandex.ru");
-		mail_smtp.set_sender(L"Влад", L"ostrov-skal@yandex.ru");
-		mail_smtp.add_attach(L"e:\\1.jpg");
-		mail_smtp.add_attach(L"e:\\2.jpg");
-		mail_smtp.smtp(L"Новое сообщение", L"Моё третье собственноручно отправленное письмо!!!");
 	}
 	catch(const Exception& e) { e.add(L"главная процедура!"); }
 	return 0;
