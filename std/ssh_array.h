@@ -120,15 +120,15 @@ namespace ssh
 				data = ptr;
 			}
 		}
-		// данные
-		T* data;
-		// количество элементов
-		ssh_u count;
-		// выделено элементов
-		ssh_u max_count;
-		// приращение
-		ssh_u grow;
 		// идентификатор массива
 		ssh_u ID;
+		// количество элементов
+		ssh_u count;
+		// приращение
+		ssh_u grow;
+		// данные
+		T* data;
+		// выделено элементов
+		ssh_u max_count;
 	};
 }

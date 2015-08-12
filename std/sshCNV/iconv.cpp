@@ -49,14 +49,14 @@ static struct encoding const all_encodings[] =
 
 struct stringpool2_t
 {
-	#define S(tag,name,encoding_index) wchar_t stringpool_##tag[sizeof(name)];
+	#define S(tag, name, encoding_index) wchar_t stringpool_##tag[sizeof(name)];
 	#include "aliases_dos.h"
 	#undef S
 };
 
 static const struct stringpool2_t stringpool2_contents =
 {
-	#define S(tag,name,encoding_index) name,
+	#define S(tag, name, encoding_index) name,
 	#include "aliases_dos.h"
 	#undef S
 };
@@ -65,7 +65,7 @@ static const struct stringpool2_t stringpool2_contents =
 
 static const struct alias sysdep_aliases[] =
 {
-	#define S(tag,name,encoding_index) { (int)(long)&((struct stringpool2_t*)0)->stringpool_##tag, encoding_index },
+	#define S(tag, name, encoding_index) { (int)(long long)&((struct stringpool2_t*)0)->stringpool_##tag, encoding_index },
 	#include "aliases_dos.h"
 	#undef S
 };
@@ -253,7 +253,7 @@ iconv_t LIBICONV_DLL_EXPORTED iconv_open(const wchar_t* tocode, const wchar_t* f
 	if(from_wchar != to_wchar)
 	{
 		struct wchar_conv_struct* wcd((struct wchar_conv_struct*)cd);
-		memset(&wcd->state, '\0', sizeof(mbstate_t));
+		memset(&wcd->state, '\0', sizeof(int));
 	}
 	return (iconv_t)cd;
 }

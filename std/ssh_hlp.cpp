@@ -58,7 +58,7 @@ namespace ssh
 			osVersion.Build = OSVersion.dwBuildNumber;
 		}
 
-		cpuFlags = ssh_cpu_caps();
+		cpuFlags = asm_ssh_capability();
 
 		startTime = __rdtsc();
 		Sleep(100);

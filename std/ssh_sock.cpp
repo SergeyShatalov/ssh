@@ -158,7 +158,7 @@ namespace ssh
 				// не IP-адрес, может это имя хоста?
 				if(!(HE = gethostbyname(buf)))
 					SSH_THROW(L"Не удалось определить адрес хоста сервера %S!", buf);
-				addr = *((u_long*)HE->h_addr_list[0]);
+ 				addr = *((u_long*)HE->h_addr_list[0]);
 			}
 			socks[0].addr.sin_addr.s_addr = addr;
 			fd_flags = fd_all;
@@ -273,40 +273,35 @@ namespace ssh
 	bool Socket::receive(SOCK* s)
 	{
 		Buffer<ssh_cs> _recv;
-		static ssh_cs _tmp[4096];
-		ssh_u size(0), _size(0);
-		bool is(true);
-		while(is)
+		static ssh_cs _tmp[1024];
+		ssh_u size(0);
+		int _size(0);
+		while(true)
 		{
-			switch((err = ((s->ssl) ? SSL_read(s->ssl, _tmp + _size, 1024) : recv(s->h, _tmp + _size, 1024, 0))))
+			err = (s->ssl ? SSL_read(s->ssl, _tmp + _size, 1024 - _size) : recv(s->h, _tmp + _size, 1024 - _size, 0));
+			// 1. или ошибка, или ожидаем
+			if(err == SOCKET_ERROR)
 			{
-				case SOCKET_ERROR:
-					// или ждем, или ошибка, или все приняли
-					if(!_size && is_wouldblock(s->ssl, err)) break;
-					is = false;
-					break;
-				case 0:
-					is = false;
-					break;
-				default:
-					// данные приняты
-					if((_size + err + 1024) >= 4096)
-					{
-						Buffer<ssh_cs> buf(size + err);
-						memcpy(buf, _recv, size);
-						memcpy(buf + size, _tmp, _size);
-						size += _size;
-						_size = 0;
-						_recv = Buffer<ssh_cs>(buf, BUFFER_COPY | BUFFER_RESET, size);
-					}
-					size += err;
-					break;
+				if(!_size && is_wouldblock(s->ssl, err)) continue;
+				err = 0;
 			}
+			// 2. приняли данные
+			_size += err;
+			if(_size >= 1024 || (!err && _size))
+			{
+				Buffer<ssh_cs> buf(size + _size);
+				memcpy(buf, _recv, size);
+				memcpy(buf + size, _tmp, _size);
+				size += _size;
+				_size = 0;
+				_recv = Buffer<ssh_cs>(buf, size);
+			}
+			if(!err) break;
 		}
-		// ????
+		// 3. если данные есть - сообщить клиенту
 		if(size)
 		{
-			if(m_receive) m_receive(this, s, Buffer<ssh_cs>(_recv, 0, size));
+			if(m_receive) m_receive(this, s, _recv);
 			return true;
 		}
 		return false;

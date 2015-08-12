@@ -139,7 +139,7 @@ namespace ssh
 
 	Buffer<ssh_cs> Zip::compress(const Buffer<ssh_cs>& buf)
 	{
-		Buffer<ZipDeflate> deflate(new ZipDeflate, 0, 1);
+		Buffer<ZipDeflate> deflate(1);
 		ssh_u lbuf(buf.count()), lret(lbuf * 2 + 32);
 		Buffer<ssh_cs> ret(lret);
 
@@ -149,14 +149,14 @@ namespace ssh
 		avail_in = (UINT)lbuf;
 
 		lret = deflate->make(this, ZIP_FINISH);
-		*(ssh_u*)(ssh_cs*)ret = lbuf;
-		return Buffer<ssh_cs>(ret, BUFFER_COPY, lret + sizeof(ssh_u));
+		*ret.to<ssh_u>() = lbuf;
+		return Buffer<ssh_cs>(ret, lret + sizeof(ssh_u));
 	}
 
 	Buffer<ssh_cs> Zip::decompress(const Buffer<ssh_cs>& buf)
 	{
-		Buffer<ZipInflate> inflate(new ZipInflate, 0, 1);
-		ssh_u lbuf(buf.count()), lret(*(ssh_u*)buf.to<ssh_cs>());
+		Buffer<ZipInflate> inflate(1);
+		ssh_u lbuf(buf.count()), lret(*buf.to<ssh_u>());
 		Buffer<ssh_cs> ret(lret);
 
 		avail_out = (UINT)lret;

@@ -8,7 +8,6 @@ namespace ssh
 	template <typename T> class Pts;
 	template <typename T> class Range;
 	template <typename T> class Bar;
-	template <typename T> class Hex;
 	template <typename T> class Hash;
 	template <typename T1, typename T2> class Box;
 
@@ -23,7 +22,7 @@ namespace ssh
 	public:
 		static List<Base*, SSH_SPTR>* objs()
 		{
-			static List<Base*, SSH_SPTR> obj(100);
+			static List<Base*, SSH_SPTR> obj(ID_LIST_BASE);
 			return &obj;
 		}
 		// оператор выделения памяти под объект

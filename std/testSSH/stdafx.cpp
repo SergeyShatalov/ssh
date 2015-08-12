@@ -107,7 +107,7 @@ public:
 	Temp(ssh_wcs path) { open(path); }
 	virtual void save(ssh_wcs path, bool is_xml) override
 	{
-		(is_xml ? saveXml(path, L"utf-8", this) : saveBin(path, this));
+		Serialize::save(path, this, is_xml);
 	}
 	virtual SCHEME* get_scheme() const override
 	{
@@ -133,8 +133,8 @@ public:
 			SCHEME_END(Temp);
 	}
 	double d[3];
-protected:
 	virtual ~Temp() {}
+protected:
 	ssh_wcs _wcs;
 	ssh_ccs _ccs;
 	ssh_ws _ws[10];
@@ -147,40 +147,28 @@ protected:
 	// сформировать из памяти
 	virtual void make(const Buffer<ssh_cs>& buf) override
 	{
-		openXml(buf, this);
+		Serialize::open(buf, this, true);
 	}
 };
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	float mtx[16];
-	ssh_mtx_mtx(mtx, mtx);
-	String _b64 = L"Sergey";
-	char16_t _u16[] = u"sergey";
-	String _1, _2 = ssh_base64(cp_utf, _b64);
-	_1 = ssh_base64(_2, false).to<ssh_ws>();
-	_2 = ssh_base64(_2, true).to<ssh_ws>();
-	ssh_u _szz = sizeof(Temp);
-	ssh_u _szz1 = sizeof(Temp2);
-	ssh_u _szz2 = sizeof(Temp3);
-	ssh_u _szz3 = sizeof(Xml);
-	ssh_u _szz4 = sizeof(File);
-
-	/*
-	String _num(L"10f00");
-	short _ii = _num;// .toNum<ssh_l>(_num, String::_dec);
-	float _dd = 100.123f;
-	void* pp(&_dd);
-	*/
 	Singlton<Helpers> _hlp;
+	ssh_w _ww = Half::compress(33.3f);
+	float _flt = Half::decompress(_ww);
 	Singlton<Log> _lg;
 	try
 	{
 		Log::LOG _log;
-		_log._out = Log::TypeOutput::Debug;
+		_log._out = Log::TypeOutput::File;
 		_lg->init(&_log);
 		Singlton<Gamepad> _gp;
+		SSH_LOG(L"Привет!!!!");
+		Log::LOG _log1;
+		_log1._out = Log::TypeOutput::Debug;
+		_lg->init(&_log1);
 		SSH_LOG(L"Привет!");
+		return 0;
 		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
 		mail_smtp.set_charset(L"koi8-r");
 		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
@@ -223,8 +211,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		nm = _arh->enumerate(false);
 	}
-	Buffer<ssh_b> buf(_arh->get(L"server"));
+	Buffer<ssh_cs> buf(_arh->get(L"server"));
 	//_arh->close();
 	_arh->open(L"c:\\1.arh", L"sergey");
 	return 0;
 }
+

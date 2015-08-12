@@ -9,38 +9,42 @@ namespace ssh
 	static Serialize::SCHEME* _sc(nullptr);
 	static ssh_cs* _buf(nullptr);
 
-	void Serialize::openXml(const Buffer<ssh_cs>& buf, void* srlz)
+	void Serialize::open(const Buffer<ssh_cs>& buf, void* srlz, bool is_xml)
 	{
 		SSH_TRACE;
-		Xml xml(buf);
-		_xml = &xml;
-		_sc = get_scheme();
-		readXml(_xml->root(), (ssh_b*)srlz - (ssh_b*)this);
-		SSH_LOG(L"ok");
-	}
-	void Serialize::openBin(const Buffer<ssh_cs>& buf, void* srlz)
-	{
-		SSH_TRACE;
-		_sc = get_scheme();
+		ssh_l offs((ssh_b*)srlz - (ssh_b*)this);
 		_buf = buf;
-		readBin((ssh_b*)srlz - (ssh_b*)this);
+		_sc = get_scheme();
+		if(is_xml)
+		{
+			Xml xml(buf);
+			_xml = &xml;
+			readXml(_xml->root(), offs);
+		}
+		else
+		{
+			readBin(offs);
+		}
 	}
-	void Serialize::saveXml(const String& path, ssh_wcs code, void* srlz)
+
+	void Serialize::save(const String& path, void* srlz, bool is_xml, ssh_wcs code)
 	{
 		SSH_TRACE;
-		Xml xml;
-		_xml = &xml;
+		ssh_l offs((ssh_b*)srlz - (ssh_b*)this);
 		_sc = get_scheme();
-		writeXml(_xml->root(), (ssh_b*)srlz - (ssh_b*)this);
-		_xml->save(path, code);
-	}
-	void Serialize::saveBin(const String& path, void* srlz)
-	{
-		SSH_TRACE;
-		File f(path, File::create_write);
-		_fl = &f;
-		_sc = get_scheme();
-		writeBin((ssh_b*)srlz - (ssh_b*)this);
+		if(is_xml)
+		{
+			Xml xml;
+			_xml = &xml;
+			writeXml(_xml->root(), offs);
+			_xml->save(path, code);
+		}
+		else
+		{
+			File f(path, File::create_write);
+			_fl = &f;
+			writeBin(offs);
+		}
 	}
 
 	void Serialize::writeXml(HXML hp, ssh_l p_offs)

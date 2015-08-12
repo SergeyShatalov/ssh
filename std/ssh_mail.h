@@ -82,10 +82,10 @@ namespace ssh
 		};
 		enum CommandFlags
 		{
-			no_send		= 0x01,
-			cont_resp	= 0x02,
-			add_crlf	= 0x04,
-			no_resp		= 0x08
+			no_send = 0x01,
+			cont_resp = 0x02,
+			add_crlf = 0x04,
+			no_resp = 0x08
 		};
 		enum SecurityType
 		{
@@ -106,7 +106,6 @@ namespace ssh
 		};
 		struct MAIL
 		{
-			MAIL() { attached.setID(310); }
 			struct ATTACH
 			{
 				String name;
@@ -121,7 +120,7 @@ namespace ssh
 			String body;
 			String body_type;
 			String xcmd;
-			List<ATTACH*> attached;
+			List<ATTACH*> attached{ID_ATTACH_STK_MAIL};
 		};
 		// конструктор
 		Mail();
@@ -214,9 +213,9 @@ namespace ssh
 		// кодировка
 		String charset;
 		// список прикрепленных файлов
-		List<String, SSH_TYPE> attach;
+		List<String, SSH_TYPE> attach{ID_ATTACH_MAIL};
 		// список адресатов
-		List<MAIL_NAME, SSH_TYPE> recipients;
+		List<MAIL_NAME, SSH_TYPE> recipients{ID_RECIPIENTS_MAIL};
 		// тип протокола
 		int protocol;
 		// возможности

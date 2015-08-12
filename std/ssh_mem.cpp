@@ -20,19 +20,24 @@ namespace ssh
 
 	bool MemMgr::fault(int type, ssh_wcs fn, ssh_wcs fl, int ln, EXCEPTION_POINTERS* except, ssh_wcs msg_ex)
 	{
-		if(!except)
+		//if(!except)
 		{
+			CONTEXT ContextRecord;
+			EXCEPTION_RECORD ExceptionRecord;
+			memset(&ContextRecord, 0, sizeof(CONTEXT));
+			memset(&ExceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+
+			RtlCaptureContext(&ContextRecord);
+
+			ExceptionRecord.ExceptionCode = 0;
+			ExceptionRecord.ExceptionAddress = _ReturnAddress();
+
 			except = new EXCEPTION_POINTERS;
 			except->ContextRecord = new CONTEXT;
 			except->ExceptionRecord = new EXCEPTION_RECORD;
 
-			memset(except->ContextRecord, 0, sizeof(CONTEXT));
-			memset(except->ExceptionRecord, 0, sizeof(EXCEPTION_RECORD));
-
-			RtlCaptureContext(except->ContextRecord);
-		
-			except->ExceptionRecord->ExceptionCode = 0;
-			except->ExceptionRecord->ExceptionAddress = _ReturnAddress();
+			memcpy(except->ContextRecord, &ContextRecord, sizeof(CONTEXT));
+			memcpy(except->ExceptionRecord, &ExceptionRecord, sizeof(EXCEPTION_RECORD));
 		}
 		String msg(L"\r\nКонтекст на момент возбуждения исключения: \r'n");
 		String caption;
@@ -54,12 +59,12 @@ namespace ssh
 		}
 		if(except)
 		{
-			msg.fmt(L"\r\nадрес: %016I64X flags: %08X rip: %016I64X\r\n"
+			msg.fmt(L"\r\nадрес: %016I64X flags: %08X\r\n"
 					L"rax: %016I64X rcx: %016I64X rdx: %016I64X rbx: %016I64X rbp: %016I64X rsp: %016I64X rsi: %016I64X rdi: %016I64X\r\n"
 					L"r8: %016I64X r9: %016I64X r10: %016I64X r11: %016I64X r12: %016I64X r13: %016I64X r14: %016I64X r15: %016I64X\r\n"
 					L"xmm0: %016I64X%016I64X xmm1: %016I64X%016I64X xmm2: %016I64X%016I64X xmm3: %016I64X%016I64X xmm4: %016I64X%016I64X xmm5: %016I64X%016I64X xmm6: %016I64X%016I64X xmm7: %016I64X%016I64X\r\n"
 					L"xmm8: %016I64X%016I64X xmm9: %016I64X%016I64X xmm10: %016I64X%016I64X xmm11: %016I64X%016I64X xmm12: %016I64X%016I64X xmm13: %016I64X%016I64X xmm14: %016I64X%016I64X xmm15: %016I64X%016I64X",
-					except->ExceptionRecord->ExceptionAddress, except->ContextRecord->EFlags, except->ContextRecord->Rip,
+					except->ExceptionRecord->ExceptionAddress, except->ContextRecord->EFlags,
 					except->ContextRecord->Rax, except->ContextRecord->Rcx, except->ContextRecord->Rdx, except->ContextRecord->Rbx,
 					except->ContextRecord->Rbp, except->ContextRecord->Rsp, except->ContextRecord->Rsi, except->ContextRecord->Rdi,
 					except->ContextRecord->R8, except->ContextRecord->R9, except->ContextRecord->R10, except->ContextRecord->R11,
@@ -115,7 +120,7 @@ namespace ssh
 	{
 		Section cs;
 		
-		ssh_b* p((ssh_b*)_aligned_malloc(sz + sizeof(NodeMem*), 16));
+		ssh_b* p((ssh_b*)::malloc(sz + sizeof(NodeMem*)));
 		if(!is_disabled)
 		{
 			is_disabled = true;
@@ -142,6 +147,7 @@ namespace ssh
 		auto nd(*(NodeMem**)p);
 		if(nd)
 		{
+			memset(p, 0xaa, nd->sz);
 			is_disabled = true;
 			count_alloc--;
 			total_free += nd->sz;
@@ -157,6 +163,6 @@ namespace ssh
 			is_disabled = false;
 		}
 		// освобождаем память
-		_aligned_free(p);
+		::free(p);
 	}
 }

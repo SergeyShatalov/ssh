@@ -75,6 +75,47 @@ SSH float* ssh_mtx_mtx(const float* m1, const float* m2)
 
 namespace ssh
 {
+	ssh_w Half::compress(float value)
+	{
+		if(hlp->is_cpu_caps(Helpers::SUPPORTS_HALF))
+			return _mm_cvtps_ph(_mm_set_ss(value), 0b00000000).m128i_u16[0];
+		Bits v, s;
+		v.f = value;
+		unsigned long sign = v.si & signN;
+		v.si ^= sign;
+		sign >>= shiftSign; // logical shift
+		s.si = mulN;
+		s.si = (long)(s.f * v.f); // correct subnormals
+		v.si ^= (s.si ^ v.si) & -(minN > v.si);
+		v.si ^= (infN ^ v.si) & -((infN > v.si) & (v.si > maxN));
+		v.si ^= (nanN ^ v.si) & -((nanN > v.si) & (v.si > infN));
+		v.ui >>= shift; // logical shift
+		v.si ^= ((v.si - maxD) ^ v.si) & -(v.si > maxC);
+		v.si ^= ((v.si - minD) ^ v.si) & -(v.si > subC);
+		return (ssh_w)(v.ui | sign);
+	}
+
+	float Half::decompress(ssh_w value)
+	{
+		if(hlp->is_cpu_caps(Helpers::SUPPORTS_HALF))
+			return _mm_cvtph_ps(_mm_set1_epi16(value)).m128_f32[0];
+		Bits v;
+		v.ui = value;
+		long sign = v.si & signC;
+		v.si ^= sign;
+		sign <<= shiftSign;
+		v.si ^= ((v.si + minD) ^ v.si) & -(v.si > subC);
+		v.si ^= ((v.si + maxD) ^ v.si) & -(v.si > maxC);
+		Bits s;
+		s.si = mulC;
+		s.f *= v.si;
+		long mask = -(norC > v.si);
+		v.si <<= shift;
+		v.si ^= (s.si ^ v.si) & mask;
+		v.si |= sign;
+		return v.f;
+	}
+
 	bool sphere::intersects(const bbox& box) const
 	{
 		const vec3& mnn(box.minimum());

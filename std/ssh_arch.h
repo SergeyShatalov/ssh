@@ -86,7 +86,7 @@ namespace ssh
 		// индекс для синглтона
 	protected:
 		// конструктор по умолчанию
-		Archive() { resources.setID(400); }
+		Archive() {}
 		// деструктор
 		virtual ~Archive() { close(); }
 		// возвращает ресурс из архива(по его имени)
@@ -96,7 +96,7 @@ namespace ssh
 		// файл ресурса
 		File file;
 		// дерево ресурсов
-		List<RESOURCE, SSH_TYPE> resources;
+		List<RESOURCE, SSH_TYPE> resources{ID_RESOURCES_ARCHIVE};
 		// заголовок архива
 		ARCHIVE caption;
 		// индекс синглтона

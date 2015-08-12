@@ -123,11 +123,11 @@ namespace ssh
 			clear();
 		}
 	protected:
+		// идентификатор
+		ssh_u ID;
 		// корень
 		Node* nroot;
 		// последний
 		Node* nlast;
-		// идентификатор
-		ssh_u ID;
 	};
 }

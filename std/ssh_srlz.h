@@ -56,10 +56,8 @@ namespace ssh
 		Serialize() {}
 		virtual ~Serialize() {}
 		virtual SCHEME* get_scheme() const = 0;
-		void openXml(const Buffer<ssh_cs>& buf, void* srlz);
-		void openBin(const Buffer<ssh_cs>& buf, void* srlz);
-		void saveXml(const String& path, ssh_wcs code, void* srlz);
-		void saveBin(const String& path, void* srlz);
+		virtual void open(const Buffer<ssh_cs>& buf, void* srlz, bool is_xml);
+		virtual void save(const String& path, void* srlz, bool is_xml, ssh_wcs code_xml = L"utf-8");
 	protected:
 		virtual void readXml(HXML hp, ssh_l p_offs, ssh_l idx = 0);
 		virtual void writeXml(HXML h, ssh_l p_offs);

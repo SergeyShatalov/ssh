@@ -33,11 +33,11 @@ namespace ssh
 		// конструкторы
 		String() { init(); }
 		String(String&& str) { buf = str.buf; str.init(); }
-		String(ssh_wcs wcs, ssh_u len = -1);
+		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); } }
 		String(ssh_ccs ccs, ssh_u len = -1);
 		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
 		String(const String& str) { init(); *this = str; }
-		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep)) _wcsset(buf, ws); }
+		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep)) { _wcsset(buf, ws); update(); } }
 		template <typename T> String(T v, Radix r) { init(); fromNum(v, r); }
 		// деструктор
 		~String() { empty(); }
@@ -59,8 +59,8 @@ namespace ssh
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
 		// операторы сравнения
 		friend bool operator == (const String& str1, const String& str2) { return (str1.hash() == str2.hash()); }
-		friend bool operator == (const String& str, ssh_wcs wcs) { return (SSH_STRCMP(str, wcs) == 0); }
-		friend bool operator == (ssh_wcs wcs, const String& str) { return (SSH_STRCMP(wcs, str) == 0); }
+		friend bool operator == (const String& str, ssh_wcs wcs) { return (wcs ? (SSH_STRCMP(str, wcs) == 0) : false); }
+		friend bool operator == (ssh_wcs wcs, const String& str) { return (wcs ? (SSH_STRCMP(wcs, str) == 0) : false); }
 		friend bool operator != (const String& str1, const String& str2) { return !(operator == (str1, str2)); }
 		friend bool operator != (const String& str, ssh_wcs wcs) { return !(operator == (str, wcs)); }
 		friend bool operator != (ssh_wcs wcs, const String& str) { return !(operator == (wcs, str)); }
@@ -69,18 +69,19 @@ namespace ssh
 		const String& operator = (const Buffer<ssh_cs>& buf);
 		const String& operator = (String&& str) { empty(); buf = str.buf; str.init(); return *this; }
 		const String& operator = (ssh_ws ws) { return make((ssh_wcs)&ws, 1); }
-		const String& operator = (ssh_wcs wcs) { return (wcs ? make(wcs, SSH_STRLEN(wcs)) : *this); }
+		const String& operator = (ssh_wcs wcs) { return make(wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// операторы контакенции
 		const String& operator += (const String& str) { return add(str, str.length()); }
 		const String& operator += (ssh_ws ws) { return add((ssh_wcs)&ws, 1); }
 		const String& operator += (ssh_wcs wcs) { return (wcs ? add(wcs, SSH_STRLEN(wcs)) : *this); }
 		// дружественные операторы
 		friend String operator + (ssh_ws ws, const String& str) { return String::add((ssh_wcs)&ws, 1, str, str.length()); }
-		friend String operator + (ssh_wcs wcs, const String& str) { return String::add(wcs, SSH_STRLEN(wcs), str, str.length()); }
+		friend String operator + (ssh_wcs wcs, const String& str) { return String::add(wcs, wcs ? SSH_STRLEN(wcs) : 0, str, str.length()); }
 		friend String operator + (const String& str1, const String& str2) { return String::add(str1, str1.length(), str2, str2.length()); }
 		friend String operator + (const String& str, ssh_ws ws) { return String::add(str, str.length(), (ssh_wcs)&ws, 1); }
-		friend String operator + (const String& str, ssh_wcs wcs) { return String::add(str, str.length(), wcs, SSH_STRLEN(wcs)); }
+		friend String operator + (const String& str, ssh_wcs wcs) { return String::add(str, str.length(), wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// методы
+		void update() { data()->update(); }
 		ssh_ws* buffer() const { return buf; }
 		ssh_u length() const { return data()->len; }
 		ssh_ws get(ssh_u idx) const { return (idx >= length() ? L'0' : buf[idx]); }

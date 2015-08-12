@@ -82,8 +82,6 @@ namespace ssh
 	Mail::Mail()
 	{
 		SSH_TRACE;
-		recipients.setID(205);
-		attach.setID(206);
 		rx.set_pattern(0, LR"(^[a-z0-9\._-]+@[a-z0-9\._-]+\.[a-z]{2,4}$)");
 		rx.set_pattern(1, LR"((?m)^\d{3,3}[-|=|\s|\r\n])");
 		rx.set_pattern(2, LR"((?m)Date:[,\D]*(\d{1,2})\s+(\w\w\w\s)\s*([\d]+)\s+(\d{1,2}):(\d{1,2}):(\d{1,2}))");
@@ -448,7 +446,8 @@ namespace ssh
 		x_ostrov.mail = L"";
 		charset = L"windows-1251";
 		sender = makeNameMail(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
-		reply_to = makeNameMail(sender.name, sender.mail);
+		reply_to.name = sender.name;
+		reply_to.mail = sender.mail;
 		x_msg = L"Создано Шаталовым С.В. в системе stdSSH";
 		host = L"smtp.mail.ru:465";
 		sock_flags = (Socket::OPENSSL | Socket::METHOD_SSLv23);

@@ -162,9 +162,9 @@ namespace ssh
 			else if(!root) root = n;
 			return n;
 		}
-		// корень
-		Node* root;
 		// идентификатор
 		ssh_u ID;
+		// корень
+		Node* root;
 	};
 }

@@ -158,15 +158,15 @@ namespace ssh
 		// прием данных
 		virtual bool receive(SOCK* s);
 		// контекст SSL
-		SSL_CTX* sslCtx;
+		SSL_CTX* sslCtx = nullptr;
 		// feedы select
 		fd_set fds;
 		// клиенты серверка
 		SOCK socks[32];
 		// статус сокета
-		int status;
+		int status = 0;
 		// хэндл потока сокета
-		HANDLE hThread;
+		HANDLE hThread = 0;
 		// структура проверки сертификата
 		VERIFY_CERT verify;
 		// структура инициализации библиотеки сокетов
@@ -176,10 +176,10 @@ namespace ssh
 		// пароль к SSL сертификату
 		String ssl_pwd_cert;
 		// флаги инициализации сокета
-		ssh_u flags;
+		ssh_u flags = 0;
 		// пользовательские данные
-		void* user_data;
+		void* user_data = nullptr;
 		// признак пропуска записи и ошибок
-		int fd_flags;
+		int fd_flags = 0;
 	};
 }

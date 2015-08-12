@@ -686,752 +686,752 @@ static const struct alias aliases[] =
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str11, ei_iso646_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str11, ei_iso646_cn},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str15, ei_hp_roman8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str15, ei_hp_roman8},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str17, ei_cp866},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str17, ei_cp866},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str25, ei_cp862},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str25, ei_cp862},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str26, ei_johab},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str26, ei_johab},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str27, ei_cp866},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str27, ei_cp866},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str28, ei_cp1251},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str28, ei_cp1251},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str30, ei_cp1256},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str30, ei_cp1256},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str32, ei_cp1255},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str32, ei_cp1255},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str33, ei_cp1133},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str33, ei_cp1133},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str34, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str34, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str35, ei_cp862},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str35, ei_cp862},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str36, ei_cp1253},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str36, ei_cp1253},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str37, ei_local_char},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str37, ei_local_char},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str38, ei_cp1252},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str38, ei_cp1252},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str39, ei_ces_gbk},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str39, ei_ces_gbk},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str40, ei_cp1258},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str40, ei_cp1258},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str42, ei_c99},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str42, ei_c99},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str47, ei_cp932},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str47, ei_cp932},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str49, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str49, ei_ascii},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str54, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str54, ei_iso8859_1},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str56, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str56, ei_tis620},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str58, ei_isoir165},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str58, ei_isoir165},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str60, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str60, ei_iso8859_7},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str64, ei_gb2312},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str64, ei_gb2312},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str65, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str65, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str66, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str66, ei_iso8859_1},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str68, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str68, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str69, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str69, ei_iso8859_8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str70, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str70, ei_iso8859_5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str71, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str71, ei_iso8859_16},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str73, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str73, ei_iso8859_15},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str74, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str74, ei_iso8859_3},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str76, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str76, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str77, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str77, ei_iso8859_13},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str78, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str78, ei_iso8859_8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str79, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str79, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str80, ei_euc_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str80, ei_euc_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str81, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str81, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str82, ei_euc_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str82, ei_euc_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str83, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str83, ei_iso8859_5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str84, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str84, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str85, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str85, ei_jisx0212},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str86, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str86, ei_iso8859_15},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str87, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str87, ei_iso8859_3},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str89, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str89, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str90, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str90, ei_iso8859_13},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str91, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str91, ei_iso8859_8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str92, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str92, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str93, ei_cp850},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str93, ei_cp850},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str95, ei_euc_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str95, ei_euc_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str96, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str96, ei_iso8859_9},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str98, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str98, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str99, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str99, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str100, ei_iso646_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str100, ei_iso646_cn},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str104, ei_cp850},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str104, ei_cp850},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str105, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str105, ei_iso8859_15},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str106, ei_cp1250},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str106, ei_cp1250},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str107, ei_hz},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str107, ei_hz},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str109, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str109, ei_iso8859_9},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str113, ei_cp950},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str113, ei_cp950},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str114, ei_iso2022_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str114, ei_iso2022_cn},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str116, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str116, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str117, ei_cp949},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str117, ei_cp949},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str118, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str118, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str119, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str119, ei_iso8859_9},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str120, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str120, ei_iso8859_5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str121, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str121, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str122, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str122, ei_iso8859_3},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str123, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str123, ei_iso8859_15},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str124, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str124, ei_iso8859_3},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str125, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str125, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str126, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str126, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str127, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str127, ei_iso8859_13},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str128, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str128, ei_iso8859_8},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str131, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str131, ei_iso8859_4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str132, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str132, ei_iso8859_15},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str134, ei_iso2022_cn_ext},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str134, ei_iso2022_cn_ext},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str136, ei_cp1254},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str136, ei_cp1254},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str137, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str137, ei_ksc5601},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str139, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str139, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str140, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str140, ei_iso8859_10},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str141, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str141, ei_iso8859_9},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str143, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str143, ei_iso8859_3},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str144, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str144, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str145, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str145, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str146, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str146, ei_iso8859_9},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str147, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str147, ei_iso8859_10},
 	{-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str153, ei_iso2022_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str153, ei_iso2022_cn},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str155, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str155, ei_iso8859_13},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str156, ei_cp949},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str156, ei_cp949},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str158, ei_iso646_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str158, ei_iso646_jp},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str160, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str160, ei_iso8859_10},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str167, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str167, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str168, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str168, ei_iso8859_10},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str170, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str170, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str171, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str171, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str172, ei_cp1257},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str172, ei_cp1257},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str173, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str173, ei_iso8859_10},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str174, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str174, ei_iso8859_4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str175, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str175, ei_iso8859_9},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str176, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str176, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str177, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str177, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str178, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str178, ei_iso8859_7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str179, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str179, ei_iso8859_3},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str180, ei_sjis},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str180, ei_sjis},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str181, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str181, ei_iso8859_2},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str183, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str183, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str184, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str184, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str185, ei_georgian_academy},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str185, ei_georgian_academy},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str186, ei_mac_roman},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str186, ei_mac_roman},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str187, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str187, ei_iso8859_4},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str189, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str189, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str190, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str190, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str191, ei_gb18030},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str191, ei_gb18030},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str192, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str192, ei_jisx0212},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str193, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str193, ei_iso8859_4},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str196, ei_iso646_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str196, ei_iso646_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str197, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str197, ei_iso8859_10},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str198, ei_cp866},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str198, ei_cp866},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str199, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str199, ei_iso8859_10},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str200, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str200, ei_jisx0208},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str202, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str202, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str203, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str203, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str204, ei_cp874},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str204, ei_cp874},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str206, ei_cp862},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str206, ei_cp862},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str207, ei_ces_gbk},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str207, ei_ces_gbk},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str210, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str210, ei_iso8859_7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str211, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str211, ei_iso8859_13},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str214, ei_iso8859_15},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str214, ei_iso8859_15},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str215, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str215, ei_iso8859_5},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str220, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str220, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str221, ei_jisx0201},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str221, ei_jisx0201},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str222, ei_hp_roman8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str222, ei_hp_roman8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str223, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str223, ei_iso8859_7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str224, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str224, ei_iso8859_4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str225, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str225, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str226, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str226, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str227, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str227, ei_iso8859_14},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str228, ei_gb2312},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str228, ei_gb2312},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str229, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str229, ei_ces_big5},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str231, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str231, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str232, ei_ucs2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str232, ei_ucs2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str233, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str233, ei_jisx0208},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str238, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str238, ei_ces_big5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str239, ei_koi8_r},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str239, ei_koi8_r},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str241, ei_iso646_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str241, ei_iso646_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str242, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str242, ei_ces_big5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str243, ei_koi8_r},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str243, ei_koi8_r},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str244, ei_cp1133},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str244, ei_cp1133},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str249, ei_iso646_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str249, ei_iso646_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str250, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str250, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str251, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str251, ei_ces_big5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str252, ei_iso8859_16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str252, ei_iso8859_16},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str253, ei_gb2312},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str253, ei_gb2312},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str255, ei_ucs2be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str255, ei_ucs2be},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str257, ei_iso8859_14},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str257, ei_iso8859_14},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str259, ei_euc_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str259, ei_euc_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str260, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str260, ei_iso8859_7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str261, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str261, ei_iso8859_1},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str263, ei_iso8859_10},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str263, ei_iso8859_10},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str265, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str265, ei_iso8859_9},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str266, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str266, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str267, ei_mac_croatian},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str267, ei_mac_croatian},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str269, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str269, ei_iso8859_3},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str270, ei_ucs2be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str270, ei_ucs2be},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str271, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str271, ei_iso8859_2},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str273, ei_koi8_t},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str273, ei_koi8_t},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str274, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str274, ei_iso8859_5},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str275, ei_cp850},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str275, ei_cp850},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str276, ei_cp1252},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str276, ei_cp1252},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str278, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str278, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str279, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str279, ei_iso8859_4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str280, ei_georgian_ps},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str280, ei_georgian_ps},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str284, ei_euc_kr},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str284, ei_euc_kr},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str285, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str285, ei_iso8859_6},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str290, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str290, ei_iso8859_7},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str292, ei_utf16},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str292, ei_utf16},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str295, ei_armscii_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str295, ei_armscii_8},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str297, ei_euc_kr},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str297, ei_euc_kr},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str298, ei_ucs2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str298, ei_ucs2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str299, ei_utf8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str299, ei_utf8},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str301, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str301, ei_ksc5601},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str302, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str302, ei_iso8859_5},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str304, ei_utf32},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str304, ei_utf32},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str305, ei_tis620},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str305, ei_tis620},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str306, ei_ucs2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str306, ei_ucs2},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str310, ei_iso8859_5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str310, ei_iso8859_5},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str312, ei_iso8859_3},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str312, ei_iso8859_3},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str314, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str314, ei_iso8859_8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str315, ei_iso8859_13},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str315, ei_iso8859_13},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str316, ei_iso2022_kr},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str316, ei_iso2022_kr},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str319, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str319, ei_ksc5601},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str327, ei_mac_thai},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str327, ei_mac_thai},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str329, ei_ucs4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str329, ei_ucs4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str330, ei_ucs4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str330, ei_ucs4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str331, ei_utf7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str331, ei_utf7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str332, ei_iso8859_9},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str332, ei_iso8859_9},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str333, ei_isoir165},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str333, ei_isoir165},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str336, ei_euc_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str336, ei_euc_jp},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str338, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str338, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str339, ei_hp_roman8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str339, ei_hp_roman8},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str344, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str344, ei_iso8859_6},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str346, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str346, ei_ascii},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str347, ei_ucs4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str347, ei_ucs4},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str348, ei_utf7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str348, ei_utf7},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str349, ei_euc_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str349, ei_euc_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str350, ei_local_wchar_t},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str350, ei_local_wchar_t},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str351, ei_euc_tw},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str351, ei_euc_tw},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str352, ei_iso2022_jp1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str352, ei_iso2022_jp1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str353, ei_hp_roman8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str353, ei_hp_roman8},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str354, ei_iso646_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str354, ei_iso646_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str355, ei_iso2022_kr},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str355, ei_iso2022_kr},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str356, ei_tcvn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str356, ei_tcvn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str357, ei_iso2022_jp2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str357, ei_iso2022_jp2},
 	{-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str362, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str362, ei_iso8859_4},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str364, ei_euc_tw},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str364, ei_euc_tw},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str365, ei_gb2312},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str365, ei_gb2312},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str367, ei_cp1250},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str367, ei_cp1250},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str368, ei_iso2022_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str368, ei_iso2022_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str369, ei_iso8859_4},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str369, ei_iso8859_4},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str372, ei_cp862},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str372, ei_cp862},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str373, ei_nextstep},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str373, ei_nextstep},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str374, ei_iso8859_1},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str374, ei_iso8859_1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str375, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str375, ei_iso8859_6},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str377, ei_cp866},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str377, ei_cp866},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str379, ei_iso8859_2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str379, ei_iso8859_2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str380, ei_hz},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str380, ei_hz},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str383, ei_cp1251},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str383, ei_cp1251},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str384, ei_cp1256},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str384, ei_cp1256},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str385, ei_cp1255},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str385, ei_cp1255},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str386, ei_iso8859_6},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str386, ei_iso8859_6},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str387, ei_cp1253},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str387, ei_cp1253},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str388, ei_cp1252},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str388, ei_cp1252},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str389, ei_cp1258},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str389, ei_cp1258},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str390, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str390, ei_iso8859_7},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str392, ei_mac_roman},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str392, ei_mac_roman},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str393, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str393, ei_jisx0208},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str395, ei_iso2022_jp2},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str395, ei_iso2022_jp2},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str396, ei_ces_gbk},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str396, ei_ces_gbk},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str397, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str397, ei_jisx0208},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str399, ei_viscii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str399, ei_viscii},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str402, ei_iso646_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str402, ei_iso646_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str403, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str403, ei_ksc5601},
 	{-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str407, ei_iso2022_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str407, ei_iso2022_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str408, ei_viscii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str408, ei_viscii},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str411, ei_euc_cn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str411, ei_euc_cn},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str412, ei_mac_arabic},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str412, ei_mac_arabic},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str422, ei_cp1250},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str422, ei_cp1250},
 	{-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str428, ei_mac_romania},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str428, ei_mac_romania},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str429, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str429, ei_ksc5601},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str430, ei_iso646_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str430, ei_iso646_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str431, ei_utf7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str431, ei_utf7},
 	{-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str434, ei_euc_kr},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str434, ei_euc_kr},
 	{-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str436, ei_iso646_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str436, ei_iso646_jp},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str437, ei_cp1254},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str437, ei_cp1254},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str438, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str438, ei_jisx0212},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str446, ei_iso8859_7},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str447, ei_mac_iceland},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str446, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str447, ei_mac_iceland},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str455, ei_cp1257},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str455, ei_cp1257},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str458, ei_ces_gbk},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str458, ei_ces_gbk},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str460, ei_ksc5601},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str461, ei_tcvn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str460, ei_ksc5601},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str461, ei_tcvn},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str463, ei_tcvn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str463, ei_tcvn},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str471, ei_ucs2internal},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str471, ei_ucs2internal},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str473, ei_mac_roman},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str473, ei_mac_roman},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str478, ei_ucs2le},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str478, ei_ucs2le},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str480, ei_ucs2le},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str480, ei_ucs2le},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str483, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str483, ei_ascii},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str485, ei_cp1251},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str485, ei_cp1251},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str488, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str488, ei_ascii},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str493, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str493, ei_iso8859_8},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str496, ei_mac_cyrillic},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str496, ei_mac_cyrillic},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str498, ei_mac_roman},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str498, ei_mac_roman},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str501, ei_euc_tw},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str501, ei_euc_tw},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str503, ei_ucs2be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str503, ei_ucs2be},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str510, ei_ucs2swapped},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str511, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str510, ei_ucs2swapped},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str511, ei_iso8859_7},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str517, ei_ucs2be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str517, ei_ucs2be},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str519, ei_koi8_u},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str520, ei_ucs4internal},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str521, ei_viscii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str519, ei_koi8_u},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str520, ei_ucs4internal},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str521, ei_viscii},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str525, ei_koi8_ru},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str525, ei_koi8_ru},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str529, ei_ucs4le},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str529, ei_ucs4le},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str533, ei_cp1255},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str533, ei_cp1255},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str537, ei_euc_jp},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str537, ei_euc_jp},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str544, ei_utf16le},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str544, ei_utf16le},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str547, ei_mulelao},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str547, ei_mulelao},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str552, ei_utf32le},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str552, ei_utf32le},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str558, ei_mac_centraleurope},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str559, ei_ucs4swapped},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str558, ei_mac_centraleurope},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str559, ei_ucs4swapped},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str561, ei_cp874},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str561, ei_cp874},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str563, ei_ascii},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str563, ei_ascii},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str566, ei_ucs4be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str566, ei_ucs4be},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str569, ei_sjis},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str569, ei_sjis},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str571, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str571, ei_jisx0212},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str577, ei_cp1256},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str578, ei_iso8859_7},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str577, ei_cp1256},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str578, ei_iso8859_7},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str581, ei_utf16be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str581, ei_utf16be},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str587, ei_jisx0201},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str587, ei_jisx0201},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str589, ei_utf32be},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str589, ei_utf32be},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str591, ei_java},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str591, ei_java},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str600, ei_jisx0201},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str600, ei_jisx0201},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str604, ei_iso8859_8},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str604, ei_iso8859_8},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str606, ei_sjis},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str606, ei_sjis},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str612, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str612, ei_jisx0208},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str623, ei_jisx0208},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str624, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str623, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str624, ei_jisx0212},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str629, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str629, ei_jisx0208},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str651, ei_tcvn},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str651, ei_tcvn},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str663, ei_sjis},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str664, ei_jisx0208},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str663, ei_sjis},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str664, ei_jisx0208},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str683, ei_mac_ukraine},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str683, ei_mac_ukraine},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str688, ei_sjis},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str689, ei_jisx0201},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str688, ei_sjis},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str689, ei_jisx0201},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str694, ei_johab},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str694, ei_johab},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str708, ei_cp850},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str708, ei_cp850},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str713, ei_jisx0212},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str714, ei_big5hkscs},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str713, ei_jisx0212},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str714, ei_big5hkscs},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str727, ei_big5hkscs},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str727, ei_big5hkscs},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str764, ei_mac_greek},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str764, ei_mac_greek},
 	{-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str770, ei_cp1254},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str771, ei_cp1253},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str770, ei_cp1254},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str771, ei_cp1253},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str791, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str791, ei_ces_big5},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str804, ei_ces_big5},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str804, ei_ces_big5},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str821, ei_mac_turkish},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str821, ei_mac_turkish},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 	{-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str843, ei_cp1257},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str844, ei_mac_hebrew},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str843, ei_cp1257},
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str844, ei_mac_hebrew},
 	{-1}, {-1}, {-1}, {-1},
-	{(int)(long)&((struct stringpool_t *)0)->stringpool_str849, ei_euc_jp}
+	{(int)(long long)&((struct stringpool_t *)0)->stringpool_str849, ei_euc_jp}
 };

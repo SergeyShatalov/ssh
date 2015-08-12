@@ -173,13 +173,14 @@ namespace ssh
 		StackTrace* get_tracer() { return &tracer; }
 	protected:
 		// конструктор
-		Log() {}
+		Log() : hEventSocket(0) {}
 		// деструктор
 		virtual ~Log() { close(); }
+		void shutdown();
 		// отправка сообщения серверу
 		void sendSocket(const String& msg);
 		// применение шаблона к сообщению
-		String apply_template(ssh_wcs fn, ssh_wcs fl, int ln, int tp, ssh_wcs msg, String templ) const;
+		String apply_template(ssh_wcs fn, ssh_wcs fl, int ln, int tp, ssh_wcs msg, ssh_wcs templ) const;
 		// закрыть
 		virtual void close();
 		// отправить почту

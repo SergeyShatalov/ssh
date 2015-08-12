@@ -154,9 +154,9 @@ namespace ssh
 			while(n) {if(n->key == key) return n; if(p) *p = n; n = n->next;}
 			return nullptr;
 		}
-		// корневой элемент
-		Node* cells;
 		// идентификатор
 		ssh_u ID;
+		// корневой элемент
+		Node* cells;
 	};
 }

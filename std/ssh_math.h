@@ -854,43 +854,8 @@ namespace ssh
 		static long const minD = minC - subC - 1;
 
 	public:
-
-		static ssh_w compress(float value)
-		{
-			Bits v, s;
-			v.f = value;
-			unsigned long sign = v.si & signN;
-			v.si ^= sign;
-			sign >>= shiftSign; // logical shift
-			s.si = mulN;
-			s.si = (long)(s.f * v.f); // correct subnormals
-			v.si ^= (s.si ^ v.si) & -(minN > v.si);
-			v.si ^= (infN ^ v.si) & -((infN > v.si) & (v.si > maxN));
-			v.si ^= (nanN ^ v.si) & -((nanN > v.si) & (v.si > infN));
-			v.ui >>= shift; // logical shift
-			v.si ^= ((v.si - maxD) ^ v.si) & -(v.si > maxC);
-			v.si ^= ((v.si - minD) ^ v.si) & -(v.si > subC);
-			return (ssh_w)(v.ui | sign);
-		}
-
-		static float decompress(ssh_w value)
-		{
-			Bits v;
-			v.ui = value;
-			long sign = v.si & signC;
-			v.si ^= sign;
-			sign <<= shiftSign;
-			v.si ^= ((v.si + minD) ^ v.si) & -(v.si > subC);
-			v.si ^= ((v.si + maxD) ^ v.si) & -(v.si > maxC);
-			Bits s;
-			s.si = mulC;
-			s.f *= v.si;
-			long mask = -(norC > v.si);
-			v.si <<= shift;
-			v.si ^= (s.si ^ v.si) & mask;
-			v.si |= sign;
-			return v.f;
-		}
+		static ssh_w compress(float value);
+		static float decompress(ssh_w value);
 	};
 
 	inline vec3 vec3::operator * (const mtx& m) const

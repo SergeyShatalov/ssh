@@ -3,42 +3,23 @@
 
 namespace ssh
 {
-	#define BUFFER_COPY		1
-	#define BUFFER_RESET	2
-
 	template<typename T> class Buffer
 	{
 	public:
 		// по умолчанию
 		Buffer() : sz(0), data(nullptr), is_owner(false) {}
 		// конструктор копии
-		Buffer(const Buffer& buf, ssh_u ops, ssh_u size) : sz(size)
-		{
-			if(ops == (BUFFER_COPY | BUFFER_RESET))
-			{
-				const_cast<Buffer<T>*>(&buf)->is_owner = false;
-				is_owner = true;
-				data = buf.data;
-			}
-			else
-			{
-				is_owner = (ops & BUFFER_COPY);
-				move(buf.data);
-			}
-		}
+		Buffer(const Buffer& buf, ssh_u size) : sz(size), is_owner(true) { const_cast<Buffer<T>*>(&buf)->is_owner = false; data = buf.data; }
 		// конструктор переноса
 		Buffer(Buffer&& buf) : data(buf.data), sz(buf.sz), is_owner(buf.is_owner) {buf.data = nullptr;}
 		// создать буфер определённого размера
 		Buffer(ssh_u count) : is_owner(true), sz(count * sizeof(T)), data(new T[count]) {}
 		// создать из существующего неопределённого буфера
-		Buffer(T* p, ssh_u ops, ssh_u count) : sz(count * sizeof(T)), is_owner((ops & BUFFER_COPY)) { move(p); }
-		// создать из строки
-		Buffer(const String& str, ssh_u ops = 0) : sz(str.length() * 2), is_owner((ops & BUFFER_COPY)) { move((T*)(ssh_wcs)str); }
+		Buffer(T* p, ssh_u count, bool is_copy) : sz(count * sizeof(T)), is_owner(true), data(p) { if(is_copy) move(p); }
 		// деструктор
 		~Buffer() { release(); }
 		// оператор присваивание
-		const Buffer& operator = (const Buffer& buf) { release(); is_owner = buf.is_owner; sz = buf.sz; move(buf.data); return *this; }
-		const Buffer& operator = (const String& str) { release(); is_owner = true; sz = str.length() * 2; move((T*)(ssh_wcs)str); return *this; }
+		const Buffer& operator = (const Buffer& buf) { release(); is_owner = true; sz = buf.sz; const_cast<Buffer<T>*>(&buf)->is_owner = false; data = buf.data; return *this; }
 		// оператор переноса
 		const Buffer& operator = (Buffer&& buf) { release(); data = buf.data; sz = buf.sz; is_owner = buf.is_owner; buf.data = nullptr; return *this; }
 		// освобождение буфера

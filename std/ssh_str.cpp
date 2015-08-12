@@ -24,12 +24,6 @@ namespace ssh
 		return *this;
 	}
 
-	String::String(ssh_wcs wcs, ssh_u len)
-	{
-		init();
-		if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); }
-	}
-	
 	String::String(ssh_ccs ccs, ssh_u len)
 	{
 		init();
@@ -60,7 +54,7 @@ namespace ssh
 		{
 			// перевыделение буфера
 			ssh_u l(length());
-			Buffer<ssh_ws> ptr(buf, true, l);
+			Buffer<ssh_ws> ptr(buf, l, true);
 			if(alloc(l + len))
 			{
 				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, ptr.size()) + l, wcs, len * 2);
@@ -72,11 +66,7 @@ namespace ssh
 	
 	const String& String::make(ssh_wcs wcs, ssh_u len)
 	{
-		if(alloc(len))
-		{
-			SSH_MEMCPY(buf, wcs, len * 2);
-			data()->update();
-		}
+		if(alloc(len)) { SSH_MEMCPY(buf, wcs, len * 2); data()->update(); }
 		return *this;
 	}
 
@@ -97,7 +87,9 @@ namespace ssh
 					if(nsz < 32) nsz = 32;
 				}
 				empty();
-				buffer = (STRING_BUFFER*)new ssh_ws[sizeof(STRING_BUFFER) / 2 + nsz];
+				// выделим память под новый буфер
+				buffer = (STRING_BUFFER*)new ssh_b[sizeof(STRING_BUFFER) + nsz * sizeof(ssh_ws)];
+				// инициализируем новую
 				buffer->len_buf = nsz;
 				buf = buffer->data();
 			}
@@ -105,7 +97,7 @@ namespace ssh
 			buf[sz] = 0;
 			return true;
 		}
-		init();
+		empty();
 		return false;
 	}
 
@@ -121,23 +113,18 @@ namespace ssh
 
 	String String::add(ssh_wcs wcs1, ssh_u len1, ssh_wcs wcs2, ssh_u len2)
 	{
-		if(wcs1 && wcs2)
-		{
-			Buffer<ssh_ws> ptr(len1 + len2 + 1);
-			SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(ptr, wcs1, len1 * 2) + len1, wcs2, len2 * 2);
-			ptr[len1 + len2] = 0;
-			return String(ptr, len1 + len2);
-		}
-		return String();
+		Buffer<ssh_ws> ptr(len1 + len2 + 1);
+		if(wcs1) SSH_MEMCPY(ptr, wcs1, len1 * 2);
+		if(wcs2) SSH_MEMCPY(ptr + len1, wcs2, len2 * 2);
+		ptr[len1 + len2] = 0;
+		return String(ptr, len1 + len2);
 	}
 
 	const String& String::replace(ssh_wcs _old, ssh_wcs _new)
 	{
-		SSH_TRACE;
 		ssh_u nOld(SSH_STRLEN(_old)), nNew(SSH_STRLEN(_new)), nLen(length()), pos(0), nCount(0);
 		ssh_ws* f(buf);
-		//ssh_l p;
-		Buffer<ssh_ws> ptr(buf, true, nLen + 1);
+		Buffer<ssh_ws> ptr(buf, nLen + 1, true);
 		// расчитать новый размер
 		while((f = wcsstr(f, _old))) nCount++, f += nOld;
 		nLen -= (nOld - nNew) * nCount;
@@ -216,7 +203,7 @@ namespace ssh
 		ssh_u len(length()), nWcs(SSH_STRLEN(wcs));
 		if(idx < len)
 		{
-			Buffer<ssh_ws> ptr(buf, true, len);
+			Buffer<ssh_ws> ptr(buf, len, true);
 			if(alloc(len + nWcs))
 			{
 				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, idx * 2) + idx, wcs, nWcs * 2) + nWcs, &ptr[idx], (len - idx) * 2);
@@ -232,7 +219,7 @@ namespace ssh
 		ssh_u len(length());
 		if(idx < len)
 		{
-			Buffer<ssh_ws> ptr(buf, true, len);
+			Buffer<ssh_ws> ptr(buf, len, true);
 			if(alloc(len + 1))
 			{
 				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, idx * 2) + idx + 1, &ptr[idx], (len - idx) * 2);
@@ -334,6 +321,7 @@ namespace ssh
 		}
 		return ret;
 	}
+	
 	void regx::replace(String& subject, ssh_wcs repl, ssh_u idx_ptrn, ssh_l idx)
 	{
 		ssh_l nWcs(wcslen(repl));

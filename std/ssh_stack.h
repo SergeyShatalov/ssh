@@ -68,9 +68,9 @@ namespace ssh
 		// проверка на наличие элементов
 		bool is_empty() const {return (root == nullptr);}
 	protected:
-		// вершина
-		Node* root;
 		// идентификатор
 		ssh_u ID;
+		// вершина
+		Node* root;
 	};
 }

@@ -112,7 +112,7 @@ namespace ssh
 		// текущая мыщь
 		MOUSE* current;
 		// все мыши
-		Map<MOUSE*, String> mouses;
+		Map<MOUSE*, String> mouses{ID_STK_MOUSE};
 		// хэндл захвата
 		ssh_u hcapture;
 		// индекс синглота

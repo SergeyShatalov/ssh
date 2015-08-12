@@ -73,8 +73,6 @@ namespace ssh
 		BlockFix* arrs;
 	};
 
-	template <typename TYPE, ssh_u ops> class List;
-
 	class SSH MemMgr
 	{
 	public:

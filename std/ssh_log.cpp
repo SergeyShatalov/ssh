@@ -17,7 +17,7 @@ namespace ssh
 	static LONG WINAPI Win32UnhandledExceptionFilter(EXCEPTION_POINTERS* except)
 	{
 		SSH_FAULT(UNHANDLED_EXCEPTION, except);
-		exit(1);
+		exit(-1);
 	}
 
 	static void __cdecl ssh_terminate_handler()
@@ -111,9 +111,10 @@ namespace ssh
 		trace_template = L"$ms\r\n";
 	}
 
-	String Log::apply_template(ssh_wcs fn, ssh_wcs fl, int ln, int tp, ssh_wcs msg, String templ) const
+	String Log::apply_template(ssh_wcs fn, ssh_wcs fl, int ln, int tp, ssh_wcs msg, ssh_wcs tpl) const
 	{
 		String tmp;
+		String templ(tpl);
 		static ssh_wcs m_types[] = {L"INFO", L"ASSERT", L"EXCEPTION", L"TRACE"};
 		static ssh_wcs rpl[] = {L"$DT", L"$fn", L"$ln", L"$fl", L"$ms", L"$tm", L"$dt", L"$us", L"$cm", L"$nm", L"$tp", nullptr};
 		tmp.fmt(L"%s\1%s\1%i\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1\1",
@@ -122,7 +123,6 @@ namespace ssh
 				hlp->get_system_info(Helpers::siCompName), hlp->get_system_info(Helpers::siNameProg), m_types[tp]);
 		tmp.replace(L'\1', L'\0');
 		return templ.replace(rpl, tmp);
-
 	}
 
 	static void socket_receive(Socket* sock, Socket::SOCK* s, const Buffer<ssh_cs>& buf)
@@ -144,6 +144,8 @@ namespace ssh
 	{
 		try
 		{
+			shutdown();
+
 			if(!lg) lg = &_log;
 			_log._out = lg->_out;
 			_log.string_begin = apply_template(L"", L"", 0, 0, L"", lg->string_begin);
@@ -166,7 +168,7 @@ namespace ssh
 				case TypeOutput::File:
 					_log.file_template = lg->file_template;
 					file.open(lg->file_path, lg->file_flags);
-					file.write(lg->string_begin, L"utf-8");
+					file.write(_log.string_begin, L"utf-8");
 					break;
 				case TypeOutput::Mail:
 					_log.email_template = lg->email_template;
@@ -192,9 +194,8 @@ namespace ssh
 		}
 		catch(const Exception&)
 		{
-			file.close();
-			sock.close();
 			_log._out = TypeOutput::Null;
+			shutdown();
 		}
 		// установть обработчики нестандартных исключительных ситуаций
 		ssh_set_exceptionHandlers();
@@ -204,22 +205,15 @@ namespace ssh
 		MemMgr::instance()->start();
 	}
 
-	void Log::close()
+	void Log::shutdown()
 	{
 		tracer.stop();
-		tracer.output();
 		MemMgr::instance()->stop();
-		MemMgr::instance()->output();
 		_log.string_finish = apply_template(L"", L"", 0, 0, L"", _log.string_finish);
 		switch(_log._out)
 		{
 			case TypeOutput::Net:
 				sendSocket(_log.string_finish);
-				if(hEventSocket)
-				{
-					CloseHandle(hEventSocket);
-					hEventSocket = nullptr;
-				}
 				break;
 			case TypeOutput::Screen:
 				break;
@@ -234,6 +228,23 @@ namespace ssh
 				OutputDebugString(_log.string_finish);
 				break;
 		}
+		_log._out = TypeOutput::Null;
+		if(hEventSocket)
+		{
+			CloseHandle(hEventSocket);
+			hEventSocket = nullptr;
+		}
+		file.close();
+		sock.close();
+	}
+
+	void Log::close()
+	{
+		tracer.stop();
+		tracer.output();
+		MemMgr::instance()->stop();
+		MemMgr::instance()->output();
+		shutdown();
 	}
 
 	void Log::add(const String& msg)
@@ -301,7 +312,7 @@ namespace ssh
 						send_email(apply_template(fn, fl, ln, type, msgArgs, _log.string_continue));
 					break;
 				case TypeOutput::Debug:
-					OutputDebugString(apply_template(fn, fl, ln, type, msgArgs, _log.debug_template));
+					OutputDebugStringW(apply_template(fn, fl, ln, type, msgArgs, _log.debug_template));
 					break;
 			}
 			tracer.start();

@@ -111,13 +111,6 @@ namespace ssh
 			if(name) return tree.get_node_hash(h, ssh_hash(name));
 			return tree.get_node_index(h->fchild, index);
 		}
-		static regx* get_regx()
-		{
-			static ssh_wcs ptrs[] = {LR"serg((?mUs)<(?:(?:([/]{0,1})([\w_]+[\w\d_-]*)>)|(!--.*-->)|(?:([A-Za-zА-Яа-я_]+[A-Za-zА-Яа-я\d_-]*)\s+([A-Za-zА-Яа-я_]+.*)([/]{0,1})>)))serg", LR"serg((?sm)([A-Za-zА-Яа-я_]+[A-Za-zА-Яа-я\d_]*)\s*=\s*(?:"(.*?)")\s*)serg",
-									 LR"serg((?ms)()?<=>"(.*?)")serg", LR"((?im)<\?xml\s+version=.+encoding=["]?(.*?)["]?\s*\?>)"};
-			static regx rx(ptrs, 4);
-			return &rx;
-		}
 	protected:
 		// декодировка
 		String encode(const Buffer<ssh_cs>& buf);
@@ -129,7 +122,7 @@ namespace ssh
 		// сохранение
 		String _save(HXML h, ssh_l level);
 		// дерево узлов
-		Tree<XmlNode*, SSH_PTR> tree;
+		Tree<XmlNode*, SSH_PTR> tree{ID_TREE_XML};
 		// указатель на текст при формировании дерева
 		static ssh_ws* _xml;
 	};

@@ -5,6 +5,7 @@
 namespace ssh
 {
 	ssh_ws* Xml::_xml(nullptr);
+	static ssh_w vec[256];
 
 	Xml::Xml(const Buffer<ssh_cs>& buf)
 	{
@@ -33,7 +34,6 @@ namespace ssh
 	{
 		SSH_TRACE;
 		String ret, charset, caption;
-		regx* rx(get_regx());
 		// проверить на BOM
 		ssh_b _0(buf[0]), _1(buf[1]), _2(buf[2]);
 		ssh_l pos;
@@ -48,9 +48,10 @@ namespace ssh
 		buf[pos * width] = 0;
 		caption = (width == 1 ? ssh_cnv(L"utf-8", buf, bom8 * 3) : buf.to<ssh_ws>() + 1);
 		buf[pos * width] = _cs;
-		if(rx->match(caption, (ssh_u)3) > 0)
+		regx rx;
+		if(rx.match(caption, LR"((?im)<\?xml\s+version=.+encoding=["]?(.*?)["]?\s*\?>)") > 0)
 		{
-			charset = rx->substr(1);
+			charset = rx.substr(1);
 			charset.lower();
 			if((bom16le && charset != L"utf-16le") || (bom16be && charset != L"utf-16be") || (bom8 && charset != L"utf-8")) charset.empty();
 		}
@@ -68,88 +69,57 @@ namespace ssh
 		make(root(), 0);
 	}
 
+	static int len_vec(int idx)
+	{
+		return vec[idx * 2 + 1] - vec[idx * 2];
+	}
+
+	// 0,1 - весь тег с значением
+	// 2,3 - начало тега
+	// 4,5 - им€ тега
+	// 6,7 - конец тега
+	// 8,9 - значение тега
+	// 10... - им€ атрибута и его значение
 	void Xml::make(HXML hp, ssh_u lev)
 	{
-		while(*_xml)
+		while(_xml)
 		{
-			regx* rx(get_regx());
-			if(rx->match(_xml, (ssh_u)0) > 0)
+			ssh_l ret(asm_ssh_parse_xml(_xml, vec));
+			if(ret == -1) SSH_THROW(L"ќшибка парсинга!");
+			if(ret == 0)
 			{
-				bool is_child(false);
-				HXML h;
-				ssh_ws* _x(_xml);
-				_xml += rx->vec(0, 1);
-				// это комментырий?
-				if(rx->len(3)) continue;
-				// это завершающий тег?
-				if(rx->len(1))
+				if(lev) SSH_THROW(L"Ќеожиданный конец XML!");
+				return;
+			}
+			if((len_vec(3) == 2 && len_vec(4) > 0) || (len_vec(1) == 2 && (len_vec(4) > 0 || ret > 5 || len_vec(3) == 2))) SSH_THROW(L"Ќекорректный xml!");
+			ssh_ws* _x(_xml);
+			_xml += vec[1];
+			// это завершающий тег?
+			if(len_vec(1) == 2)
+			{
+				_x[vec[5]] = 0;
+				if(get_name(hp) != (_x + vec[4])) SSH_THROW(L"");
+				return;
+			}
+			_x[vec[5]] = 0;
+			// есть значение?
+			if(vec[8]) _x[vec[9]] = 0;
+			HXML h(add_node(hp, _x + vec[4], (vec[8] ? _x + vec[8] : L"")));
+			bool is_child(len_vec(3) == 1);
+			// есть атрибуты?
+			if(ret > 5)
+			{
+				ssh_l attr(5);
+				while(attr <= ret)
 				{
-					// </tag>
-					_x[rx->vec(2, 1)] = 0;
-					if(get_name(hp) != (_x + rx->vec(2, 0))) SSH_THROW(L"");
-					return;
-				}
-				else if(rx->len(2))
-				{
-					// <tag>
-					is_child = true;
-					_x[rx->vec(2, 1)] = 0;
-					h = add_node(hp, _x + rx->vec(2, 0), L"");
-				}
-				else
-				{
-					// это стартовый тег
-					is_child = (rx->len(6) == 0);
-					_x[rx->vec(4, 1)] = 0;
-					h = add_node(hp, _x + rx->vec(4, 0), L"");
-					// атрибуты
-					_x[rx->vec(5, 1)] = 0;
-					ssh_ws* _ws(_x + rx->vec(5, 0));
-					while(rx->match(_ws, (ssh_u)1) == 3)
-					{
-						// проверка на пространство между атрибутами
-						if(rx->vec(0, 0)) SSH_THROW(L"Ќедопустимо заданы атрибуты тега<%s>.", h->value->nm);
-						// добавить атрибут
-						_ws[rx->vec(2, 1)] = 0;
-						_ws[rx->vec(1, 1)] = 0;
-						set_attr(h, _ws + rx->vec(1, 0), _ws + rx->vec(2, 0));
-						_ws += rx->len(0);
-					}
-					// проверить после найденных атрибутов больше ничего нет?
-					if(*_ws != L'\0') SSH_THROW(L"");
-				}
-				if(is_child)
-				{
-					ssh_ws ws;
-					bool is(false);
-					// проверим на значение тега
-					while(ws = *_xml++)
-					{
-						if(ws == L'\"')
-						{
-							if(is) break;
-							_x = _xml;
-							is = true;
-						}
-						else if(ws == L'\\') _xml++;
-						else if(ws == L'<' && !is) { _xml--; break; }
-					}
-					if(ws == 0) SSH_THROW(L"Ќеожиданный конец XML!");
-					if(is)
-					{
-						*(_xml - 1) = 0;
-						set_val(h, _x);
-					}
-					make(h, lev + 1);
+					_x[vec[attr * 2 + 1]] = 0;
+					_x[vec[attr * 2 + 3]] = 0;
+					set_attr(h, _x + vec[attr * 2], _x + vec[attr * 2 + 2]);
+					attr += 2;
 				}
 			}
-			else
-			{
-				while(*_xml <= L' ' && *_xml != 0) _xml++;
-				if(*_xml != 0) SSH_THROW(L"Ќайдена неизвестна€ лексема!");
-			}
+			if(is_child) make(h, lev + 1);
 		}
-		if(lev) SSH_THROW(L"Ќеожиданный конец XML!");
 	}
 
 	void Xml::save(const String& path, ssh_wcs code)
