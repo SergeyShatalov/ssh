@@ -149,33 +149,39 @@ namespace ssh
 		String file_title(const String& path) const
 		{
 			ssh_l i;
-			String nm((i = path.find_rev(L'\\') + 1) ? path.substr(i) : L"");
-			return ((i = nm.find_rev(L'.')) >= 0 ? nm.left(i) : nm);
+			String nm(path);
+			if(((i = path.find_rev(L'\\')) + 1) >= 0) nm = path.substr(i);
+			if((i = nm.find_rev(L'.')) >= 0) nm.left(i);
+			return nm;
 		}
 		// извлечь расширение файла
 		String file_ext(const String& path, bool is_pt) const
 		{
 			ssh_l i;
-			String nm((i = path.find_rev(L'\\') + 1) ? path.substr(i) : L"");
-			return ((i = nm.find_rev(L'.') + !is_pt) ? nm.substr(i) : L"");
+			String nm(path);
+			if(((i = path.find_rev(L'\\') + 1)) >= 0) nm = path.substr(i);
+			if(((i = nm.find_rev(L'.')) + !is_pt) >= 0) nm = nm.substr(i);
+			return nm;
 		}
 		// извлечь имя файла с расширением
 		String file_name(const String& path) const
 		{
 			ssh_l i;
-			return ((i = path.find_rev(L'\\')) < 0 ? "" : path.substr(i + 1));
+			String nm(path);
+			if(((i = path.find_rev(L'\\')) + 1) >= 0) nm = path.substr(i);
+			return nm;
 		}
 		// извлечь путь
 		String file_path(const String& path) const
 		{
 			ssh_l i;
-			return ((i = path.find_rev(L'\\') + 1) ? path.left(i) : L""); 
+			return ((i = path.find_rev(L'\\') + 1) >= 0 ? path.left(i) : L""); 
 		}
 		// извлечь путь c файлом
 		String file_path_title(const String& path) const
 		{
 			ssh_l i;
-			return ((i = path.find_rev(L'.')) ? path.left(i) : path); 
+			return ((i = path.find_rev(L'.')) >= 0 ? path.left(i) : path); 
 		}
 		// сгенерировать случайное имя
 		String gen_name(ssh_wcs nm, bool is_long = true) const

@@ -153,6 +153,7 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	String _lll(L"Sergey");
 	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
 	try

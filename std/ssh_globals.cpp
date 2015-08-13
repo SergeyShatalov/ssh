@@ -123,11 +123,10 @@ namespace ssh
 	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs)
 	{
 		iconv_t h;
-		ssh_u in_c(in.count() - offs);
-		String out(L'\0', in_c);
-		ssh_u out_c(out.length() * 2);
+		ssh_u in_c(in.count() - offs), out_c(in_c * 2);
+		Buffer<ssh_cs> out(out_c);
 		ssh_ccs _in(in + offs);
-		ssh_cs* _out((ssh_cs*)out.buffer());
+		ssh_cs* _out(out);
 		if(_open && _close && _make)
 		{
 			if((h = _open(cp_utf, from)) != (iconv_t)-1)
@@ -139,7 +138,6 @@ namespace ssh
 				_close(h);
 			}
 		}
-		out.update();
-		return out;
+		return String(out.to<ssh_ws>(), (_out - out) / 2);
 	}
 }
