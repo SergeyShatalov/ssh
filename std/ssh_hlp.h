@@ -150,8 +150,8 @@ namespace ssh
 		{
 			ssh_l i;
 			String nm(path);
-			if(((i = path.find_rev(L'\\')) + 1) >= 0) nm = path.substr(i);
-			if((i = nm.find_rev(L'.')) >= 0) nm.left(i);
+			if((i = path.find_rev(L'\\') + 1) >= 0) nm = path.substr(i);
+			if((i = nm.find_rev(L'.')) >= 0) nm = nm.left(i);
 			return nm;
 		}
 		// извлечь расширение файла
@@ -160,7 +160,7 @@ namespace ssh
 			ssh_l i;
 			String nm(path);
 			if(((i = path.find_rev(L'\\') + 1)) >= 0) nm = path.substr(i);
-			if(((i = nm.find_rev(L'.')) + !is_pt) >= 0) nm = nm.substr(i);
+			if((i = nm.find_rev(L'.') + !is_pt) >= 0) nm = nm.substr(i);
 			return nm;
 		}
 		// извлечь имя файла с расширением
@@ -168,7 +168,7 @@ namespace ssh
 		{
 			ssh_l i;
 			String nm(path);
-			if(((i = path.find_rev(L'\\')) + 1) >= 0) nm = path.substr(i);
+			if((i = path.find_rev(L'\\') + 1) >= 0) nm = path.substr(i);
 			return nm;
 		}
 		// извлечь путь

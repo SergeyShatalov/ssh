@@ -23,14 +23,14 @@ namespace ssh
 	public:
 		enum Radix : int { _dec, _bin, _oct, _hex, _dbl, _flt };
 		// конструкторы
-		String() {}
+		String() { init(); }
 		String(String&& str) { buf = str.buf; str.init(); }
-		String(ssh_wcs wcs, ssh_u len = -1) { if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t?t:len); } }
+		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t?t:len); } }
 		String(ssh_ccs ccs, ssh_u len = -1);
-		String(const Buffer<ssh_cs>& buf) { *this = buf; }
-		String(const String& str) { *this = str; }
-		String(ssh_ws ws, ssh_u rep) { if(alloc(rep, false)) { _wcsset(buf, ws); buf[rep] = 0; data()->update(); } }
-		template <typename T> String(T v, Radix r) { fromNum(v, r); }
+		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
+		String(const String& str) { init(); *this = str; }
+		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep, false)) { buf[rep] = 0; _wcsset(buf, ws); data()->update(); } }
+		template <typename T> String(T v, Radix r) { init(); fromNum(v, r); }
 		// деструктор
 		~String() { empty(); }
 		// привидение типа

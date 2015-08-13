@@ -96,7 +96,7 @@ namespace ssh
 		email_flags = Mail::stSSL;
 		email_template = L"[$tp] $DT-$tm\t$fn\t - \t($fl: $ln) - <$ms>\r\n";
 		email_subject = L"Уведомление логгирования";
-		email_max_msgs = 50;
+		email_max_msgs = 200;
 		email_blocked = false;
 		// вывод в файл
 		file_path = hlp->get_system_info(Helpers::siProgFolder) + hlp->get_system_info(Helpers::siNameProg) + L".log";
@@ -149,8 +149,8 @@ namespace ssh
 			if(!lg) lg = &_log;
 			_log._out = lg->_out;
 			_log.string_begin = apply_template(L"", L"", 0, 0, L"", lg->string_begin);
+			_log.string_continue = apply_template(L"", L"", 0, 0, L"", lg->string_continue);
 			_log.string_finish = lg->string_finish;
-			_log.string_continue = lg->string_continue;
 			
 			switch(_log._out)
 			{
@@ -174,17 +174,16 @@ namespace ssh
 					_log.email_template = lg->email_template;
 					_log.email_max_msgs = lg->email_max_msgs;
 					_log.email_subject = lg->email_subject;
+					_log.email_host = lg->email_host;
+					_log.email_flags = lg->email_flags;
+					_log.email_login = lg->email_login;
+					_log.email_pass = lg->email_pass;
+					_log.email_address = lg->email_address;
 					_log.email_count_msgs = 0;
 					_log.email_blocked = false;
-					mail.set_host(lg->email_host, lg->email_flags);
-					mail.set_login(lg->email_login, lg->email_pass);
-					mail.set_charset(L"cp1251");
-					mail.add_recipient(L"", lg->email_address);
-					mail.set_sender(hlp->get_system_info(Helpers::siNameProg), lg->email_address);
-					mail.set_message(L"Система логгирования для отладки программы.");
 					_log.file_path = hlp->get_system_info(Helpers::siTempFolder) + hlp->gen_name(L"__MAIL__LOG__");
 					file.open(_log.file_path, File::create_read_write);// | File::access_temp_remove);
-					file.write(_log.string_begin, 0);
+					file.write(_log.string_begin, cp_utf);
 					break;
 				case TypeOutput::Debug:
 					_log.debug_template = lg->debug_template;
@@ -221,11 +220,11 @@ namespace ssh
 				if(!file.is_close()) file.write(_log.string_finish, L"utf-8");
 				break;
 			case TypeOutput::Mail:
-				if(!file.is_close()) file.write(_log.string_finish, 0);
+				if(!file.is_close()) file.write(_log.string_finish, cp_utf);
 				send_email(L"");
 				break;
 			case TypeOutput::Debug:
-				OutputDebugString(_log.string_finish);
+				OutputDebugStringW(_log.string_finish);
 				break;
 		}
 		_log._out = TypeOutput::Null;
@@ -247,7 +246,7 @@ namespace ssh
 		shutdown();
 	}
 
-	void Log::add(const String& msg)
+	void Log::add(ssh_wcs msg)
 	{
 		String _msg(apply_template(L"", L"", 0, 0, msg, _log.trace_template));
 		switch(_log._out)
@@ -264,13 +263,16 @@ namespace ssh
 				if(!file.is_close()) file.write(_msg, L"utf-8");
 				break;
 			case TypeOutput::Mail:
-				if(!file.is_close()) file.write(_msg, 0);
-				_log.email_count_msgs++;
-				if(_log.email_count_msgs >= _log.email_max_msgs && !is_email_blocked())
-					send_email(apply_template(L"StackTrace", L"ssh_log.cpp", 161, 3, msg, _log.string_continue));
+				if(!_log.email_blocked)
+				{
+					if(!file.is_close()) file.write(_msg, cp_utf);
+					_log.email_count_msgs++;
+					if(_log.email_count_msgs >= _log.email_max_msgs)
+						send_email(_log.string_continue);
+				}
 				break;
 			case TypeOutput::Debug:
-				OutputDebugString(_msg);
+				OutputDebugStringW(_msg);
 				break;
 		}
 	}
@@ -306,10 +308,13 @@ namespace ssh
 					if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.file_template), L"utf-8");
 					break;
 				case TypeOutput::Mail:
-					if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.email_template), 0);
-					_log.email_count_msgs++;
-					if(_log.email_count_msgs >= _log.email_max_msgs && !is_email_blocked())
-						send_email(apply_template(fn, fl, ln, type, msgArgs, _log.string_continue));
+					if(!_log.email_blocked)
+					{
+						if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.email_template), cp_utf);
+						_log.email_count_msgs++;
+						if(_log.email_count_msgs >= _log.email_max_msgs)
+							send_email(_log.string_continue);
+					}
 					break;
 				case TypeOutput::Debug:
 					OutputDebugStringW(apply_template(fn, fl, ln, type, msgArgs, _log.debug_template));
@@ -330,10 +335,15 @@ namespace ssh
 			file.close();
 			// обнуляем файл
 			file.open(_log.file_path, File::create_read_write);
-			file.write(ln, 0);
+			file.write(ln, cp_utf);
 			_log.email_count_msgs = 0;
 			// отправка на почту
-			mail.smtp(_log.email_subject, str);
+			Buffer<Mail> m(new Mail(_log.email_host, _log.email_login, _log.email_pass, _log.email_flags), 1, false);
+			m->set_charset(L"cp1251");
+			m->add_recipient(L"", _log.email_address);
+			m->set_sender(hlp->get_system_info(Helpers::siNameProg), _log.email_address);
+			m->set_message(L"Система логгирования для отладки программы.");
+			m->smtp(_log.email_subject, str);
 			_log.email_blocked = false;
 		}
 	}

@@ -99,12 +99,12 @@ namespace ssh
 		return ret;
 	}
 
-	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, const String& str, bool is_null)
+	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, ssh_wcs str, bool is_null)
 	{
 		iconv_t h;
-		Buffer<ssh_cs> out((str.length() + is_null) * 2);
+		Buffer<ssh_cs> out((wcslen(str) + is_null) * 2);
 		ssh_u in_c(out.count()), out_c(in_c);
-		ssh_ccs _in((ssh_ccs)str.buffer());
+		ssh_ccs _in((ssh_ccs)str);
 		ssh_cs* _out(out);
 		if(_open && _close && _make)
 		{

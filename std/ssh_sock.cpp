@@ -55,7 +55,7 @@ namespace ssh
 		int result;
 		Socket* sock((Socket*)arg);
 		struct timeval tv;
-		tv.tv_sec = 3 * 60;
+		tv.tv_sec = 60;
 		tv.tv_usec = 0;
 		while(sock->status && Socket::THREAD)
 		{
@@ -114,7 +114,7 @@ namespace ssh
 		return 0;
 	}
 
-	void Socket::init(const String& host, int max_clients, int flgs, const String& cert, const String& pwd)
+	void Socket::init(const String& host, int max_clients, int flgs, ssh_wcs cert, ssh_wcs pwd)
 	{
 		SSH_TRACE;
 		ssh_l pos_dpt;
@@ -139,7 +139,7 @@ namespace ssh
 		if((flgs & SERVER))
 		{
 			socks[0].addr.sin_addr.s_addr = INADDR_ANY;
-			if(bind(socks[0].h, (LPSOCKADDR)&socks[0].addr, sizeof(sockaddr)) == SOCKET_ERROR)
+			if(bind(socks[0].h, (sockaddr*)&socks[0].addr, sizeof(sockaddr)) == SOCKET_ERROR)
 				SSH_THROW(L"Не удалось забиндить сокет сервера!");
 			if(listen(socks[0].h, max_clients) == SOCKET_ERROR)
 				SSH_THROW(L"Ошибка прослушивания сокета сервера!");

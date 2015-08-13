@@ -58,11 +58,7 @@ namespace ssh
 			ssh_d nsz((ssh_d)sz + 1);
 			if(nsz > buffer->len_buf)
 			{
-				if(nsz < 8192)
-				{
-					nsz = hlp->pow2<ssh_d>(nsz, false) * 2;
-					if(nsz < 32) nsz = 32;
-				}
+				if(nsz < 8192) { nsz = hlp->pow2<ssh_d>(nsz, true) * 2; if(nsz < 32) nsz = 32; }
 				// выделим память под новый буфер
 				buffer = (STRING_BUFFER*)new ssh_b[sizeof(STRING_BUFFER) + nsz * sizeof(ssh_ws)];
 				// скопировать старый, если необходимо
@@ -82,7 +78,6 @@ namespace ssh
 
 	String String::substr(ssh_u idx, ssh_u len) const
 	{
-		SSH_TRACE;
 		ssh_u l(length());
 		if(idx > l) return String();
 		if(len == -1) len = l;
@@ -111,7 +106,6 @@ namespace ssh
 		if(alloc(nLen + l, true))
 		{
 			ssh_ws* _buf(buf);
-			nLen++;
 			// непосредственно замена
 			while((f = wcsstr(_buf, _old)))
 			{
@@ -129,7 +123,6 @@ namespace ssh
 
 	const String& String::replace(ssh_ws _old, ssh_ws _new)
 	{
-		SSH_TRACE;
 		ssh_ws* ptr(buf);
 		while(*ptr) { if(*ptr == _old) *ptr = _new; ptr++; }
 		data()->update();
@@ -138,7 +131,6 @@ namespace ssh
 
 	const String& String::remove(ssh_wcs wcs)
 	{
-		SSH_TRACE;
 		ssh_u nWcs(SSH_STRLEN(wcs)), nLen(length());
 		ssh_ws* f(buf);
 		while((f = wcsstr(f, wcs))) { nLen -= nWcs; SSH_MEMCPY(f, f + nWcs, ((nLen - (f - buf)) + 1) * 2); }
@@ -149,7 +141,6 @@ namespace ssh
 
 	const String& String::remove(ssh_ws ws)
 	{
-		SSH_TRACE;
 		ssh_ws* ptr(buf), *rem(buf);
 		while(*ptr) { if(*ptr != ws) *rem++ = *ptr; ptr++; }
 		*rem = 0;
@@ -160,7 +151,6 @@ namespace ssh
 
 	const String& String::remove(ssh_u idx, ssh_u len)
 	{
-		SSH_TRACE;
 		ssh_u l(length());
 		if(idx < l)
 		{
@@ -176,7 +166,6 @@ namespace ssh
 
 	const String& String::insert(ssh_u idx, ssh_wcs wcs)
 	{
-		SSH_TRACE;
 		ssh_u len(length()), nWcs(SSH_STRLEN(wcs));
 		if(idx < len && alloc(len + nWcs, true))
 		{
@@ -189,7 +178,6 @@ namespace ssh
 
 	const String& String::insert(ssh_u idx, ssh_ws ws)
 	{
-		SSH_TRACE;
 		ssh_u len(length());
 		if(idx < len && alloc(len + 1, true))
 		{
@@ -223,7 +211,6 @@ namespace ssh
 
 	const String& String::replace(ssh_wcs* _old, ssh_wcs _new)
 	{
-		SSH_TRACE;
 		ssh_u idx(0);
 		while(_old[idx]) replace(_old[idx++], _new), _new += (wcslen(_new) + 1);
 		return *this;
@@ -231,7 +218,6 @@ namespace ssh
 
 	const String& String::load(ssh_u id)
 	{
-		SSH_TRACE;
 		HINSTANCE hInst(::GetModuleHandle(nullptr));
 		HRSRC h(::FindResourceW(hInst, MAKEINTRESOURCE((((id >> 4) + 1) & static_cast<WORD>(~0))), RT_STRING));
 		ssh_u len(::SizeofResource(hInst, h) / sizeof(ssh_ws));

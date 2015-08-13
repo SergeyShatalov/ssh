@@ -48,7 +48,7 @@ namespace ssh
 		};
 		struct SSH SOCK
 		{
-			SOCK() : ssl(nullptr), h(0) { memset(&addr, 0, sizeof(sockaddr_in)); }
+			SOCK() : ssl(nullptr), h(0) { }
 			~SOCK() { close(); }
 			void init(SSL_CTX* ctx)
 			{
@@ -111,7 +111,7 @@ namespace ssh
 		// деструктор
 		virtual ~Socket() { close(); }
 		// запуск
-		virtual void init(const String& host, int max_clients, int flags, const String& cert, const String& pwd);
+		virtual void init(const String& host, int max_clients, int flags, ssh_wcs cert = nullptr, ssh_wcs pwd = nullptr);
 		// закрытие
 		virtual void close(SOCK* s = nullptr);
 		// отправка данных

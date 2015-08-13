@@ -10,6 +10,7 @@ namespace ssh
 	{
 		friend void sock_receive(Socket* sock, Socket::SOCK* s, const Buffer<ssh_cs>& buf);
 		friend void sock_connect(Socket* sock, Socket::SOCK* s);
+		Mail(const Mail& m) {}
 	public:
 		enum SMTP_COMMAND
 		{
@@ -73,8 +74,6 @@ namespace ssh
 		};
 		struct Command_Entry
 		{
-			// комманда серверу
-			SMTP_COMMAND command;
 			// валидный код ответа от сервера
 			ssh_u valid_code;
 			//  сообщение об ошибке
@@ -178,8 +177,8 @@ namespace ssh
 		void connect_imap();
 		void connect_smtp();
 		// отправка данных
+		void _send_cmd(ssh_u command, ssh_wcs data, ssh_u flags = 0);
 		void send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags = 0, ...);
-		//void send_cmd(ssh_u command, const Buffer<ssh_cs>& base64, ssh_u flags = 0);
 		// получить ответ
 		void recv_resp(ssh_u command, ssh_u flags = 0);
 		// формирование связки имя <адрес>

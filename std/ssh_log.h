@@ -166,9 +166,7 @@ namespace ssh
 		// инициализация
 		virtual void init(LOG* lg);
 		// добавить трассировку стека
-		void add(const String& msg);
-		// проверить на блокировку сообщений почты
-		bool is_email_blocked() const { return  _log.email_blocked; }
+		void add(ssh_wcs msg);
 		// вернуть трейсер
 		StackTrace* get_tracer() { return &tracer; }
 	protected:
@@ -191,8 +189,6 @@ namespace ssh
 		Socket sock;
 		// файл
 		File file;
-		// почта
-		Mail mail;
 		// хэндл события
 		HANDLE hEventSocket;
 		// трейсер

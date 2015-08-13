@@ -86,13 +86,13 @@ namespace ssh
 			ssh_ws tmp[MAX_PATH];
 			ssh_d sz(MAX_PATH);
 
+			::GetModuleFileName(::GetModuleHandle(nullptr), tmp, MAX_PATH);
+			arr[siNameProg] = file_title(tmp);
+			arr[siProgFolder] = file_path(tmp);
 			::GetTempPath(MAX_PATH, tmp);
 			arr[siTempFolder] = slash_path(tmp);
 			::GetCurrentDirectory(MAX_PATH, tmp);
 			arr[siWorkFolder] = slash_path(tmp);
-			::GetModuleFileName(::GetModuleHandle(nullptr), tmp, MAX_PATH);
-			arr[siNameProg] = file_title(tmp);
-			arr[siProgFolder] = file_path(tmp);
 			if(SUCCEEDED(SHGetFolderPath(nullptr, CSIDL_APPDATA, nullptr, 0, tmp))) arr[siUserFolder] = slash_path(tmp);
 			if(SUCCEEDED(SHGetFolderPath(nullptr, csidl, nullptr, 0, tmp))) arr[siCustom] = slash_path(tmp);
 			if(GetUserName(tmp, &sz)) arr[siUserName] = tmp;

@@ -11,7 +11,7 @@ extern "C"
 
 namespace ssh
 {
-	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, const String& str, bool is_null);
+	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, ssh_wcs str, bool is_null);
 	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs);
 	String SSH ssh_md5(const String& str);
 	String SSH ssh_base64(ssh_wcs charset, const String& str);

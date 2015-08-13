@@ -37,6 +37,8 @@ base64_chars	dw 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 
 ; rdx - система счисления
 ; ret - result of whar_t*
 asm_ssh_ntow proc public
+		push r10
+		push r11
 		mov r9, offset result + 126
 		add r9, 2
 		mov word ptr [r9], 0
@@ -50,6 +52,8 @@ asm_ssh_ntow proc public
 		mov rcx, [rdx + 16]
 		call qword ptr [rdx]
 @@:		mov rax, r9
+		pop r11
+		pop r10
 		ret
 tbl_radix dq nto_dec, 0, 10, nto_ohb, 1, 1, nto_ohb, 7, 3, nto_ohb, 15, 4, nto_dbl, 0, 10, nto_flt, 0, 10
 nto_ohb:sub r9, 2
@@ -117,6 +121,9 @@ asm_ssh_ntow endp
 
 asm_ssh_wton proc public
 		push rbx
+		push r10
+		push r11
+		push r12
 		push r13
 		xor rax, rax
 		jrcxz @f
@@ -130,6 +137,9 @@ asm_ssh_wton proc public
 		call qword ptr [rdx]
 @@:		mov qword ptr [result], rax
 		pop r13
+		pop r12
+		pop r11
+		pop r10
 		pop rbx
 		mov rax, offset result
 		ret
@@ -205,6 +215,7 @@ asm_ssh_wton endp
 ; 0 - register(offs), 1 - bit check, 2 - bit set 
 asm_ssh_capability proc
 		push rbx
+		push r10
 		xor r10, r10
 		mov r9, offset result
 		mov r8, offset cpu_caps_1
@@ -216,6 +227,7 @@ asm_ssh_capability proc
 		mov r8, offset cpu_caps_7
 		call _cset
 		mov rax, r10
+		pop r10
 		pop rbx
 		ret
 _cset:	cpuid
@@ -242,6 +254,7 @@ asm_ssh_to_base64 proc
 		push rsi
 		push rdi
 		push rbx
+		push r12
 		mov r8, 3
 		mov rax, rdx
 		mov r12, rax				; src_len
@@ -282,6 +295,7 @@ _loop:	xor rdx, rdx				; i = 0
 		rep stosw
 @@:		mov word ptr [rdi], 0
 		pop rax
+		pop r12
 		pop rbx
 		pop rdi
 		pop rsi
@@ -321,6 +335,8 @@ asm_ssh_from_base64 proc
 		push rbx
 		push rsi
 		push rdi
+		push r10
+		push r12
 		mov rsi, rcx			; src
 		lea r12, [rcx + rdx * 2]
 		mov r10, rsi
@@ -361,6 +377,8 @@ _loop:	xor rdx, rdx			; i = 0
 		call _sub
 @@:		mov word ptr [rdi], 0
 		pop rax
+		pop r12
+		pop r10
 		pop rdi
 		pop rsi
 		pop rbx
@@ -411,6 +429,12 @@ xml_chars	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0
 			db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1
 			db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0
 asm_ssh_parse_xml proc
+		push rbx
+		push r10
+		push r11
+		push r12
+		mov r11, 002d002d0021003ch
+		mov r12, 003e002d002d0020h
 		xor r8, r8					; cur src
 		xor rbx, rbx				; count attrs
 		call _skip_c
@@ -479,11 +503,14 @@ _ex:	xor rax, rax
 		movzx r8, word ptr [rdx + 4]
 		call _set_v
 		lea rax, [rbx + 3]
+		pop r12
+		pop r11
+		pop r10
+		pop rbx
 		ret
 _skip_c:call _skip_s
 ;<!-- sergey -->
-		mov r10, 002d002d0021003ch
-		cmp qword ptr [rcx + r8 * 2], r10
+		cmp qword ptr [rcx + r8 * 2], r11
 		jnz _skip_cc
 		add r8, 3
 @@:		inc r8
@@ -492,8 +519,7 @@ _skip_c:call _skip_s
 		jz _err
 		cmp rax, '>'
 		jnz @b
-		mov r10, 003e002d002d0020h
-		cmp qword ptr [rcx + r8 * 2 - 6], r10
+		cmp qword ptr [rcx + r8 * 2 - 6], r12
 		jnz @b
 		inc r8
 		call _skip_s
