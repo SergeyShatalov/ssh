@@ -53,13 +53,13 @@ namespace ssh
 		// вернуть текущую
 		MOUSE* get_current() const { return current; }
 		// вернуть признак видимости
-		bool is_visible() const { return status.testBit(msVisible); }
+		bool is_visible() const { return status.test_bit(msVisible); }
 		// установка признака видимости
-		void setVisible(bool use) { status.setBit(msVisible, use); }
+		void setVisible(bool use) { status.set_bit(msVisible, use); }
 		// установка статуса колеса
 		void setWheelStatus(long w) { wheel = w; }
 		// установка статуса двойного клика
-		void setDoubleClickStatus(bool dclickM, bool dclickR, bool dclickL) { status.setBit(msDclickR, dclickR); status.setBit(msDclickL, dclickL); status.setBit(msDclickM, dclickM); }
+		void setDoubleClickStatus(bool dclickM, bool dclickR, bool dclickL) { status.set_bit(msDclickR, dclickR); status.set_bit(msDclickL, dclickL); status.set_bit(msDclickM, dclickM); }
 		// установка текущих параметров
 		void update(const Pts<ssh_u>& pt, long k) { old_position = position; position = pt; key = k; if(!(k & (MK_LBUTTON | MK_MBUTTON))) hcapture = 0; }
 		// вернуть признак нажатия кнопки Ctrl
@@ -73,11 +73,11 @@ namespace ssh
 		// вернуть признак нажатия средней кнопки
 		bool is_keyMiddle(ssh_u h) const { return ((hcapture == 0 ? 1 : h == hcapture) && ((key & MK_MBUTTON) != 0)); }
 		// вернуть признак правого двойного клика
-		bool is_doubleClickRight() const { return status.testBit(msDclickR); }
+		bool is_doubleClickRight() const { return status.test_bit(msDclickR); }
 		// вернуть признак левого двойного клика
-		bool is_doubleClickLeft() const { return status.testBit(msDclickL); }
+		bool is_doubleClickLeft() const { return status.test_bit(msDclickL); }
 		// вернуть признак среднего двойного клика
-		bool is_doubleClickMiddle() const { return status.testBit(msDclickM); }
+		bool is_doubleClickMiddle() const { return status.test_bit(msDclickM); }
 		// установить захват
 		void set_capture(ssh_u h) { hcapture = h; }
 		// проверить на захват
@@ -108,7 +108,7 @@ namespace ssh
 		// статус кнопок
 		long key;
 		// статус
-		Bits<WORD> status;
+		Bits status;
 		// текущая мыщь
 		MOUSE* current;
 		// все мыши

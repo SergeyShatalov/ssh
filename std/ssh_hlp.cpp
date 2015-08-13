@@ -8,6 +8,15 @@ namespace ssh
 	static ssh_wcs wrong_lexem = L",#\"?&^%$:;\'|~<>/!{}[]";
 	Map<HMODULE, String, SSH_TYPE, SSH_TYPE>* Helpers::dlls(nullptr);
 
+	ssh_u Bits::total_set() const
+	{
+		if(hlp->is_cpu_caps(Helpers::SUPPORTS_POPCNT)) return __popcnt64(value);
+		ssh_u count(0), total(total_bits());
+		ssh_l tmp(value);
+		for(ssh_u i = total; i; --i) { count += (tmp & 1); tmp >>= 1; }
+		return count;
+	}
+
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		return hlp->proc_wndmsg(hWnd, msg, wParam, lParam);

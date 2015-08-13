@@ -75,65 +75,54 @@ namespace ssh
 		String* tp;
 	};
 
-	template <typename T> class SSH Bits
+	class SSH Bits
 	{
 	public:
 		// конструктор
 		Bits() : value(0) {}
 		// конструктор по значению
-		Bits(const T& data) : value(data) {}
+		Bits(ssh_l v) : value(v) {}
 		// конструктор копии
-		Bits(const Bits<T>& src) : value(src.value) {}
+		Bits(const Bits& src) : value(src.value) {}
 		// операции
 		// присваивание
-		Bits<T>& operator = (const Bits<T>& src) {value = src.value; return *this;}
-		Bits<T>& operator = (const T& src) {value = src; return *this;}
+		const Bits& operator = (const Bits& src) { value = src.value; return *this; }
+		const Bits& operator = (const ssh_l src) { value = src; return *this; }
 		// приведение
-		operator T() const {return value;}
+		operator ssh_l() const { return value; }
 		// логические
-		bool operator == (const T& src) const {return (value == src);}
-		bool operator != (const T& src) const {return (value != src);}
+		bool operator == (const ssh_l v) const { return (value == v); }
+		bool operator != (const ssh_l v) const { return (value != v); }
 		// функции
 		// установить
-		void set(const T& settings) {value = settings;}
+		void set(const ssh_l v) { value = v; }
 		// очистить
-		void clear() {value = 0;}
+		void clear() { value = 0; }
 		// добавить
-		void addFlags(const T& settings) {value |= settings;}
+		void add_flags(const ssh_l v) { value |= v; }
 		// исключить
-		void delFlags(const T& settings) {value &= ~settings;}
+		void del_flags(const ssh_l v) { value &= ~v; }
 		// установить бит
-		void setBit(ssh_u bit) { value |= (1 << bit); }
+		void set_bit(ssh_l bit) { _bittestandset64(&value, bit); }
 		// очистить бит
-		void clearBit(ssh_u bit) { value &= (~(1 << bit)); }
+		void clear_bit(ssh_l bit) { _bittestandreset64(&value, bit); }
 		// установить по признаку
-		void setBit(ssh_u bit, bool setting) { setting ? setBit(bit) : clearBit(bit); }
+		void set_bit(ssh_l bit, bool is) { is ? set_bit(bit) : clear_bit(bit); }
 		// пустой ?
-		bool is_empty() const {return (value == static_cast<T>(0));}
+		bool is_empty() const { return (value == 0); }
 		// проверка на бит
-		bool testBit(ssh_u bit) const { return ((value & (1 << bit)) != 0); }
+		bool test_bit(ssh_l bit) const { return (_bittest64(&value, bit) != 0); }
 		// проверка на несколько бит
-		bool testFlags(const T& test) const {return ((value & test) == test);}
+		bool test_flags(const ssh_l test) const { return ((value & test) == test); }
 		// проверка на наличие хоть одного установленного
-		bool testAny(const T& test) const {return ((value & test) != 0);}
+		bool test_any(const ssh_l test) const { return ((value & test) != 0); }
 		// длина
-		ssh_u totalBits() const {return (sizeof(T) << 3);}
+		ssh_u total_bits() const { return 64; }
 		// количество установленных
-		ssh_u totalSet() const
-		{
-			ssh_u count(0), total(totalBits());
-			T TestValue(value);
-			for(ssh_u i = total; i; --i) { count += (TestValue & 1); TestValue >>= 1; }
-			return count;
-		}
+		ssh_u total_set() const;
 		// значение
-		T value;
+		ssh_l value;
 	};
-
-	#define Bits8	Bits<BYTE>
-	#define Bits16	Bits<WORD>
-	#define Bits32	Bits<long>
-	#define Bits64	Bits<unsigned long long>
 
 	template <typename T = ssh_u> class Pts
 	{

@@ -154,8 +154,6 @@ protected:
 int _tmain(int argc, _TCHAR* argv[])
 {
 	Singlton<Helpers> _hlp;
-	ssh_w _ww = Half::compress(33.3f);
-	float _flt = Half::decompress(_ww);
 	Singlton<Log> _lg;
 	try
 	{
@@ -191,29 +189,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 	catch(const Exception& e) { e.add(L"главная процедура!"); }
-	return 0;
-	Singlton<Archive> _arh;
-	String nm;
-	if(File::is_exist(L"c:\\1.arh"))
-	{
-		_arh->open(L"c:\\1.arh", L"sergey");
-	}
-	else
-	{
-		_arh->make(L"c:\\1.arh", L"sergey", L"");
-		_arh->add(L"c:\\ca.pem", L"ca");
-		_arh->add(L"c:\\server.pem", L"server");
-	}
-	//_arh->rename(L"ca", L"ca+");
-	_arh->remove(L"ca");
-	nm = _arh->enumerate(true);
-	while(!nm.is_empty())
-	{
-		nm = _arh->enumerate(false);
-	}
-	Buffer<ssh_cs> buf(_arh->get(L"server"));
-	//_arh->close();
-	_arh->open(L"c:\\1.arh", L"sergey");
 	return 0;
 }
 

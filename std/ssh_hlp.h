@@ -129,7 +129,7 @@ namespace ssh
 		// получение относительной скорости процессора
 		ssh_u cpuSpeed() const { return processorSpeed; }
 		// вернуть поддерживаемые наборы инструкций
-		bool is_cpu_caps(ssh_u caps) const { return cpuFlags.testBit(caps); }
+		bool is_cpu_caps(ssh_u caps) const { return cpuFlags.test_bit(caps); }
 		// вернуть версию операционной системы
 		const OS_VERSION& windowsVersion() { return osVersion; }
 		// вернуть смещение строки от начала текста
@@ -286,7 +286,7 @@ namespace ssh
 		// системные строки
 		String si[8];
 		// флаги процессора
-		Bits32 cpuFlags;
+		Bits cpuFlags;
 		// версия операционной системы
 		OS_VERSION osVersion;
 		// индекс сиглтона

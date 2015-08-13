@@ -7,7 +7,7 @@
 
 namespace ssh
 {
-	ssh_wcs String::_empty = L"\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+//	ssh_wcs String::_empty = L"\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
 	__regx_compile regx::_compile((__regx_compile)hlp->get_procedure(L"sshREGX.dll", "regex16_compile"));
 	__regx_exec regx::_exec((__regx_exec)hlp->get_procedure(L"sshREGX.dll", "regex16_exec"));
@@ -16,10 +16,11 @@ namespace ssh
 	const String& String::operator = (const Buffer<ssh_cs>& ccs)
 	{
 		ssh_u len(ccs.count());
-		if(alloc(len))
+		if(alloc(len, false))
 		{
-			MultiByteToWideChar(CP_ACP, 0, ccs, (int)len, buf, (int)len);
-			data()->update();
+			MultiByteToWideChar(CP_ACP, 0, ccs, (int)len, stk.buf, (int)len);
+			stk.buf[len] = 0;
+			stk.update();
 		}
 		return *this;
 	}
@@ -31,46 +32,34 @@ namespace ssh
 		{
 			ssh_u t(strlen(ccs));
 			if(len > t) len = t;
-			if(alloc(len))
+			if(alloc(len, false))
 			{
-				MultiByteToWideChar(CP_ACP, 0, ccs, (int)len, buf, (int)len);
-				data()->update();
+				MultiByteToWideChar(CP_ACP, 0, ccs, (int)len, stk.buf, (int)len);
+				stk.buf[len] = 0;
+				stk.update();
 			}
 		}
 	}
 
 	const String& String::add(ssh_wcs wcs, ssh_u len)
 	{
-		STRING_BUFFER* sb(data());
-		if((sb->len + len) < sb->len_buf)
+		ssh_u l(length());
+		if(alloc(l + len, true))
 		{
-			// в старый буфер все помещается
-			SSH_MEMCPY(buf + sb->len, wcs, len * 2);
-			buf[sb->len + len] = 0;
-			sb->len += len;
-			sb->update();
-		}
-		else
-		{
-			// перевыделение буфера
-			ssh_u l(length());
-			Buffer<ssh_ws> ptr(buf, l, true);
-			if(alloc(l + len))
-			{
-				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, ptr.size()) + l, wcs, len * 2);
-				data()->update();
-			}
+			memcpy(stk.buf + l, wcs, len * 2);
+			stk.buf[l + len] = 0;
+			stk.update();
 		}
 		return *this;
 	}
 	
 	const String& String::make(ssh_wcs wcs, ssh_u len)
 	{
-		if(alloc(len)) { SSH_MEMCPY(buf, wcs, len * 2); data()->update(); }
+		if(alloc(len, false)) { SSH_MEMCPY(buf, wcs, len * 2); buf[len] = 0; data()->update(); }
 		return *this;
 	}
 
-	bool String::alloc(ssh_u sz)
+	bool String::alloc(ssh_u sz, bool is_copy)
 	{
 		if(sz)
 		{
@@ -80,21 +69,20 @@ namespace ssh
 			{
 				if(nsz < 8192)
 				{
-					ssh_d idx;
-					_BitScanReverse64(&idx, nsz);
-					idx++;
-					nsz = (ssh_u)(1 << idx);
+					nsz = hlp->pow2<ssh_u>(nsz, false) * 2;
 					if(nsz < 32) nsz = 32;
 				}
-				empty();
 				// выделим память под новый буфер
 				buffer = (STRING_BUFFER*)new ssh_b[sizeof(STRING_BUFFER) + nsz * sizeof(ssh_ws)];
+				// скопировать старый, если необходимо
+				if(is_copy && !is_empty()) memcpy(buffer->data(), buf, length() * 2);
+				// очистить старый
+				empty();
 				// инициализируем новую
 				buffer->len_buf = nsz;
 				buf = buffer->data();
 			}
 			buffer->len = sz;
-			buf[sz] = 0;
 			return true;
 		}
 		empty();
@@ -122,23 +110,28 @@ namespace ssh
 
 	const String& String::replace(ssh_wcs _old, ssh_wcs _new)
 	{
-		ssh_u nOld(SSH_STRLEN(_old)), nNew(SSH_STRLEN(_new)), nLen(length()), pos(0), nCount(0);
+		ssh_u nOld(SSH_STRLEN(_old)), nNew(SSH_STRLEN(_new)), nLen(length()), nCount(0), nDstOffs(0), nSrcOffs(0), nDiff;
 		ssh_ws* f(buf);
-		Buffer<ssh_ws> ptr(buf, nLen + 1, true);
 		// расчитать новый размер
 		while((f = wcsstr(f, _old))) nCount++, f += nOld;
-		nLen -= (nOld - nNew) * nCount;
-		if(alloc(nLen))
+		nDiff = nNew - nOld;
+		if(nNew > nOld) nDstOffs = nDiff; else nSrcOffs = -nDiff;
+		ssh_u l(nDiff * nCount);
+		// проверка на вместительность буфера
+		if(alloc(nLen + l, true))
 		{
-			ssh_ws *tmp(buf), *pptr(ptr);
-			while((f = wcsstr(pptr, _old)))
+			ssh_ws* _buf(buf);
+			nLen++;
+			// непосредственно замена
+			while((f = wcsstr(_buf, _old)))
 			{
-				ssh_l l(f - pptr);
-				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(tmp, pptr, l * 2) + l, _new, nNew * 2);
-				pptr += (l + nOld);
-				tmp += (l + nNew);
+				l = (nLen - ((f + nSrcOffs) - buf));
+				memmove(f + nDstOffs, f + nSrcOffs, l *2);
+				memcpy(f, _new, nNew * 2);
+				_buf = f + nNew;
+				nLen += nDiff;
 			}
-			SSH_STRCPY(tmp, pptr);
+			buf[nLen] = 0;
 			data()->update();
 		}
 		return *this;
@@ -156,15 +149,13 @@ namespace ssh
 	const String& String::remove(ssh_wcs wcs)
 	{
 		SSH_TRACE;
-		ssh_u nWcs(SSH_STRLEN(wcs)), nLen(length()), pos(0);
-		ssh_ws* f;
-		while((f = wcsstr(buf + pos, wcs)))
+		ssh_u nWcs(SSH_STRLEN(wcs)), nLen(length());
+		ssh_ws* f(buf);
+		while((f = wcsstr(f, wcs)))
 		{
-			pos = (f - buf);
 			nLen -= nWcs;
-			SSH_MEMCPY(f, f + nWcs, (nLen - pos)* 2);
+			SSH_MEMCPY(f, f + nWcs, ((nLen - (f - buf)) + 1) * 2);
 		}
-		buf[nLen] = 0;
 		data()->len = nLen;
 		data()->update();
 		return *this;
@@ -203,10 +194,10 @@ namespace ssh
 		ssh_u len(length()), nWcs(SSH_STRLEN(wcs));
 		if(idx < len)
 		{
-			Buffer<ssh_ws> ptr(buf, len, true);
-			if(alloc(len + nWcs))
+			if(alloc(len + nWcs, true))
 			{
-				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, idx * 2) + idx, wcs, nWcs * 2) + nWcs, &ptr[idx], (len - idx) * 2);
+				memmove(buf + idx + nWcs, buf + idx, ((len - idx) + 1) * 2);
+				memcpy(buf + idx, wcs, nWcs * 2);
 				data()->update();
 			}
 		}
@@ -219,10 +210,9 @@ namespace ssh
 		ssh_u len(length());
 		if(idx < len)
 		{
-			Buffer<ssh_ws> ptr(buf, len, true);
-			if(alloc(len + 1))
+			if(alloc(len + 1, true))
 			{
-				SSH_MEMCPY((ssh_ws*)SSH_MEMCPY(buf, ptr, idx * 2) + idx + 1, &ptr[idx], (len - idx) * 2);
+				memmove(buf + idx + 1, buf + idx, ((len - idx) + 1) * 2);
 				buf[idx] = ws;
 				data()->update();
 			}
@@ -242,9 +232,10 @@ namespace ssh
 	const String& String::fmt(ssh_wcs pattern, va_list argList)
 	{
 		int sz(_vscwprintf(pattern, argList));
-		if(alloc(sz))
+		if(alloc(sz, false))
 		{
 			vswprintf(buf, sz + 1, pattern, argList);
+			buf[sz] = 0;
 			data()->update();
 		}
 		return *this;
@@ -268,10 +259,12 @@ namespace ssh
 		SSH_TRACE;
 		HINSTANCE hInst(::GetModuleHandle(nullptr));
 		HRSRC h(::FindResourceW(hInst, MAKEINTRESOURCE((((id >> 4) + 1) & static_cast<WORD>(~0))), RT_STRING));
-		if(alloc(::SizeofResource(hInst, h)))
+		ssh_u len(::SizeofResource(hInst, h) / sizeof(ssh_ws));
+		if(alloc(len, false))
 		{
-			::LoadString(hInst, (UINT)id, buf, (int)length());
-			data()->len = wcslen(buf);
+			::LoadString(hInst, (UINT)id, buf, (int)len);
+			buf[len] = 0;
+			data()->update();
 		}
 		return *this;
 	}
@@ -288,7 +281,7 @@ namespace ssh
 	const String& String::trim_left(ssh_wcs wcs)
 	{
 		ssh_u len(length()), ln(wcslen(wcs));
-		ssh_ws* _ws(buffer());
+		ssh_ws* _ws(buf);
 		while(is_chars(_ws, wcs, ln)) { len--; _ws++; }
 		memcpy(buf, _ws, len * 2);
 		buf[len] = 0;
@@ -300,7 +293,7 @@ namespace ssh
 	const String& String::trim_right(ssh_wcs wcs)
 	{
 		ssh_u len(length()), ln(wcslen(wcs));
-		ssh_ws* _ws(buffer() + len - 1);
+		ssh_ws* _ws(buf + len - 1);
 		while(is_chars(_ws, wcs, ln)) { len--; _ws--; }
 		buf[len] = 0;
 		data()->len = len;

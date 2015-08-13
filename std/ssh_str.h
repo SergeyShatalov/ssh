@@ -21,28 +21,20 @@ namespace ssh
 	class SSH String
 	{
 	public:
-		enum Radix : int
-		{
-			_dec = 0,
-			_bin = 1,
-			_oct = 2,
-			_hex = 3,
-			_dbl = 4,
-			_flt = 5
-		};
+		enum Radix : int { _dec, _bin, _oct, _hex, _dbl, _flt };
 		// конструкторы
-		String() { init(); }
-		String(String&& str) { buf = str.buf; str.init(); }
-		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); } }
+		String() { }
+		String(String&& str) { stk.buf = str.stk.buf; str.init(); }
+		String(ssh_wcs wcs, ssh_u len = -1) { if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); } }
 		String(ssh_ccs ccs, ssh_u len = -1);
-		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
-		String(const String& str) { init(); *this = str; }
-		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep)) { _wcsset(buf, ws); update(); } }
-		template <typename T> String(T v, Radix r) { init(); fromNum(v, r); }
+		String(const Buffer<ssh_cs>& buf) { *this = buf; }
+		String(const String& str) { *this = str; }
+		String(ssh_ws ws, ssh_u rep) { if(alloc(rep, false)) { _wcsset(stk.buf, ws); stk.buf[rep] = 0; stk.update(); } }
+		template <typename T> String(T v, Radix r) { fromNum(v, r); }
 		// деструктор
-		~String() { empty(); }
+		~String() { stk.empty(); }
 		// привидение типа
-		operator ssh_wcs() const { return buf; }
+		operator ssh_wcs() const { return stk.buf; }
 		operator ssh_u() const { return toNum<ssh_u>(0, _dec); }
 		operator ssh_d() const { return toNum<ssh_d>(0, _dec); }
 		operator int() const { return toNum<int>(0, _dec); }
@@ -53,7 +45,7 @@ namespace ssh
 		operator ssh_b() const { return toNum<ssh_b>(0, _dec); }
 		operator double() const { return toNum<double>(0, _dbl); }
 		operator float() const { return toNum<float>(0, _flt); }
-		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(buf + idx, R); }
+		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(stk.buf + idx, R); }
 		template <typename T> void fromNum(T v, Radix R = String::_dec) { *this = asm_ssh_ntow(&v, R); }
 		// вернуть по индексу
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
@@ -67,7 +59,7 @@ namespace ssh
 		// операторы присваивания
 		const String& operator = (const String& str) { return make(str, str.length()); }
 		const String& operator = (const Buffer<ssh_cs>& buf);
-		const String& operator = (String&& str) { empty(); buf = str.buf; str.init(); return *this; }
+		const String& operator = (String&& str) { empty(); stk.buf = str.stk.buf; str.init(); return *this; }
 		const String& operator = (ssh_ws ws) { return make((ssh_wcs)&ws, 1); }
 		const String& operator = (ssh_wcs wcs) { return make(wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// операторы контакенции
@@ -81,21 +73,23 @@ namespace ssh
 		friend String operator + (const String& str, ssh_ws ws) { return String::add(str, str.length(), (ssh_wcs)&ws, 1); }
 		friend String operator + (const String& str, ssh_wcs wcs) { return String::add(str, str.length(), wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// методы
-		void update() { data()->update(); }
-		ssh_ws* buffer() const { return buf; }
-		ssh_u length() const { return data()->len; }
-		ssh_ws get(ssh_u idx) const { return (idx >= length() ? L'0' : buf[idx]); }
-		void set(ssh_u idx, ssh_ws ws) { if(idx < length()) buf[idx] = ws; }
-		void empty() { if(!is_empty()) { delete data(); init(); } }
-		bool is_empty() const { return (buf == (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)));; }
-		bool compare(ssh_wcs wcs) const { return (_wcsicmp(buf, wcs) == 0); }
-		ssh_u hash() const { return data()->hash; }
+		//void update() { data()->update(); }
+		ssh_ws* buffer() const { return stk.buf; }
+		ssh_u length() const { return stk.l; }
+		ssh_ws get(ssh_u idx) const { return (idx >= length() ? L'0' : stk.buf[idx]); }
+		void set(ssh_u idx, ssh_ws ws) { if(idx < length()) stk.buf[idx] = ws; }
+		void empty() { stk.empty(); }
+//		void empty() { if(!is_empty()) { delete data(); init(); } }
+		bool is_empty() const { return stk.is_empty(); }
+//		bool is_empty() const { return (buf == (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)));; }
+		bool compare(ssh_wcs wcs) const { return (_wcsicmp(stk.buf, wcs) == 0); }
+		ssh_u hash() const { return stk.h; }
 		// модификация
-		ssh_cs* ccs(ssh_cs* ccs, int sz_ccs) const { WideCharToMultiByte(CP_ACP, 0, buf, (int)length() + 1, ccs, (int)sz_ccs, 0, 0); return ccs; }
+		//ssh_cs* ccs(ssh_cs* ccs, int sz_ccs) const { WideCharToMultiByte(CP_ACP, 0, buf, (int)length() + 1, ccs, (int)sz_ccs, 0, 0); return ccs; }
 		const String& load(ssh_u id);
-		const String& lower() { _wcslwr(buf); return *this; }
-		const String& upper() { _wcsupr(buf); return *this; }
-		const String& reverse() { _wcsrev(buf); return *this; }
+		const String& lower() { _wcslwr(stk.buf); return *this; }
+		const String& upper() { _wcsupr(stk.buf); return *this; }
+		const String& reverse() { _wcsrev(stk.buf); return *this; }
 		const String& replace(ssh_wcs _old, ssh_wcs _new);
 		const String& replace(ssh_ws _old, ssh_ws _new);
 		const String& replace(ssh_wcs* _old, ssh_wcs _new);
@@ -111,12 +105,26 @@ namespace ssh
 		const String& trim_left(ssh_wcs wcs);
 		const String& trim_right(ssh_wcs wcs);
 		// поиск
-		ssh_l find(ssh_wcs wcs, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcsstr(buf + idx, wcs) - buf)); }
-		ssh_l find(ssh_ws ws, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcschr(buf + idx, ws) - buf)); }
-		ssh_l find_rev(ssh_ws ws) const { return (ssh_l)(wcsrchr(buf, ws) - buf); }
+		ssh_l find(ssh_wcs wcs, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcsstr(stk.buf + idx, wcs) - stk.buf)); }
+		ssh_l find(ssh_ws ws, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcschr(stk.buf + idx, ws) - stk.buf)); }
+		ssh_l find_rev(ssh_ws ws) const { return (ssh_l)(wcsrchr(stk.buf, ws) - stk.buf); }
 		String substr(ssh_u idx, ssh_u len = -1) const;
 		String left(ssh_u idx) const { return substr(0, idx); }
 	protected:
+		struct STRING
+		{
+			STRING() { init(); }
+			void init() { l = h = 0; lb = 40; buf = sbuf; buf[0] = 0; }
+			bool is_empty() const { return l == 0; }
+			void empty() { if(buf != sbuf) delete buf; init(); }
+			void update() { h = ssh_hash(buf); }
+			ssh_ws* buf;
+			ssh_u l;
+			ssh_u lb;
+			ssh_u h;
+			ssh_ws sbuf[32];
+		};
+		/*
 		struct STRING_BUFFER
 		{
 			// длина данных
@@ -130,15 +138,18 @@ namespace ssh
 			// пересчитать хэш
 			void update() { hash = ssh_hash(data()); }
 		};
+		*/
 		static String add(ssh_wcs wcs1, ssh_u len1, ssh_wcs wcs2, ssh_u len2);
-		void init() { buf = (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)); }
-		bool alloc(ssh_u size);
+		void init() { stk.init(); }
+//		void init() { buf = (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)); }
+		bool alloc(ssh_u size, bool is_copy);
 		const String& add(ssh_wcs wcs, ssh_u len);
 		const String& make(ssh_wcs wcs, ssh_u len);
-		STRING_BUFFER* data() const { return ((STRING_BUFFER*)buf) - 1; }
-		ssh_ws* buf;
+		//STRING_BUFFER* data() const { return ((STRING_BUFFER*)buf) - 1; }
+		//ssh_ws* buf;
+		STRING stk;
 	private:
-		static ssh_wcs _empty;
+		//static ssh_wcs _empty;
 	};
 
 	class SSH regx
