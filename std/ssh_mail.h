@@ -30,47 +30,7 @@ namespace ssh
 			command_smtp_DATABLOCK,
 			command_smtp_DATAEND,
 			command_smtp_STARTTLS,
-			command_smtp_QUIT,
-			// pop3
-			command_pop_INIT,
-			command_pop_USER,
-			command_pop_PASSWORD,
-			command_pop_APOP,//
-			command_pop_DELE,// номер сообщения
-			command_pop_LIST,// [номер сообщения]
-			command_pop_NOOP,//
-			command_pop_RETR,// сообщение
-			command_pop_RSET,//
-			command_pop_STAT,//
-			command_pop_TOP,  // сообщение, количество строк
-			command_pop_STLS,
-			command_pop_QUIT,
-			command_pop_CAPA,
-			command_pop_UIDL,
-			// imap
-			command_imap_INIT,
-			command_imap_LOGIN,// аутентификация - user, pass
-			command_imap_AUTHENTICATE, // безопасная аутентификация
-			command_imap_CLOSE,// закрыть ящик - имя
-			command_imap_LOGOUT,// завершение соединения
-			command_imap_CREATE,// создать ящик - имя
-			command_imap_DELETE,// удалить ящик - имя
-			command_imap_RENAME,// переименовать ящик - старое имя, новое имя
-			command_imap_SUBSCRIBE,// добавить ящик в список активных - имя
-			command_imap_UNSUBSCRIBE,// убрать ящик из списка активных - имя
-			command_imap_LIST,// получить список всех ящиков - -
-			command_imap_LSUB,// получить список активных ящиков - -
-			command_imap_STATUS,// вернуть состояние ящик - имя ящика, - список критериев [MESSAGES,RECENT,UIDNEXT,UIDVALIDITY,UNSEEN] 
-			command_imap_APPEND,
-			command_imap_CHECK,
-			command_imap_EXPUNGE,// удалить все сообщение, помеченные флагом DELETED
-			command_imap_SEARCH,// поиск сообщение по каким-либо критериям
-			command_imap_FETCH,// получить сообщение
-			command_imap_STORE,// 
-			command_imap_COPY,// скопировать сообщение на другой ящик
-			command_imap_UID,// уникальный ID сообщения
-			command_imap_CAPABILITY,// возможности сервера
-			command_imap_NOOP// простой
+			command_smtp_QUIT
 		};
 		struct Command_Entry
 		{
@@ -92,34 +52,10 @@ namespace ssh
 			stTLS,
 			stSSL
 		};
-		enum Protocol
-		{
-			_pop3,
-			_imap,
-			_smtp
-		};
 		struct MAIL_NAME
 		{
 			String name;
 			String mail;
-		};
-		struct MAIL
-		{
-			struct ATTACH
-			{
-				String name;
-				String filename;
-				String bits;
-				Buffer<ssh_cs> obj;
-			};
-			MAIL_NAME sender;
-			String subject;
-			Time gmt_date;
-			String xmailer;
-			String body;
-			String body_type;
-			String xcmd;
-			List<ATTACH*> attached{ID_ATTACH_STK_MAIL};
 		};
 		// конструктор
 		Mail();
@@ -151,14 +87,8 @@ namespace ssh
 		void default(bool is_recipients, bool is_attach);
 		// отправить письмо
 		void smtp(const String& subject, const String& body, bool is_html = false, bool is_notify = false);
-		// принять список писем в соответствии с определенной коммандой(тегом)
-		bool pop3(const String& cmd, List<Mail::MAIL*>* lst, bool is_del);
-		bool imap(const String& cmd, List<Mail::MAIL*>* lst, bool is_del);
 	protected:
-		// декодировать строку из base64 и соответсвующей кодировке
-		String decode_string(String charset, const String& base64, bool is_base64 = true);
 		// парсер письма
-		MAIL* parse_mail(const String& mail, const String& x, MAIL* m, bool is_body);
 		String cnv_rfc(const String& str);
 		// проверка на ключевое слово
 		bool check_keyword(ssh_wcs keyword);
@@ -168,14 +98,8 @@ namespace ssh
 		String headers(const String& subject, bool is_html, bool is_notify);
 		// приветствие серверу
 		void say_hello();
-		// выход
-		void say_quit();
 		// запуск TLS
 		void start_tls();
-		// коннект с удаленным сервером
-		void connect_pop3();
-		void connect_imap();
-		void connect_smtp();
 		// отправка данных
 		void _send_cmd(ssh_u command, ssh_wcs data, ssh_u flags = 0);
 		void send_cmd(ssh_u command, ssh_wcs fmt, ssh_u flags = 0, ...);
@@ -215,8 +139,6 @@ namespace ssh
 		List<String, SSH_TYPE> attach{ID_ATTACH_MAIL};
 		// список адресатов
 		List<MAIL_NAME, SSH_TYPE> recipients{ID_RECIPIENTS_MAIL};
-		// тип протокола
-		int protocol;
 		// возможности
 		String caps;
 		// для операций с регулярными выражениями

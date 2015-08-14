@@ -176,17 +176,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		//mail_smtp.add_attach(L"e:\\2.jpg");
 		mail_smtp.smtp(L"Привет!", L"новое письмецо!!!");
 		return 0;
-		Temp* t;
-		new(&t, L"serg") Temp();
-		t->open(L"e:\\serg++.xml");
-		t->save(L"e:\\serg.xml", true);
-		SSH_REL(t);
- 		return 0;
-		Mail mail_pop(L"imap.yandex.ru:143", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
-		List<Mail::MAIL*> lst;
-		mail_pop.pop3(L"X-Priority", &lst, false);
-		mail_pop.imap(L"X-Priority", &lst, false);
-		return 0;
 	}
 	catch(const Exception& e) { e.add(L"главная процедура!"); }
 	return 0;

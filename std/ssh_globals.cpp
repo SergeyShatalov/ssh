@@ -199,7 +199,7 @@ namespace ssh
 		HMODULE hdll;
 		String module(ssh_file_path_title(dll));
 #ifdef _DEBUG
-		if(_suffix) module += _suffix;
+		if(suffix) module += suffix;
 #endif
 		module += (ssh_file_ext(dll, true));
 		if(!(hdll = dlls[module]))
