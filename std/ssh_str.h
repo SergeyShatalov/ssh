@@ -25,7 +25,7 @@ namespace ssh
 		// конструкторы
 		String() { init(); }
 		String(String&& str) { buf = str.buf; str.init(); }
-		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t?t:len); } }
+		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); } }
 		String(ssh_ccs ccs, ssh_u len = -1);
 		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
 		String(const String& str) { init(); *this = str; }
@@ -51,8 +51,8 @@ namespace ssh
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
 		// операторы сравнения
 		friend bool operator == (const String& str1, const String& str2) { return (str1.hash() == str2.hash()); }
-		friend bool operator == (const String& str, ssh_wcs wcs) { return (wcs?(SSH_STRCMP(str, wcs) == 0):false); }
-		friend bool operator == (ssh_wcs wcs, const String& str) { return (wcs?(SSH_STRCMP(wcs, str) == 0):false); }
+		friend bool operator == (const String& str, ssh_wcs wcs) { return (wcs ? (SSH_STRCMP(str, wcs) == 0) : false); }
+		friend bool operator == (ssh_wcs wcs, const String& str) { return (wcs ? (SSH_STRCMP(wcs, str) == 0) : false); }
 		friend bool operator != (const String& str1, const String& str2) { return !(operator == (str1, str2)); }
 		friend bool operator != (const String& str, ssh_wcs wcs) { return !(operator == (str, wcs)); }
 		friend bool operator != (ssh_wcs wcs, const String& str) { return !(operator == (wcs, str)); }
@@ -61,21 +61,21 @@ namespace ssh
 		const String& operator = (const Buffer<ssh_cs>& buf);
 		const String& operator = (String&& str) { empty(); buf = str.buf; str.init(); return *this; }
 		const String& operator = (ssh_ws ws) { return make((ssh_wcs)&ws, 1); }
-		const String& operator = (ssh_wcs wcs) { return make(wcs, wcs?SSH_STRLEN(wcs):0); }
+		const String& operator = (ssh_wcs wcs) { return make(wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// операторы контакенции
 		const String& operator += (const String& str) { return add(str, str.length()); }
 		const String& operator += (ssh_ws ws) { return add((ssh_wcs)&ws, 1); }
-		const String& operator += (ssh_wcs wcs) { return (wcs?add(wcs, SSH_STRLEN(wcs)):*this); }
+		const String& operator += (ssh_wcs wcs) { return (wcs ? add(wcs, SSH_STRLEN(wcs)) : *this); }
 		// дружественные операторы
 		friend String operator + (ssh_ws ws, const String& str) { return String::add((ssh_wcs)&ws, 1, str, str.length()); }
-		friend String operator + (ssh_wcs wcs, const String& str) { return String::add(wcs, wcs?SSH_STRLEN(wcs):0, str, str.length()); }
+		friend String operator + (ssh_wcs wcs, const String& str) { return String::add(wcs, wcs ? SSH_STRLEN(wcs) : 0, str, str.length()); }
 		friend String operator + (const String& str1, const String& str2) { return String::add(str1, str1.length(), str2, str2.length()); }
 		friend String operator + (const String& str, ssh_ws ws) { return String::add(str, str.length(), (ssh_wcs)&ws, 1); }
-		friend String operator + (const String& str, ssh_wcs wcs) { return String::add(str, str.length(), wcs, wcs?SSH_STRLEN(wcs):0); }
+		friend String operator + (const String& str, ssh_wcs wcs) { return String::add(str, str.length(), wcs, wcs ? SSH_STRLEN(wcs) : 0); }
 		// методы
 		ssh_ws* buffer() const { return buf; }
 		ssh_u length() const { return data()->len; }
-		ssh_ws get(ssh_u idx) const { return (idx >= length()?L'0':buf[idx]); }
+		ssh_ws get(ssh_u idx) const { return (idx >= length() ? L'0' : buf[idx]); }
 		void set(ssh_u idx, ssh_ws ws) { if(idx < length()) buf[idx] = ws; }
 		void empty() { if(!is_empty()) { delete data(); init(); } }
 		bool is_empty() const { return (buf == (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)));; }
@@ -101,8 +101,8 @@ namespace ssh
 		const String& trim_left(ssh_wcs wcs);
 		const String& trim_right(ssh_wcs wcs);
 		// поиск
-		ssh_l find(ssh_wcs wcs, ssh_u idx = 0) const { return (idx >= length()?-1:(ssh_l)(wcsstr(buf + idx, wcs) - buf)); }
-		ssh_l find(ssh_ws ws, ssh_u idx = 0) const { return (idx >= length()?-1:(ssh_l)(wcschr(buf + idx, ws) - buf)); }
+		ssh_l find(ssh_wcs wcs, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcsstr(buf + idx, wcs) - buf)); }
+		ssh_l find(ssh_ws ws, ssh_u idx = 0) const { return (idx >= length() ? -1 : (ssh_l)(wcschr(buf + idx, ws) - buf)); }
 		ssh_l find_rev(ssh_ws ws) const { return (ssh_l)(wcsrchr(buf, ws) - buf); }
 		String substr(ssh_u idx, ssh_u len = -1) const;
 		String left(ssh_u idx) const { return substr(0, idx); }
@@ -161,12 +161,12 @@ namespace ssh
 		ssh_l match(ssh_wcs subject, ssh_u idx_ptrn = -1, ssh_l idx = 0)
 		{
 			subj = (ssh_ws*)subject;
-			return (result = _exec((idx_ptrn == -1?re:patterns[idx_ptrn]), subject, wcslen(subject), idx, 0, vector, 256));
+			return (result = _exec((idx_ptrn == -1 ? re : patterns[idx_ptrn]), subject, wcslen(subject), idx, 0, vector, 256));
 		}
 		// найти совпадения с компиляцией паттерна
 		ssh_l match(ssh_wcs subject, ssh_wcs pattern, ssh_l idx = 0)
 		{
-			return ((re = compile(pattern))?match(subject, -1, idx):0);
+			return ((re = compile(pattern)) ? match(subject, -1, idx) : 0);
 		}
 		// вернуть подстроку по результатам последней операции
 		String substr(ssh_l idx);
@@ -180,16 +180,16 @@ namespace ssh
 		// вернуть количество найденных совпадений
 		ssh_l count() const { return result; }
 		// вернуть индекс в массике совпадений
-		ssh_l vec(ssh_u idx, int offs = 0) const { return (idx < (ssh_u)result?vector[idx * 2 + offs]:-1); }
+		ssh_l vec(ssh_u idx, int offs = 0) const { return (idx < (ssh_u)result ? vector[idx * 2 + offs] : -1); }
 		// вернуть длину в массике совпадений
-		ssh_l len(ssh_u idx) const { return (idx < (ssh_u)result?(vector[idx * 2 + 1] - vector[idx * 2]):0); }
+		ssh_l len(ssh_u idx) const { return (idx < (ssh_u)result ? (vector[idx * 2 + 1] - vector[idx * 2]) : 0); }
 	protected:
 		// компилировать
 		regex16* compile(ssh_wcs pattern)
 		{
 			result = 0;
 			if(re && _free) { _free(re); re = nullptr; }
-			return (_compile?(regex16*)_compile(pattern, 0):nullptr);
+			return (_compile ? (regex16*)_compile(pattern, 0) : nullptr);
 		}
 		ssh_ws* subj;
 		// найденные позиции

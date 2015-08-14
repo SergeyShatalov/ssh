@@ -90,7 +90,7 @@ namespace ssh
 								switch(flg & 15)
 								{
 									case SC_ENUM:
-									case SC_FLAGS: sval += hlp->cnvString(val, sc->stk, sc->def, ((flg & SC_ENUM) == SC_ENUM)); break;
+									case SC_FLAGS: sval += ssh_cnv_string(val, sc->stk, sc->def, ((flg & SC_ENUM) == SC_ENUM)); break;
 									case SC_BOOL: sval += (val == 0 ? L"false" : L"true"); break;
 									default: sval += String(val, (String::Radix)(flg & 3));
 								}
@@ -204,7 +204,7 @@ namespace ssh
 								switch(flg & 15)
 								{
 									case SC_ENUM:
-									case SC_FLAGS: val = hlp->cnvValue(_ws, sc->stk, String(sc->def)); break;
+									case SC_FLAGS: val = ssh_cnv_value(_ws, sc->stk, String(sc->def)); break;
 									case SC_BOOL: val = (wcscmp(_ws, L"true") == 0); break;
 									default: val = sval.toNum<ssh_u>(pos, (String::Radix)(flg & 3)); break;
 								}

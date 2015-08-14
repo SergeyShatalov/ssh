@@ -6,9 +6,9 @@ namespace ssh
 {
 	ssh_wcs String::_empty = L"\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
-	__regx_compile regx::_compile((__regx_compile)hlp->get_procedure(L"sshREGX.dll", "regex16_compile"));
-	__regx_exec regx::_exec((__regx_exec)hlp->get_procedure(L"sshREGX.dll", "regex16_exec"));
-	__regx_free regx::_free((__regx_free)hlp->get_procedure(L"sshREGX.dll", "regex_free"));
+	__regx_compile regx::_compile((__regx_compile)ssh_dll_proc(L"sshREGX.dll", "regex16_compile"));
+	__regx_exec regx::_exec((__regx_exec)ssh_dll_proc(L"sshREGX.dll", "regex16_exec"));
+	__regx_free regx::_free((__regx_free)ssh_dll_proc(L"sshREGX.dll", "regex_free"));
 
 	const String& String::operator = (const Buffer<ssh_cs>& ccs)
 	{
@@ -58,7 +58,7 @@ namespace ssh
 			ssh_d nsz((ssh_d)sz + 1);
 			if(nsz > buffer->len_buf)
 			{
-				if(nsz < 8192) { nsz = hlp->pow2<ssh_d>(nsz, true) * 2; if(nsz < 32) nsz = 32; }
+				if(nsz < 8192) { nsz = ssh_pow2<ssh_d>(nsz, true) * 2; if(nsz < 32) nsz = 32; }
 				// выделим память под новый буфер
 				buffer = (STRING_BUFFER*)new ssh_b[sizeof(STRING_BUFFER) + nsz * sizeof(ssh_ws)];
 				// скопировать старый, если необходимо

@@ -2,7 +2,6 @@
 #pragma once
 
 #include "ssh_buf.h"
-#include "ssh_hlp.h"
 #include "ssh_xml.h"
 
 // опции

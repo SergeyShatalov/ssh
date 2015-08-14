@@ -375,7 +375,7 @@ namespace ssh
 	void Mail::say_hello()
 	{
 		SSH_TRACE;
-		_send_cmd(command_smtp_EHLO, L"EHLO " + hlp->get_system_info(Helpers::siCompName), Mail::add_crlf);
+		_send_cmd(command_smtp_EHLO, L"EHLO " + ssh_system_paths(SystemInfo::siCompName), Mail::add_crlf);
 		caps = resp;
 	}
 
@@ -424,7 +424,7 @@ namespace ssh
 		host = L"smtp.mail.ru:465";
 		sock_flags = (Socket::OPENSSL | Socket::METHOD_SSLv23);
 
-		msg_id = hlp->gen_name(L"__MESSAGE__ID__");
+		msg_id = ssh_gen_name(L"__MESSAGE__ID__");
 	}
 
 	void Mail::set_host(const String& hst, int type)

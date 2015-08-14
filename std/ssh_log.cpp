@@ -99,7 +99,7 @@ namespace ssh
 		email_max_msgs = 200;
 		email_blocked = false;
 		// вывод в файл
-		file_path = hlp->get_system_info(Helpers::siProgFolder) + hlp->get_system_info(Helpers::siNameProg) + L".log";
+		file_path = ssh_system_paths(SystemInfo::siProgFolder) + ssh_system_paths(SystemInfo::siNameProg) + L".log";
 		file_template = L"[$tp] $DT-$tm\t$fn  -  ($fl: $ln) - <$ms>\r\n";;
 		file_flags = File::create_write;
 		// вывод на хост
@@ -119,8 +119,8 @@ namespace ssh
 		static ssh_wcs rpl[] = {L"$DT", L"$fn", L"$ln", L"$fl", L"$ms", L"$tm", L"$dt", L"$us", L"$cm", L"$nm", L"$tp", nullptr};
 		tmp.fmt(L"%s\1%s\1%i\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1%s\1\1",
 				Time::current().fmt(L"$d.$m.$y"), fn, ln, fl, msg, Time::current().fmt(L"$h:$nm:$s"),
-				Time::current().fmt(L"$d $MN)+ $Y ($dW)"), hlp->get_system_info(Helpers::siUserName),
-				hlp->get_system_info(Helpers::siCompName), hlp->get_system_info(Helpers::siNameProg), m_types[tp]);
+				Time::current().fmt(L"$d $MN)+ $Y ($dW)"), ssh_system_paths(SystemInfo::siUserName),
+				ssh_system_paths(SystemInfo::siCompName), ssh_system_paths(SystemInfo::siNameProg), m_types[tp]);
 		tmp.replace(L'\1', L'\0');
 		return templ.replace(rpl, tmp);
 	}
@@ -181,7 +181,7 @@ namespace ssh
 					_log.email_address = lg->email_address;
 					_log.email_count_msgs = 0;
 					_log.email_blocked = false;
-					_log.file_path = hlp->get_system_info(Helpers::siTempFolder) + hlp->gen_name(L"__MAIL__LOG__");
+					_log.file_path = ssh_system_paths(SystemInfo::siTempFolder) + ssh_gen_name(L"__MAIL__LOG__");
 					file.open(_log.file_path, File::create_read_write);// | File::access_temp_remove);
 					file.write(_log.string_begin, cp_utf);
 					break;
@@ -302,7 +302,7 @@ namespace ssh
 					sendSocket(apply_template(fn, fl, ln, type, msgArgs, _log.file_template));
 					break;
 				case TypeOutput::Screen:
-					if(MessageBox(nullptr, apply_template(fn, fl, ln, type, msgArgs, _log.screen_template), hlp->get_system_info(Helpers::siNameProg), MB_ICONERROR | MB_YESNO) == IDNO) { exit(4); }
+					if(MessageBox(nullptr, apply_template(fn, fl, ln, type, msgArgs, _log.screen_template), ssh_system_paths(SystemInfo::siNameProg), MB_ICONERROR | MB_YESNO) == IDNO) { exit(4); }
 					break;
 				case TypeOutput::File:
 					if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.file_template), L"utf-8");
@@ -341,7 +341,7 @@ namespace ssh
 			Buffer<Mail> m(new Mail(_log.email_host, _log.email_login, _log.email_pass, _log.email_flags), 1, false);
 			m->set_charset(L"cp1251");
 			m->add_recipient(L"", _log.email_address);
-			m->set_sender(hlp->get_system_info(Helpers::siNameProg), _log.email_address);
+			m->set_sender(ssh_system_paths(SystemInfo::siNameProg), _log.email_address);
 			m->set_message(L"Система логгирования для отладки программы.");
 			m->smtp(_log.email_subject, str);
 			_log.email_blocked = false;

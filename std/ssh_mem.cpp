@@ -101,7 +101,7 @@ namespace ssh
 			auto n(root);
 			while(n)
 			{
-				String bytes(hlp->make_hex_string<ssh_b>(n->p + sizeof(NodeMem*), n->sz > 48 ? 48 : n->sz, txt, n->sz > 48));
+				String bytes(ssh_make_hex_string<ssh_b>(n->p + sizeof(NodeMem*), n->sz > 48 ? 48 : n->sz, txt, n->sz > 48));
 				log->add(tmp.fmt(L"node <0x%X, %i, <%s>, <%s>", n->p + sizeof(NodeMem*), n->sz, bytes, txt));
 				n = n->next;
 			}
@@ -113,7 +113,7 @@ namespace ssh
 		String tmp;
 		leaks();
 		log->add(tmp.fmt(L"\r\nЗа данный сеанс было выделено %i(~%s) байт памяти ..., освобождено %i(~%s) ...:%c, максимум - %i блоков, %i(~%s)\r\n",
-				 total_alloc, hlp->num_volume(total_alloc), total_free, hlp->num_volume(total_free), (total_alloc != total_free ? L'(' : L')'), max_alloc, size_max_mem, hlp->num_volume(size_max_mem)));
+				 total_alloc, ssh_num_volume(total_alloc), total_free, ssh_num_volume(total_free), (total_alloc != total_free ? L'(' : L')'), max_alloc, size_max_mem, ssh_num_volume(size_max_mem)));
 	}
 
 	void* MemMgr::alloc(ssh_u sz)

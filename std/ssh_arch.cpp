@@ -39,7 +39,7 @@ namespace ssh
 			// 2. создать заголовок
 			caption.version = SSH_SDK_VERSION;
 			caption.hash_signature = sign.hash();
-			caption.hash_name = hlp->file_name(path).hash();
+			caption.hash_name = ssh_file_name(path).hash();
 			caption.tm_create = Time::current();
 			// 3. записать заголовок
 			file.write(&caption, sizeof(ARCHIVE));
@@ -48,7 +48,7 @@ namespace ssh
 			{
 				Xml xml(xml_list);
 				HXML hroot(xml.node(xml.root(), L"archive")), helem;
-				String dstMain(hlp->slash_path(xml.attr<String>(hroot, L"dst", L"")));
+				String dstMain(ssh_slash_path(xml.attr<String>(hroot, L"dst", L"")));
 				ssh_l index(0);
 				while((helem = xml.node(hroot, nullptr, index++)))
 				{
@@ -65,7 +65,7 @@ namespace ssh
 						}
 						else
 						{
-							String filePath(hlp->file_path(dst)), extPath(hlp->file_ext(dst, true));
+							String filePath(ssh_file_path(dst)), extPath(ssh_file_ext(dst, true));
 							for(ssh_u i = 0; i < count; i++)
 							{
 								fmtPath.fmt(count >= 100 ? L"%s%03i%s" : L"%s%02i%s", filePath, i, extPath);
@@ -94,7 +94,7 @@ namespace ssh
 			// 3.1. верси€
 			if(caption.version != SSH_SDK_VERSION) SSH_THROW(L"Ќе допустима€ верси€ SDK <%i>!", caption.version);
 			// 3.2. им€ архива
-			if(hlp->file_name(path).hash() != caption.hash_name) SSH_THROW(L"Ќе допустимое им€ архива!");
+			if(ssh_file_name(path).hash() != caption.hash_name) SSH_THROW(L"Ќе допустимое им€ архива!");
 			// 3.3. сигнатура
 			if(ssh_hash(sign) != caption.hash_signature) SSH_THROW(L"Ќе допустима€ сигнатура <%s>!", sign);
 			// 4. читаем содержимое

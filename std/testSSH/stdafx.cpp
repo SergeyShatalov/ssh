@@ -153,7 +153,6 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
 	try
 	{

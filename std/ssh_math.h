@@ -10,8 +10,6 @@
 #define OBOX_X1Y2Z2 6
 #define OBOX_X2Y2Z2 7
 
-#include "ssh_hlp.h"
-
 extern "C"
 {
 	SSH float* ssh_vec3_mtx(const float* v, const float* m);

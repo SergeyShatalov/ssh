@@ -33,9 +33,6 @@
     <ClInclude Include="ssh_globals.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="ssh_hlp.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="ssh_img.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
@@ -117,9 +114,6 @@
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="ssh_globals.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="ssh_hlp.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="ssh_img.cpp">
