@@ -153,6 +153,41 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	String str, str1(L"sss");
+	float flt = 10.1f;
+	str.fmt(L"%s, %.02f", str1, flt);
+	MYSQL sql;
+	String err;
+	if(!mysql_init(&sql))
+	{
+		err = mysql_error(&sql);
+	}
+	int res = mysql_options(&sql, MYSQL_SET_CHARSET_NAME, "cp1251");
+	if(!mysql_real_connect(&sql, "localhost", "root", nullptr, "sergey", 0, nullptr, 0))
+	{
+		err = mysql_error(&sql);
+	}
+	res = mysql_query(&sql, "INSERT INTO new_table(name, number) VALUES ('vl', 2233121)");
+	res = mysql_affected_rows(&sql);
+	res = mysql_query(&sql, "SELECT * FROM new_table");
+	MYSQL_RES* result = mysql_store_result(&sql);
+	res = mysql_num_rows(result);
+	res = mysql_num_fields(result);
+	MYSQL_FIELD* f = mysql_fetch_field(result);
+	int l = f->max_length;
+	f++;
+	int l1 = f->max_length;
+	f++;
+	int l2 = f->max_length;
+	MYSQL_ROW r = mysql_fetch_row(result);
+	r++;
+	MYSQL_ROW r1 = mysql_fetch_row(result);
+	MYSQL_ROW r2 = mysql_fetch_row(result);
+	mysql_free_result(result);
+	//mysql_fetch_fields()
+	ssh_u id = mysql_insert_id(&sql);
+	mysql_close(&sql);
+	return 0;
 	Singlton<Log> _lg;
 	try
 	{

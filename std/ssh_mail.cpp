@@ -4,8 +4,6 @@
 
 namespace ssh
 {
-	static ssh_cs _crlf[] = "\r\n";
-
 	Mail::Command_Entry command_list[] =
 	{
 		{/* Mail::command_smtp_INIT, */220, L"SERVER_NOT_RESPONDING"},
@@ -98,6 +96,7 @@ namespace ssh
 
 		if(sock.send(s, ssh_cnv(cp_ansi, data, false)))
 		{
+			static ssh_cs _crlf[] = "\r\n";
 			bool is(true);
 			if((flags & Mail::add_crlf)) is = sock.send(s, _crlf, 2);
 			if(is) { recv_resp(command, flags); return; }

@@ -79,7 +79,7 @@ namespace ssh
 		ssh_u set_pos(ssh_u pos, int flags) const { return _lseeki64(h, pos, flags); }
 		static bool rename(ssh_wcs _old, ssh_wcs _new) { return (_wrename(_old, _new) == 0); }
 		static bool unlink(ssh_wcs name) { return (_wunlink(name) == 0); }
-		static bool find(ssh_wcs path, _wfinddata64_t* data, intptr_t* handle, bool is_begin)
+		static bool find(ssh_wcs path, _wfinddata64_t* data, ssh_l* handle, bool is_begin)
 		{
 			if(is_begin) return ((*handle = _wfindfirst64(path, data)) != 0);
 			return (_wfindnext64(*handle, data) == 0);

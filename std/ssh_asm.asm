@@ -3,7 +3,8 @@ extern malloc:near
 
 .data?
 
-result		dw 256 dup(?)
+result		dw 128 dup(?)
+temp_print	dw 512 dup(?)
 
 .data
 
