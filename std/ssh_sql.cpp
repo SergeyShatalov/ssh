@@ -60,7 +60,7 @@ namespace ssh
 		for(int i = 0; i < cf; i++)
 		{
 			if(!q.is_empty()) q += L',';
-			q += String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L' ';
+			q += String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L" ";
 			q += String(types + pos_t[i * 2], pos_t[i * 2 + 1]).trim();
 			if(cd >= i && pos_d[i * 2 + 1] > 0)
 			{
@@ -178,24 +178,101 @@ namespace ssh
 				for(ssh_u i = 0; i < flds; i++)
 				{
 					String val;
-					if(lengths[i])
+					ssh_d l(lengths[i]);
+					ssh_ws* dt(nullptr);
+					if(l)
 					{
-						switch(cnv_type_field(f[i].type))
+						switch(f[i].type)
 						{
-							case TypeField::_string:
+							case MYSQL_TYPE_VARCHAR:
+							case MYSQL_TYPE_VAR_STRING:
+							case MYSQL_TYPE_STRING:
+							case MYSQL_TYPE_BLOB:
+							case MYSQL_TYPE_TINY_BLOB:
+							case MYSQL_TYPE_MEDIUM_BLOB:
+							case MYSQL_TYPE_LONG_BLOB:
+							case MYSQL_TYPE_ENUM:
+							case MYSQL_TYPE_SET:
 								val = ssh_cnv(L"utf-8", Buffer<ssh_cs>(row[i], lengths[i], false), 0);
 								break;
-							case TypeField::_number:
-							case TypeField::_real:
+							case MYSQL_TYPE_TINY:
+							case MYSQL_TYPE_SHORT:
+							case MYSQL_TYPE_LONG:
+							case MYSQL_TYPE_NULL:
+							case MYSQL_TYPE_LONGLONG:
+							case MYSQL_TYPE_INT24:
+							case MYSQL_TYPE_BIT:
+
+							case MYSQL_TYPE_NEWDECIMAL:
+							case MYSQL_TYPE_DECIMAL:
+							case MYSQL_TYPE_FLOAT:
+							case MYSQL_TYPE_DOUBLE:
 								val = row[i];
 								break;
-							case TypeField::_binary:
+							case MYSQL_TYPE_TIMESTAMP:
+							case MYSQL_TYPE_TIMESTAMP2:
+								switch(l)
+								{
+									case 14:
+										dt = L"YYYY-MM-DD HH:XX:SS";
+										break;
+									case 12:
+										dt = L"YY-MM-DD HH:XX:SS";
+										break;
+									case 10:
+										dt = L"YY-MM-DD XX:MM";
+										break;
+									case 8:
+										dt = L"YYYY-MM-DD";
+										break;
+									case 6:
+										dt = L"YY-MM-DD";
+										break;
+									case 4:
+										dt = L"YY-MM";
+										break;
+									case 2:
+										dt = L"YY";
+										break;
+								}
+								break;
+							case MYSQL_TYPE_TIME:
+							case MYSQL_TYPE_TIME2:
+								dt = L"HH:XX:SS";
+								break;
+							case MYSQL_TYPE_DATETIME:
+							case MYSQL_TYPE_DATETIME2:
+								dt = L"YYYY-MM-DD HH:XX:SS";
+								break;
+							case MYSQL_TYPE_DATE:
+							case MYSQL_TYPE_NEWDATE:
+								dt = L"YYYY-MM-DD";
+								break;
+							case MYSQL_TYPE_YEAR:
+								dt = (l == 4 ? L"YYYY" : L"YY");
+								break;
+							case MYSQL_TYPE_GEOMETRY:
 								val = ssh_base64(Buffer<ssh_cs>(row[i], lengths[i], false));
 								break;
-							case TypeField::_time:
-							case TypeField::_date:
-								val = row[i];
 						}
+					}
+					if(dt)
+					{
+						int nYear(1900), nMonth(1), nDay(0), nHour(0), nMin(0), nSec(0);
+						ssh_l pos;
+						val = row[i];
+						if((pos = (wcsstr(dt, L"YYYY") - dt)) >= 0) nYear = val.toNum<int>(pos);
+						else if((pos = (wcsstr(dt, L"YY") - dt)) >= 0)
+						{
+							nYear = val.toNum<int>(pos);
+							nYear += (nYear < 70 ? 2000 : 1900);
+						}
+						if((pos = (wcsstr(dt, L"MM") - dt)) >= 0) nMonth = val.toNum<int>(pos);
+						if((pos = (wcsstr(dt, L"DD") - dt)) >= 0) nDay = val.toNum<int>(pos);
+						if((pos = (wcsstr(dt, L"HH") - dt)) >= 0) nHour = val.toNum<int>(pos);
+						if((pos = (wcsstr(dt, L"XX") - dt)) >= 0) nMin = val.toNum<int>(pos);
+						if((pos = (wcsstr(dt, L"SS") - dt)) >= 0) nSec = val.toNum<int>(pos);
+						val = String(Time(nYear, nMonth, nDay, nHour, nMin, nSec), String::_dec);
 					}
 					map[f[i].name] = val;
 				}
@@ -216,8 +293,9 @@ namespace ssh
 			case MYSQL_TYPE_NULL:
 			case MYSQL_TYPE_LONGLONG:
 			case MYSQL_TYPE_INT24:
-			case MYSQL_TYPE_NEWDECIMAL:
+			case MYSQL_TYPE_BIT:
 				return TypeField::_number;
+			case MYSQL_TYPE_NEWDECIMAL:
 			case MYSQL_TYPE_DECIMAL:
 			case MYSQL_TYPE_FLOAT:
 			case MYSQL_TYPE_DOUBLE:
@@ -226,6 +304,11 @@ namespace ssh
 			case MYSQL_TYPE_VAR_STRING:
 			case MYSQL_TYPE_STRING:
 			case MYSQL_TYPE_BLOB:
+			case MYSQL_TYPE_TINY_BLOB:
+			case MYSQL_TYPE_MEDIUM_BLOB:
+			case MYSQL_TYPE_LONG_BLOB:
+			case MYSQL_TYPE_ENUM:
+			case MYSQL_TYPE_SET:
 				return TypeField::_string;
 			case MYSQL_TYPE_TIMESTAMP:
 			case MYSQL_TYPE_TIME:
@@ -233,23 +316,16 @@ namespace ssh
 			case MYSQL_TYPE_DATETIME:
 			case MYSQL_TYPE_TIMESTAMP2:
 			case MYSQL_TYPE_DATETIME2:
-				return TypeField::_time;
 			case MYSQL_TYPE_DATE:
 			case MYSQL_TYPE_NEWDATE:
 			case MYSQL_TYPE_YEAR:
-				return TypeField::_date;
-			case MYSQL_TYPE_TINY_BLOB:
-			case MYSQL_TYPE_MEDIUM_BLOB:
-			case MYSQL_TYPE_LONG_BLOB:
+				return TypeField::_datetime;
 			case MYSQL_TYPE_GEOMETRY:
 				return TypeField::_binary;
-			case MYSQL_TYPE_BIT:
-			case MYSQL_TYPE_ENUM:
-			case MYSQL_TYPE_SET:
-				break;
 		};
 		return TypeField::_undef;
 	}
+	
 	void MySql::_query(ssh_wcs wcs, ...)
 	{
 		SSH_TRACE;

@@ -155,15 +155,19 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
-		const Map<String, String, SSH_TYPE, SSH_TYPE>* m;
+		Map<String, String, SSH_TYPE, SSH_TYPE>* m;
 		Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> arr(550, 10, 20);
 		MySql _sql(L"localhost", L"root", L"", L"sergey");
-		_sql.add_table(L"shatalov", L"id", L"f1,f2,f3,f4", L"int(4), varchar(255), varchar(255), int(4)", L"1, sergey, vlad, 10", L"моя вторая таблица");
+		_sql.del_table(L"shatalov");
+		_sql.add_table(L"shatalov", L"id", L"_blob,_int,_year,_datetime,_decimal,_date,_time,_bigint,_varchar,_tinyint", L"text, int, year, datetime, decimal,date, time, bigint, varchar(255), tinyint unsigned", L",,,,10", L"моя вторая таблица");
+		_sql.insert(L"shatalov", L"_blob,_int,_year,_datetime,_decimal,_date,_time,_bigint,_varchar,_tinyint", L"Шаталов Сергей Викторович 1979 года рождения!,10101,2015,2015-10-10 11:11:11,22,2015-05-05,23:23:23,222333444555,Шаталов Сергей,200");
 		arr = _sql.select(L"*", L"shatalov", nullptr);
 		for(ssh_u i = 0; i < arr.size(); i++)
 		{
 			m = &arr[i];
+			//Time t = Time::parse(L"$y-$m-$d", (*m)[L"_date"]);
 		}
+		return 0;
 		ssh_u res = _sql.remove(L"shatalov");
 		String tmp;
 		ssh_wcs _tmp[] = { L"Сергей", L"Максим", L"Владислав", L"Ольга", L"Мирослав", L"Виктор", L"Владимир", L"Алан", L"Светлана", L"Георгий", L"Иван", L"Василий"};
@@ -177,28 +181,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		e.add(L"");
 	}
-	/*
-	res = mysql_query(&sql, "INSERT INTO new_table(name, number) VALUES ('vl', 2233121)");
-	res = mysql_affected_rows(&sql);
-	res = mysql_query(&sql, "SELECT * FROM new_table");
-	MYSQL_RES* result = mysql_store_result(&sql);
-	res = mysql_num_rows(result);
-	res = mysql_num_fields(result);
-	MYSQL_FIELD* f = mysql_fetch_field(result);
-	int l = f->max_length;
-	f++;
-	int l1 = f->max_length;
-	f++;
-	int l2 = f->max_length;
-	MYSQL_ROW r = mysql_fetch_row(result);
-	r++;
-	MYSQL_ROW r1 = mysql_fetch_row(result);
-	MYSQL_ROW r2 = mysql_fetch_row(result);
-	mysql_free_result(result);
-	//mysql_fetch_fields()
-	ssh_u id = mysql_insert_id(&sql);
-	mysql_close(&sql);
-	*/
 	return 0;
 	Singlton<Log> _lg;
 	try

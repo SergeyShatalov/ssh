@@ -22,7 +22,7 @@ dbl_znak	dq 1.0, -1.0
 			dq 10000000000.0
 			dq 100000000000.0
 hex_sym		dw 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70
-is_hex		dw 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+is_valid	dw 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 cpu_caps_1	db 8, 0, 4, 0, 8, 1, 8, 0, 8, 9, 5, 0, 8, 12, 9, 0, 8, 13, 10, 0, 8, 19, 6, 0
 			db 8, 20, 7, 0, 8, 22, 11, 0, 8, 23, 12, 0, 8, 25, 13, 0, 8, 28, 14, 0, 8, 29, 25, 0, 8, 30, 15, 0
 			db 12, 8, 31, 0, 12, 11, 31, 0, 12, 15, 16, 0, 12, 19, 31, 0, 12, 23, 1, 0, 12, 24, 31, 0, 12, 25, 2, 0, 12, 26, 3, 0, 0, 0, 0, 0
@@ -126,6 +126,8 @@ asm_ssh_wton proc public
 		push r11
 		push r12
 		push r13
+		push r14
+		mov r14, r8
 		xor rax, rax
 		jrcxz @f
 		mov r10, rcx
@@ -137,6 +139,10 @@ asm_ssh_wton proc public
 		mov r8, [rdx + 16]; маска
 		call qword ptr [rdx]
 @@:		mov qword ptr [result], rax
+		test r14, r14
+		jz @f
+		mov [r14], r11
+@@:		pop r14
 		pop r13
 		pop r12
 		pop r11
@@ -164,7 +170,7 @@ wto_obh:sub rcx, 2
 @@:		mov r11, rcx
 		mov r8, 1
 		xor rax, rax
-		mov rdx, offset is_hex
+		mov rdx, offset is_valid
 @@:		sub rcx, 2
 		cmp rcx, r10
 		jb @f
@@ -197,13 +203,14 @@ wto_dbl:call wto_dec
 		mov r10, rcx
 		call wto_obh
 		cvtsi2sd xmm1, rax
-@@:		sub r11, r10
+@@:		mov r9, r11
+		sub r9, r10
 		mov rcx, 22
-		cmp r11, rcx
-		cmova r11, rcx
+		cmp r9, rcx
+		cmova r9, rcx
 		mov r8, offset dbl_znak
 		shl r12, 1
-		divsd xmm1, qword ptr [r8 + r11 * 4 + 16]
+		divsd xmm1, qword ptr [r8 + r9 * 4 + 16]
 		addsd xmm0, xmm1
 		mulsd xmm0, qword ptr [r8 + r12 * 8]
 		test r13, r13

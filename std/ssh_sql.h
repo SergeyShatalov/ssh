@@ -15,7 +15,7 @@ namespace ssh
 		};
 		enum class TypeField
 		{
-			_number, _real, _string, _binary, _undef, _date, _time
+			_number, _real, _string, _binary, _undef, _datetime
 		};
 		// конструкторы
 		MySql() : is_conn(false) {}
@@ -59,7 +59,7 @@ namespace ssh
 		void _query(ssh_wcs wcs, ...);
 		// преобразование типа поля в "мой" формат
 		TypeField cnv_type_field(int tp) const;
-		// структура описывающая статус соденинеия
+		// структура описывающая статус соединения
 		MYSQL sql;
 		// признак коннекта
 		bool is_conn;

@@ -4,7 +4,7 @@
 extern "C"
 {
 	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
-	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix);
+	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
 };
 
 typedef void* (CALLBACK* __regx_compile)(ssh_wcs pattern, ssh_l options);
@@ -45,7 +45,7 @@ namespace ssh
 		operator ssh_b() const { return toNum<ssh_b>(0, _dec); }
 		operator double() const { return toNum<double>(0, _dbl); }
 		operator float() const { return toNum<float>(0, _flt); }
-		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(buf + idx, R); }
+		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(buf + idx, R, nullptr); }
 		template <typename T> void fromNum(T v, Radix R = String::_dec) { *this = asm_ssh_ntow(&v, R); }
 		// вернуть по индексу
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }

@@ -137,6 +137,7 @@
     <ClCompile Include="ssh_gamepad.cpp" />
     <ClCompile Include="ssh_globals.cpp" />
     <ClCompile Include="ssh_img.cpp" />
+    <ClCompile Include="ssh_img_io.cpp" />
     <ClCompile Include="ssh_jpg.cpp" />
     <ClCompile Include="ssh_log.cpp" />
     <ClCompile Include="ssh_mail.cpp" />
