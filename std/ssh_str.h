@@ -78,7 +78,7 @@ namespace ssh
 		ssh_ws get(ssh_u idx) const { return (idx >= length() ? L'0' : buf[idx]); }
 		void set(ssh_u idx, ssh_ws ws) { if(idx < length()) buf[idx] = ws; }
 		void empty() { if(!is_empty()) { delete data(); init(); } }
-		bool is_empty() const { return (buf == (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER)));; }
+		bool is_empty() const { return (buf == (ssh_ws*)((ssh_cs*)_empty + sizeof(STRING_BUFFER))); }
 		bool compare(ssh_wcs wcs) const { return (_wcsicmp(buf, wcs) == 0); }
 		ssh_u hash() const { return data()->hash; }
 		// модификация

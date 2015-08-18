@@ -111,7 +111,7 @@ namespace ssh
 	ssh_u SSH ssh_hash(ssh_ccs ccs);
 	ssh_u SSH ssh_hash_type(ssh_ccs nm);
 	ssh_u SSH ssh_offset_line(const String& text, ssh_l ln);
-	ssh_u SSH ssh_split(ssh_ws split, ssh_l skip, ssh_wcs src, String* dst, ssh_u count_dst, ssh_wcs def);
+	int SSH ssh_split(ssh_ws split, ssh_wcs src, int* vec, int count_vec);
 	ssh_u SSH ssh_dlg_save_or_open(bool bOpen, ssh_wcs title, ssh_wcs filter, ssh_wcs ext, String& folder, HWND hWnd, String* arr, ssh_u count);
 	ssh_u SSH ssh_cnv_value(ssh_wcs str, ENUM_DATA* stk, ssh_u def);
 	GUID SSH ssh_make_guid(ssh_wcs src);

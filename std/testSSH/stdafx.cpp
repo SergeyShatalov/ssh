@@ -153,20 +153,31 @@ protected:
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	String str, str1(L"sss");
-	float flt = 10.1f;
-	str.fmt(L"%s, %.02f", str1, flt);
-	MYSQL sql;
-	String err;
-	if(!mysql_init(&sql))
+	try
 	{
-		err = mysql_error(&sql);
+		const Map<String, String, SSH_TYPE, SSH_TYPE>* m;
+		Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> arr(550, 10, 20);
+		MySql _sql(L"localhost", L"root", L"", L"sergey");
+		_sql.add_table(L"shatalov", L"id", L"f1,f2,f3,f4", L"int(4), varchar(255), varchar(255), int(4)", L"1, sergey, vlad, 10", L"моя вторая таблица");
+		arr = _sql.select(L"*", L"shatalov", nullptr);
+		for(ssh_u i = 0; i < arr.size(); i++)
+		{
+			m = &arr[i];
+		}
+		ssh_u res = _sql.remove(L"shatalov");
+		String tmp;
+		ssh_wcs _tmp[] = { L"Сергей", L"Максим", L"Владислав", L"Ольга", L"Мирослав", L"Виктор", L"Владимир", L"Алан", L"Светлана", L"Георгий", L"Иван", L"Василий"};
+		for(ssh_u i = 0; i < 10; i++)
+		{
+			res = _sql.insert(L"shatalov", L"f1,f2,f3, f4", tmp.fmt(L"%i,%i,%s,%i", i, i*10, _tmp[i], i*20));
+		}
+		_sql.del_table(L"new_table");
 	}
-	int res = mysql_options(&sql, MYSQL_SET_CHARSET_NAME, "cp1251");
-	if(!mysql_real_connect(&sql, "localhost", "root", nullptr, "sergey", 0, nullptr, 0))
+	catch(const Exception& e)
 	{
-		err = mysql_error(&sql);
+		e.add(L"");
 	}
+	/*
 	res = mysql_query(&sql, "INSERT INTO new_table(name, number) VALUES ('vl', 2233121)");
 	res = mysql_affected_rows(&sql);
 	res = mysql_query(&sql, "SELECT * FROM new_table");
@@ -187,6 +198,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//mysql_fetch_fields()
 	ssh_u id = mysql_insert_id(&sql);
 	mysql_close(&sql);
+	*/
 	return 0;
 	Singlton<Log> _lg;
 	try

@@ -15,7 +15,7 @@ namespace ssh
 		// создать буфер определённого размера
 		Buffer(ssh_u count) : is_owner(true), sz(count * sizeof(T)), data(new T[count]) {}
 		// создать из существующего неопределённого буфера
-		Buffer(T* p, ssh_u count, bool is_copy) : sz(count * sizeof(T)), is_owner(true), data(p) { if(is_copy) move(p); }
+		Buffer(T* p, ssh_u count, bool is_own = true) : sz(count * sizeof(T)), is_owner(is_own), data(p) {}
 		// деструктор
 		~Buffer() { release(); }
 		// оператор присваивание

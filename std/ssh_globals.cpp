@@ -125,7 +125,7 @@ namespace ssh
 	Buffer<ssh_cs> SSH ssh_base64(const String& str, bool is_null)
 	{
 		ssh_u len_buf(0);
-		return Buffer<ssh_cs>(asm_ssh_from_base64(str.buffer(), str.length(), &len_buf, is_null * 2), len_buf, false);
+		return Buffer<ssh_cs>(asm_ssh_from_base64(str.buffer(), str.length(), &len_buf, is_null * 2), len_buf);
 	}
 
 	String SSH ssh_base64(ssh_wcs charset, const String& str)
@@ -135,7 +135,7 @@ namespace ssh
 
 	String SSH ssh_base64(const Buffer<ssh_cs>& buf)
 	{
-		return String(Buffer<ssh_ws>(asm_ssh_to_base64(buf, buf.count()), 1, false).to<ssh_ws>());
+		return String(Buffer<ssh_ws>(asm_ssh_to_base64(buf, buf.count()), 1).to<ssh_ws>());
 	}
 
 	String SSH ssh_md5(const String& str)
@@ -374,24 +374,19 @@ namespace ssh
 		return (_text - txt);
 	}
 	
-	ssh_u SSH ssh_split(ssh_ws split, ssh_l skip, ssh_wcs src, String* dst, ssh_u count_dst, ssh_wcs def)
+	int SSH ssh_split(ssh_ws split, ssh_wcs src, int* vec, int count)
 	{
-		SSH_TRACE;
-		ssh_ws* _wcs((ssh_ws*)src);
-		ssh_ws* t;
-		ssh_u i(0), j;
-		while(i < count_dst)
+		int i(0);
+		ssh_ws* _src((ssh_ws*)src), *esrc(_src + wcslen(src)), *_wcs;
+		while(i < count && _src < esrc)
 		{
-			if((t = wcschr(_wcs, split))) *t = 0;
-			if(skip <= 0) dst[i++] = (ssh_is_null(_wcs) ? def : _wcs);
-			if(t) { *t = split; _wcs = t + 1; }
-			else break;
-			skip--;
+			vec[i * 2 + 0] = (int)(_src - src);
+			if(!(_wcs = wcschr(_src, split))) _wcs = esrc;
+			vec[i * 2 + 1] = (int)(_wcs - _src);
+			_src = _wcs + 1;
+			i++;
 		}
-		j = i;
-		// заполняем значениями по умолчанию
-		for(; i < count_dst; i++) dst[i] = def;
-		return j;
+		return i;
 	}
 	
 	ssh_u SSH ssh_dlg_save_or_open(bool bOpen, ssh_wcs title, ssh_wcs filter, ssh_wcs ext, String& folder, HWND hWnd, String* arr, ssh_u count)
@@ -671,21 +666,21 @@ namespace ssh
 	String SSH ssh_path_in_range(const String& path, ssh_u range)
 	{
 		SSH_TRACE;
-		String result(path);
-		if(result.length() > range)
+		ssh_wcs result(path);
+		if(path.length() > range)
 		{
-			String strs[32];
-			ssh_u pf(0), pl(ssh_split(L'\\', 0, result, strs, 32, L"") - 1), pll(pl);
+			int strs[64];
+			ssh_u pf(0), pl(ssh_split(L'\\', result, strs, 32) - 1), pll(pl);
 			if(pl)
 			{
 				String resultF, resultL;
-				if((strs[0].length() + strs[pl].length() + 5) <= range)
+				if((strs[1] + strs[pl * 2 + 1] + 5) <= range)
 				{
 					while(pf < pl)
 					{
-						String tmpF(resultF + strs[pf] + L'\\'), tmpL(resultL);
+						String tmpF(resultF + String(result[strs[pf * 2]], strs[pf * 2 + 1]) + L'\\'), tmpL(resultL);
 						if(!tmpL.is_empty()) tmpL = L'\\' + tmpL;
-						tmpL = strs[pl] + tmpL;
+						tmpL = String(result[strs[pl * 2]], strs[pl * 2 + 1]) + tmpL;
 						if((tmpL.length() + tmpF.length() + 4) > range)
 						{
 							ssh_u ll(resultF.length() + tmpL.length() + 4);
@@ -700,7 +695,7 @@ namespace ssh
 						pf++;
 					}
 				}
-				if(resultL.is_empty()) resultL = strs[pll];
+				if(resultL.is_empty()) resultL = String(result[strs[pll * 2]], strs[pll * 2 + 1]);
 				result = resultF + L"...\\" + resultL;
 			}
 		}

@@ -338,7 +338,7 @@ namespace ssh
 			file.write(ln, cp_utf);
 			_log.email_count_msgs = 0;
 			// отправка на почту
-			Buffer<Mail> m(new Mail(_log.email_host, _log.email_login, _log.email_pass, _log.email_flags), 1, false);
+			Buffer<Mail> m(new Mail(_log.email_host, _log.email_login, _log.email_pass, _log.email_flags), 1);
 			m->set_charset(L"cp1251");
 			m->add_recipient(L"", _log.email_address);
 			m->set_sender(ssh_system_paths(SystemInfo::siNameProg), _log.email_address);
