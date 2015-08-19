@@ -95,13 +95,14 @@ namespace ssh
 
 	const String& String::replace(ssh_wcs _old, ssh_wcs _new)
 	{
-		ssh_u nOld(SSH_STRLEN(_old)), nNew(SSH_STRLEN(_new)), nLen(length()), nCount(0), nDstOffs(0), nSrcOffs(0), nDiff;
+		ssh_u nOld(SSH_STRLEN(_old)), nNew(SSH_STRLEN(_new)), nLen(length()), nCount(0);
+		ssh_l nDstOffs(0), nSrcOffs(0), nDiff, l;
 		ssh_ws* f(buf);
 		// расчитать новый размер
 		while((f = wcsstr(f, _old))) nCount++, f += nOld;
 		nDiff = nNew - nOld;
 		if(nNew > nOld) nDstOffs = nDiff; else nSrcOffs = -nDiff;
-		ssh_u l(nDiff * nCount);
+		l = nDiff * nCount;
 		// проверка на вместительность буфера
 		if(alloc(nLen + l, true))
 		{
@@ -212,7 +213,7 @@ namespace ssh
 	const String& String::replace(ssh_wcs* _old, ssh_wcs _new)
 	{
 		ssh_u idx(0);
-		while(_old[idx]) replace(_old[idx++], _new), _new += (wcslen(_new) + 1);
+		while(*_new) replace(_old[idx++], _new), _new += (wcslen(_new) + 1);
 		return *this;
 	}
 

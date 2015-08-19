@@ -42,7 +42,7 @@ namespace ssh
 		atm.tm_mon = nMonth - 1;
 		atm.tm_year = nYear - 1900;
 		atm.tm_isdst = nDST;
-		time = mktime(&atm);
+		time = _mktime64(&atm);
 	}
 
 	Time::Time(const SYSTEMTIME& sysTime, int nDST)
@@ -73,9 +73,10 @@ namespace ssh
 		return &ptm;
 	}
 	
-	void Time::getAsSystemTime(SYSTEMTIME& timeDest) const
+	SYSTEMTIME Time::getAsSystemTime() const
 	{
 		struct tm* ptm(local());
+		SYSTEMTIME timeDest;
 		timeDest.wYear = (WORD)(1900 + ptm->tm_year);
 		timeDest.wMonth = (WORD)(1 + ptm->tm_mon);
 		timeDest.wDayOfWeek = (WORD)ptm->tm_wday;
@@ -84,6 +85,7 @@ namespace ssh
 		timeDest.wMinute = (WORD)ptm->tm_min;
 		timeDest.wSecond = (WORD)ptm->tm_sec;
 		timeDest.wMilliseconds = 0;
+		return timeDest;
 	}
 
 	int Time::weekOfYear() const

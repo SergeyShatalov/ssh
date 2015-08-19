@@ -377,14 +377,17 @@ namespace ssh
 	int SSH ssh_split(ssh_ws split, ssh_wcs src, int* vec, int count)
 	{
 		int i(0);
-		ssh_ws* _src((ssh_ws*)src), *esrc(_src + wcslen(src)), *_wcs;
-		while(i < count && _src < esrc)
+		if(split && src && vec && count)
 		{
-			vec[i * 2 + 0] = (int)(_src - src);
-			if(!(_wcs = wcschr(_src, split))) _wcs = esrc;
-			vec[i * 2 + 1] = (int)(_wcs - _src);
-			_src = _wcs + 1;
-			i++;
+			ssh_ws* _src((ssh_ws*)src), *esrc(_src + wcslen(src)), *_wcs;
+			while(i < count && _src < esrc)
+			{
+				vec[i * 2 + 0] = (int)(_src - src);
+				if(!(_wcs = wcschr(_src, split))) _wcs = esrc;
+				vec[i * 2 + 1] = (int)(_wcs - _src);
+				_src = _wcs + 1;
+				i++;
+			}
 		}
 		return i;
 	}
@@ -728,5 +731,32 @@ namespace ssh
 			i++;
 		}
 		return (ret.is_empty() ? def : ret);
+	}
+
+	String SSH ssh_translate(ssh_wcs text, bool to_eng)
+	{
+		static ssh_wcs rus1[] = {	L"×", L"Ø", L"Ý", L"À", L"Á", L"Â", L"Ã", L"Ä", L"Å", L"¨", L"Æ", L"Ç", L"È", L"É", L"Ê", L"Ë", L"Ì", L"Í", L"Î", L"Ï", L"Ð", L"Ñ", L"Ò", L"Ó", L"Ô", L"Õ", L"Ö", L"Ù", L"Þ", L"ß", L"Ü", L"Ú", L"Û",
+									L"÷", L"ø", L"ý", L"à", L"á", L"â", L"ã", L"ä", L"å", L"¸", L"æ", L"ç", L"è", L"é", L"ê", L"ë", L"ì", L"í", L"î", L"ï", L"ð", L"ñ", L"ò", L"ó", L"ô", L"õ", L"ö", L"ù", L"þ", L"ÿ", L"ü", L"ú", L"û" };
+		static ssh_wcs eng1 = L"Ch\0Sh\0Je\0A\0B\0V\0G\0D\0E\0Jo\0Zh\0Z\0I\0J\0K\0L\0M\0N\0O\0P\0R\0S\0T\0U\0F\0H\0C\0W\0Yu\0Ya\0Q\0X\0Y\0ch\0sh\0je\0a\0b\0v\0g\0d\0e\0jo\0zh\0z\0i\0j\0k\0l\0m\0n\0o\0p\0r\0s\0t\0u\0f\0h\0c\0w\0yu\0ya\0q\0x\0y\0\0";
+
+		static ssh_wcs eng2[] = {	L"Ch", L"Sh", L"Je", L"Yu", L"Ya", L"A", L"B", L"V", L"G", L"D", L"E", L"Jo", L"Zh", L"Z", L"I", L"J", L"K", L"L", L"M", L"N", L"O", L"P", L"R", L"S", L"T", L"U", L"F", L"H", L"C", L"W", L"Q", L"X", L"Y",
+									L"ch", L"sh", L"je", L"yu", L"ya", L"a", L"b", L"v", L"g", L"d", L"e", L"jo", L"zh", L"z", L"i", L"j", L"k", L"l", L"m", L"n", L"o", L"p", L"r", L"s", L"t", L"u", L"f", L"h", L"c", L"w", L"q", L"x", L"y"};
+		static ssh_wcs rus2 = L"×\0Ø\0Ý\0Þ\0ß\0À\0Á\0Â\0Ã\0Ä\0Å\0¨\0Æ\0Ç\0È\0É\0Ê\0Ë\0Ì\0Í\0Î\0Ï\0Ð\0Ñ\0Ò\0Ó\0Ô\0Õ\0Ö\0Ù\0Ü\0Ú\0Û\0÷\0ø\0ý\0þ\0ÿ\0à\0á\0â\0ã\0ä\0å\0¸\0æ\0ç\0è\0é\0ê\0ë\0ì\0í\0î\0ï\0ð\0ñ\0ò\0ó\0ô\0õ\0ö\0ù\0ü\0ú\0û\0\0" ;
+
+		String txt(text);
+		if(to_eng) return txt.replace(rus1, eng1);
+		return txt.replace(eng2, rus2);
+	}
+
+	String SSH ssh_make_params(ssh_wcs fmt, ...)
+	{
+		String q;
+
+		va_list args;
+		va_start(args, wcs);
+		q.fmt(wcs, args);
+		va_end(args);
+
+		return q;
 	}
 }

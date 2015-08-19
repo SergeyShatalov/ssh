@@ -4,13 +4,26 @@
 
 namespace ssh
 {
-	void MySql::connect(ssh_wcs _host, ssh_wcs user, ssh_wcs pass, ssh_wcs db)
+	static ssh_wcs _lck_types[] = { L"READ", L"WRITE", L"READWRITE" };
+	static ssh_wcs _tbl_types[] = { L"BDB", L"HEAP", L"ISAM", L"InnoDB", L"MERGE", L"MRG_MYISAM", L"MYISAM" };
+	static ssh_wcs _fld_types[] = { L"DOUBLE", L"FLOAT", L"DECIMAL",
+									L"CHAR", L"VARCHAR",
+									L"TINYINT", L"SMALLINT", L"MEDIUMINT", L"BIGINT", L"INT", L"BIT",
+									L"ENUM", L"SET",
+									L"TINYBLOB", L"MEDIUMBLOB", L"LONGBLOB", L"BLOB",
+									L"TINYTEXT", L"MEDIUMTEXT", L"LONGTEXT", L"TEXT",
+									L"DATE", L"TIME", L"DATETIME", L"YEAR", L"TIMESTAMP", L""};
+	static ssh_wcs _row_types[] = { L"DEFAULT", L"DYNAMIC", L"FIXED", L"COMPRESSED"};
+
+	void MySql::connect(ssh_wcs _host, ssh_wcs user, ssh_wcs pass, ssh_wcs db, ssh_wcs _charset)
 	{
 		SSH_TRACE;
+		
 		disconnect();
 
-		if(!mysql_init(&sql))
-			SSH_THROW(L"Не удалось инициализировать mysql! Ошибка - %s!", error_string());
+		if(!mysql_init(&sql)) SSH_THROW(L"Не удалось инициализировать mysql! Ошибка - %s!", error_string());
+		if(mysql_options(&sql, MYSQL_SET_CHARSET_NAME, ssh_cnv(cp_ansi, _charset, true))) SSH_THROW(L"Не удалось установить кодировку mysql! Ошибка - %s!", error_string());
+
 		String host(_host);
 		ssh_l port(0), pos;
 		if((pos = host.find(L':')) >= 0)
@@ -20,6 +33,7 @@ namespace ssh
 		}
 		if(!mysql_real_connect(&sql, ssh_cnv(cp_ansi, host, true), ssh_cnv(cp_ansi, user, true), ssh_cnv(cp_ansi, pass, true), ssh_cnv(cp_ansi, db, true), (unsigned int)port, nullptr, 0))
 			SSH_THROW(L"Не удалось соединиться с сервером mysql! Ошибка - %s!", error_string());
+		charset = _charset;
 	}
 	
 	void MySql::disconnect()
@@ -29,68 +43,20 @@ namespace ssh
 		is_conn = false;
 	}
 	
-	void MySql::add_db(ssh_wcs name)
+	void MySql::add_table(const FIELD flds[], ssh_wcs name, ssh_wcs comment, TypesTable type, TypesRow row)
 	{
-		SSH_TRACE;
-		_query(L"CREATE DATABASE IF NOT EXISTS %s", name);
-	}
-	
-	void MySql::del_db(ssh_wcs name)
-	{
-		SSH_TRACE;
-		_query(L"DROP DATABASE IF_EXISTS %s", name);
-	}
-	
-	void MySql::sel_db(ssh_wcs name)
-	{
-		SSH_TRACE;
-		_query(L"USE %s", name);
-	}
-	
-	void MySql::add_table(ssh_wcs name, ssh_wcs auto_inc, ssh_wcs fields, ssh_wcs types, ssh_wcs defs, ssh_wcs comment)
-	{
-		SSH_TRACE;
-		int pos_f[128], pos_t[128], pos_d[128];
-		int cf(ssh_split(L',', fields, pos_f, 64));
-		int ct(ssh_split(L',', types, pos_t, 64));
-		int cd(ssh_split(L',', defs, pos_d, 64));
-		if(cf != ct) SSH_THROW(L"");
-		String q, c;
-		if(auto_inc) q.fmt(L"%s int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT", auto_inc);
-		for(int i = 0; i < cf; i++)
+		String q;
+		const FIELD* f(&flds[0]);
+		// поля
+		while(f->name)
 		{
 			if(!q.is_empty()) q += L',';
-			q += String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L" ";
-			q += String(types + pos_t[i * 2], pos_t[i * 2 + 1]).trim();
-			if(cd >= i && pos_d[i * 2 + 1] > 0)
-			{
-				String def(defs + pos_d[i * 2], pos_d[i * 2 + 1]);
-				if(def.trim().length()) q += L" DEFAULT \'" + def + L'\'';
-			}
+			q += make_field(f);
+			f++;
 		}
-		if(comment) c.fmt(L" COMMENT=\"%s\"", comment);
-		_query(L"CREATE TABLE IF NOT EXISTS %s (%s)%s", name, q, c);
+		_query(L"CREATE TABLE IF NOT EXISTS `%s` (%s) ENGINE=%s COMMENT='%s'", name, q, _tbl_types[(int)type], comment);
 	}
-	
-	void MySql::del_table(ssh_wcs name)
-	{
-		SSH_TRACE;
-		_query(L"DROP TABLE IF EXISTS %s", name);
-	}
-	
-	void MySql::lock_table(ssh_wcs name, LockTables lt, bool is)
-	{
-		SSH_TRACE;
-		String rights;
-		switch(lt)
-		{
-			case LockTables::read: rights = L"READ"; break;
-			case LockTables::write: rights = L"WRITE"; break;
-			case LockTables::readwrite: rights = L"READ WRITE"; break;
-		}
-		if(is) _query(L"LOCK TABLES %s %s", name, rights); else _query(L"UNLOCK TABLES");
-	}
-	
+
 	Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> MySql::select(ssh_wcs express, ssh_wcs tbls, bool is_duplicate, ssh_wcs comp, ssh_wcs group, ssh_wcs order, ssh_u offs, ssh_u rows)
 	{
 		SSH_TRACE;
@@ -103,63 +69,92 @@ namespace ssh
 		return get_result();
 	}
 
-	ssh_u MySql::update(ssh_wcs tbl, ssh_wcs fields, ssh_wcs values, ssh_wcs comp, ssh_u limit)
+	ssh_u MySql::update(ssh_wcs tbl, ssh_wcs fields, ssh_wcs values, ssh_wcs comp, bool is_locked, ssh_u limit)
 	{
 		SSH_TRACE;
 		int pos_f[128], pos_v[128];
 		int cf(ssh_split(L',', fields, pos_f, 64));
 		int cv(ssh_split(L',', values, pos_v, 64));
-		if(cf != cv) SSH_THROW(L"Недопустимо задан оператор UPDATE!");
+		if(cf != cv || !cf) SSH_THROW(L"Недопустимо задан оператор UPDATE!");
 		String q_lim, q;
 		for(int i = 0; i < cf; i++)
 		{
 			if(!q.is_empty()) q += L',';
-			q += String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L'=';
+			q += L'`' + String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L"`=";
 			q += L'\'' + String(values + pos_v[i * 2], pos_v[i * 2 + 1]).trim(L"'") + L'\'';
 		}
 		if(limit) q_lim.fmt(L" LIMIT %i", limit);
-		_query(L"UPDATE %s SET %s %s%s", tbl, q, comp, q_lim);
+		
+		if(is_locked) lock_table(tbl, true);
+		_query(L"UPDATE `%s` SET %s %s%s", tbl, q, comp, q_lim);
+		if(is_locked) lock_table(tbl, false);
+		
 		return mysql_affected_rows(&sql);
 	}
 	
-	ssh_u MySql::insert(ssh_wcs tbl, ssh_wcs fields, ssh_wcs values, bool is_replace)
+	ssh_u MySql::insert(ssh_wcs tbl, ssh_wcs fields, ssh_wcs values, bool is_locked, bool is_replace)
 	{
 		SSH_TRACE;
 		int pos_f[128], pos_v[128];
 		int cf(ssh_split(L',', fields, pos_f, 64));
 		int cv(ssh_split(L',', values, pos_v, 64));
-		if(cf != cv) SSH_THROW(L"Недопустимо задан оператор INSERT!");
+		if(cf != cv || !cf) SSH_THROW(L"Недопустимо задан оператор INSERT!");
 		String qf, qv;
 		for(int i = 0; i < cf; i++)
 		{
 			if(!qf.is_empty()) qf += L',';
 			if(!qv.is_empty()) qv += L',';
-			qf += String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim();
+			qf += L'`' + String(fields + pos_f[i * 2], pos_f[i * 2 + 1]).trim() + L'`';
 			qv += L'\'' + String(values + pos_v[i * 2], pos_v[i * 2 + 1]).trim(L"'") + L'\'';
 		}
-		_query(L"%s INTO %s (%s) VALUES (%s)", (is_replace ? L"REPLACE" : L"INSERT"), tbl, qf, qv);
+		
+		if(is_locked) lock_table(tbl, true);
+		_query(L"%s INTO `%s` (%s) VALUES (%s)", (is_replace ? L"REPLACE" : L"INSERT"), tbl, qf, qv);
+		if(is_locked) lock_table(tbl, false);
+		
 		return mysql_affected_rows(&sql);
 	}
 	
-	ssh_u MySql::remove(ssh_wcs tbl, ssh_wcs comp, ssh_wcs order, ssh_u limit)
+	ssh_u MySql::remove(ssh_wcs tbl, bool is_locked, ssh_wcs comp, ssh_wcs order, ssh_u limit)
 	{
 		SSH_TRACE;
-		ssh_u ret(0);
-		if(!comp)
-		{
-			_query(L"TRUNCATE TABLE %s", tbl);
-		}
-		else
-		{
-			String q, tmp;
-			if(order) q.fmt(L" ORDER BY %s", order);
-			if(limit) q += tmp.fmt(L" LIMIT %i", limit);
-			_query(L"DELETE FROM %s WHERE %s%s", tbl, tmp);
-			ret = mysql_affected_rows(&sql);
-		}
-		return ret;
+	
+		if(!comp) return truncate_table(tbl, is_locked);
+		
+		String q, tmp;
+		if(order) q.fmt(L" ORDER BY %s", order);
+		if(limit) q += tmp.fmt(L" LIMIT %i", limit);
+
+		if(is_locked) lock_table(tbl, true);
+		_query(L"DELETE FROM `%s` WHERE %s%s", tbl, tmp);
+		if(is_locked) lock_table(tbl, false);
+
+		return mysql_affected_rows(&sql);
 	}
 	
+	ssh_u MySql::truncate_table(ssh_wcs name, bool is_locked)
+	{
+		if(is_locked) lock_table(name, true);
+		_query(L"TRUNCATE TABLE `%s`", name);
+		if(is_locked) lock_table(name, false);
+		return 0;
+	}
+
+	void MySql::_query(ssh_wcs wcs, ...)
+	{
+		SSH_TRACE;
+
+		String q;
+
+		va_list args;
+		va_start(args, wcs);
+		q.fmt(wcs, args);
+		va_end(args);
+
+		if(mysql_query(&sql, ssh_cnv(charset, q, true)))
+			SSH_THROW(L"Не удалось выполнить запрос к БД! Ошибка - <%s>!", error_string());
+	}
+
 	Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> MySql::get_result()
 	{
 		SSH_TRACE;
@@ -169,11 +164,13 @@ namespace ssh
 			MYSQL_RES* result;
 			if(!(result = mysql_store_result(&sql))) SSH_THROW(L"Внутренняя ошибка сервера - <%s>!", error_string());
 			ssh_u flds(mysql_num_fields(result));
+			ssh_u rows(mysql_num_rows(result));
 			MYSQL_FIELD* f(mysql_fetch_fields(result));
-			MYSQL_ROW row;
-			while((row = mysql_fetch_row(result)))
+			arrs.set_size(rows);
+			for(ssh_u j = 0; j < rows; j++)
 			{
-				Map<String, String, SSH_TYPE, SSH_TYPE> map;
+				MYSQL_ROW row(mysql_fetch_row(result));
+				Map<String, String, SSH_TYPE, SSH_TYPE>* map(&arrs[j]);
 				ssh_d* lengths(mysql_fetch_lengths(result));
 				for(ssh_u i = 0; i < flds; i++)
 				{
@@ -182,160 +179,139 @@ namespace ssh
 					ssh_ws* dt(nullptr);
 					if(l)
 					{
-						switch(f[i].type)
+						TypesField tp(cnv_type_field(f[i].type));
+						switch(tp)
 						{
-							case MYSQL_TYPE_VARCHAR:
-							case MYSQL_TYPE_VAR_STRING:
-							case MYSQL_TYPE_STRING:
-							case MYSQL_TYPE_BLOB:
-							case MYSQL_TYPE_TINY_BLOB:
-							case MYSQL_TYPE_MEDIUM_BLOB:
-							case MYSQL_TYPE_LONG_BLOB:
-							case MYSQL_TYPE_ENUM:
-							case MYSQL_TYPE_SET:
-								val = ssh_cnv(L"utf-8", Buffer<ssh_cs>(row[i], lengths[i], false), 0);
-								break;
-							case MYSQL_TYPE_TINY:
-							case MYSQL_TYPE_SHORT:
-							case MYSQL_TYPE_LONG:
-							case MYSQL_TYPE_NULL:
-							case MYSQL_TYPE_LONGLONG:
-							case MYSQL_TYPE_INT24:
-							case MYSQL_TYPE_BIT:
-
-							case MYSQL_TYPE_NEWDECIMAL:
-							case MYSQL_TYPE_DECIMAL:
-							case MYSQL_TYPE_FLOAT:
-							case MYSQL_TYPE_DOUBLE:
-								val = row[i];
-								break;
-							case MYSQL_TYPE_TIMESTAMP:
-							case MYSQL_TYPE_TIMESTAMP2:
-								switch(l)
-								{
-									case 14:
-										dt = L"YYYY-MM-DD HH:XX:SS";
-										break;
-									case 12:
-										dt = L"YY-MM-DD HH:XX:SS";
-										break;
-									case 10:
-										dt = L"YY-MM-DD XX:MM";
-										break;
-									case 8:
-										dt = L"YYYY-MM-DD";
-										break;
-									case 6:
-										dt = L"YY-MM-DD";
-										break;
-									case 4:
-										dt = L"YY-MM";
-										break;
-									case 2:
-										dt = L"YY";
-										break;
-								}
-								break;
-							case MYSQL_TYPE_TIME:
-							case MYSQL_TYPE_TIME2:
-								dt = L"HH:XX:SS";
-								break;
-							case MYSQL_TYPE_DATETIME:
-							case MYSQL_TYPE_DATETIME2:
-								dt = L"YYYY-MM-DD HH:XX:SS";
-								break;
-							case MYSQL_TYPE_DATE:
-							case MYSQL_TYPE_NEWDATE:
-								dt = L"YYYY-MM-DD";
-								break;
-							case MYSQL_TYPE_YEAR:
-								dt = (l == 4 ? L"YYYY" : L"YY");
-								break;
-							case MYSQL_TYPE_GEOMETRY:
-								val = ssh_base64(Buffer<ssh_cs>(row[i], lengths[i], false));
-								break;
+							case TypesField::BIT: break;
+							case TypesField::TINYINT:
+							case TypesField::SMALLINT:
+							case TypesField::MEDIUMINT:
+							case TypesField::BIGINT:
+							case TypesField::INT:
+							case TypesField::FLOAT:
+							case TypesField::DOUBLE:
+							case TypesField::DECIMAL:
+							case TypesField::SET:
+							case TypesField::ENUM: val = row[i]; break;
+							case TypesField::DATETIME:
+							case TypesField::TIMESTAMP: dt = L"YYYY-MM-DD HH:XX:SS"; break;
+							case TypesField::YEAR: dt = L"YYYY"; break;
+							case TypesField::DATE: dt = L"YYYY-MM-DD"; break;
+							case TypesField::TIME: dt = L"HH:XX:SS"; break;
+							case TypesField::CHAR:
+							case TypesField::VARCHAR:
+							case TypesField::TINYBLOB:
+							case TypesField::MEDIUMBLOB:
+							case TypesField::LONGBLOB:
+							case TypesField::BLOB: val = ssh_cnv(charset, Buffer<ssh_cs>(row[i], l, false), 0); break;
 						}
 					}
 					if(dt)
 					{
-						int nYear(1900), nMonth(1), nDay(0), nHour(0), nMin(0), nSec(0);
-						ssh_l pos;
 						val = row[i];
-						if((pos = (wcsstr(dt, L"YYYY") - dt)) >= 0) nYear = val.toNum<int>(pos);
-						else if((pos = (wcsstr(dt, L"YY") - dt)) >= 0)
+						int tm[6] = { 1970, 1, 2, 3, 0, 0};
+						ssh_wcs pattern[] = { L"YY", L"MM", L"DD", L"HH", L"XX", L"SS" };
+						ssh_l pos;
+						for(int i = 0; i < 6; i++)
 						{
-							nYear = val.toNum<int>(pos);
-							nYear += (nYear < 70 ? 2000 : 1900);
+							if((pos = (wcsstr(dt, pattern[i]) - dt)) >= 0) tm[i] = val.toNum<int>(pos);
 						}
-						if((pos = (wcsstr(dt, L"MM") - dt)) >= 0) nMonth = val.toNum<int>(pos);
-						if((pos = (wcsstr(dt, L"DD") - dt)) >= 0) nDay = val.toNum<int>(pos);
-						if((pos = (wcsstr(dt, L"HH") - dt)) >= 0) nHour = val.toNum<int>(pos);
-						if((pos = (wcsstr(dt, L"XX") - dt)) >= 0) nMin = val.toNum<int>(pos);
-						if((pos = (wcsstr(dt, L"SS") - dt)) >= 0) nSec = val.toNum<int>(pos);
-						val = String(Time(nYear, nMonth, nDay, nHour, nMin, nSec), String::_dec);
+						val = String(Time(tm[0], tm[1], tm[2], tm[3], tm[4], tm[5]), String::_dec);
 					}
-					map[f[i].name] = val;
+					(*map)[f[i].name] = val;
 				}
-				arrs += map;
 			}
 			mysql_free_result(result);
 		}
 		return arrs;
 	}
 	
-	MySql::TypeField MySql::cnv_type_field(int tp) const
+	MySql::TypesField MySql::cnv_type_field(int tp) const
 	{
-		switch(tp)
+		static TypesField _t_flds[] = { TypesField::DECIMAL, TypesField::TINYINT, TypesField::SMALLINT, TypesField::INT, TypesField::FLOAT, TypesField::DOUBLE, TypesField::BIT, TypesField::TIMESTAMP,
+										TypesField::BIGINT, TypesField::MEDIUMINT, TypesField::DATE, TypesField::TIME, TypesField::DATETIME, TypesField::YEAR, TypesField::DATE, TypesField::VARCHAR,
+										TypesField::BIT, TypesField::TIMESTAMP, TypesField::DATETIME, TypesField::TIME, TypesField::DECIMAL, TypesField::ENUM, TypesField::SET, TypesField::TINYBLOB,
+										TypesField::MEDIUMBLOB, TypesField::LONGBLOB, TypesField::BLOB, TypesField::VARCHAR, TypesField::VARCHAR, TypesField::NONE};
+		if(tp >= MYSQL_TYPE_NEWDECIMAL)
 		{
-			case MYSQL_TYPE_TINY:
-			case MYSQL_TYPE_SHORT:
-			case MYSQL_TYPE_LONG:
-			case MYSQL_TYPE_NULL:
-			case MYSQL_TYPE_LONGLONG:
-			case MYSQL_TYPE_INT24:
-			case MYSQL_TYPE_BIT:
-				return TypeField::_number;
-			case MYSQL_TYPE_NEWDECIMAL:
-			case MYSQL_TYPE_DECIMAL:
-			case MYSQL_TYPE_FLOAT:
-			case MYSQL_TYPE_DOUBLE:
-				return TypeField::_real;
-			case MYSQL_TYPE_VARCHAR:
-			case MYSQL_TYPE_VAR_STRING:
-			case MYSQL_TYPE_STRING:
-			case MYSQL_TYPE_BLOB:
-			case MYSQL_TYPE_TINY_BLOB:
-			case MYSQL_TYPE_MEDIUM_BLOB:
-			case MYSQL_TYPE_LONG_BLOB:
-			case MYSQL_TYPE_ENUM:
-			case MYSQL_TYPE_SET:
-				return TypeField::_string;
-			case MYSQL_TYPE_TIMESTAMP:
-			case MYSQL_TYPE_TIME:
-			case MYSQL_TYPE_TIME2:
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP2:
-			case MYSQL_TYPE_DATETIME2:
-			case MYSQL_TYPE_DATE:
-			case MYSQL_TYPE_NEWDATE:
-			case MYSQL_TYPE_YEAR:
-				return TypeField::_datetime;
-			case MYSQL_TYPE_GEOMETRY:
-				return TypeField::_binary;
-		};
-		return TypeField::_undef;
+			tp -= MYSQL_TYPE_NEWDECIMAL;
+			tp += MYSQL_TYPE_TIME2 + 1;
+		}
+		return _t_flds[tp];
 	}
 	
-	void MySql::_query(ssh_wcs wcs, ...)
+	MySql::ClassType MySql::get_class_type(MySql::TypesField tp) const
 	{
-		SSH_TRACE;
-		String q;
-		va_list args;
-		va_start(args, wcs);
-		q.fmt(wcs, args);
-		va_end(args);
+		static ClassType _c_type[] = {	ClassType::REAL, ClassType::REAL, ClassType::REAL, ClassType::STRING, ClassType::STRING, ClassType::NUMBER, ClassType::NUMBER, ClassType::NUMBER,
+										ClassType::NUMBER, ClassType::NUMBER, ClassType::NUMBER, ClassType::STRING, ClassType::STRING, ClassType::STRING,
+										ClassType::STRING, ClassType::STRING, ClassType::STRING, ClassType::STRING, ClassType::STRING, ClassType::STRING, ClassType::STRING,
+										ClassType::DATETIME, ClassType::DATETIME, ClassType::DATETIME, ClassType::DATETIME, ClassType::DATETIME, ClassType::BIN};
+		return _c_type[(int)tp];
+	}
+	
+	String MySql::make_opts(int opt, MySql::ClassType cls) const
+	{
+		String ret;
+		switch(cls)
+		{
+			case ClassType::NUMBER:
+				if((opt & OptionsField::AUTO_INCREMENT)) ret += L" AUTO_INCREMENT";
+			case ClassType::REAL:
+				if((opt & OptionsField::UNSIGNED)) ret += L" UNSIGNED";
+				if((opt & OptionsField::ZEROFILL)) ret += L" ZEROFILL";
+				break;
+			case ClassType::STRING:
+				if((opt & OptionsField::BINARY)) ret += L" BINARY";
+				break;
+			case ClassType::DATETIME:
+				break;
+			case ClassType::BIN:
+				break;
+		}
+		if((opt & OptionsField::NOT_NULL)) ret += L" NOT NULL"; else ret += L" NULL";
+		if((opt & OptionsField::UNIQUE)) ret += L" UNIQUE";
 
-		if(mysql_query(&sql, ssh_cnv(L"utf-8", q, true)))
-			SSH_THROW(L"Не удалось выполнить запрос к БД! Ошибка - <%s>!", error_string());
+		return ret;
+	}
+
+	String MySql::make_field(const MySql::FIELD* f) const
+	{
+		String len, def, com, idx, tmp;
+		ClassType cls(get_class_type(f->type));
+		if(f->type < TypesField::TINYBLOB)
+		{
+			if(f->def && !(f->opt & OptionsField::AUTO_INCREMENT)) def.fmt(L" DEFAULT '%s'", f->def);
+			if(f->type < TypesField::CHAR && f->length) len.fmt(L"(%i,%i)", f->length, (f->decimals > 0 ? f->decimals : 2));
+			else if(f->type < TypesField::ENUM)
+			{
+				ssh_d length(f->length);
+				if(!length)
+				{
+					if(f->type == TypesField::CHAR) length = 4;
+					else if(f->type == TypesField::VARCHAR) length = 255;
+				}
+				if(length) len.fmt(L"(%i)", length);
+			}
+			else if(f->type == TypesField::ENUM || f->type == TypesField::SET)
+			{
+				int vec[128];
+				int c(ssh_split(L',', f->enums, vec, 64));
+				if(!c) SSH_THROW(L"Недопустимо заданы значения перечисления для поля <%s>!", f->name);
+				len = L'(';
+				for(int i = 0; i < c; i++)
+				{
+					if(len.length() > 1) len += L',';
+					len += L'\'' + String(f->enums + vec[i * 2], vec[i * 2 + 1]).trim(L"'") + L'\'';
+				}
+				len += L')';
+			}
+		}
+		if(f->opt & OptionsField::KEY)
+		{
+			if(f->index_length && cls == ClassType::STRING) tmp.fmt(L"(%i)", f->index_length);
+			idx.fmt(L", %sKEY `%s`(`%s`%s)", ((f->opt & OptionsField::FULLTEXT && cls == ClassType::STRING) ? L"FULLTEXT " : (f->opt & OptionsField::PRIMARY ? L"PRIMARY " : L"")), ssh_gen_name(f->name, false), f->name, tmp);
+		}
+		if(f->comment) com.fmt(L" COMMENT '%s'", f->comment);
+		return tmp.fmt(L"`%s` %s%s%s%s%s%s", f->name, _fld_types[(int)f->type], len, make_opts(f->opt, cls), def, com, idx);
 	}
 }

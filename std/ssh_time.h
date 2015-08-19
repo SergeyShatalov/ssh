@@ -7,7 +7,7 @@ namespace ssh
 {
 	class SSH Time
 	{
-		time_t time;
+		__time64_t time;
 	public:
 		Time() : time(0) {}
 		Time(const time_t& t) { *this = t; }
@@ -19,7 +19,7 @@ namespace ssh
 		bool operator == (const Time& t) const { return (time == t.time); }
 		bool operator != (const Time& t) const { return (time != t.time); }
 		bool operator < (const Time& t) const { return (time < t.time); }
-		bool operator >(const Time& t) const { return (time > t.time); }
+		bool operator > (const Time& t) const { return (time > t.time); }
 		bool operator <= (const Time& t) const { return (time <= t.time); }
 		bool operator >= (const Time& t) const { return (time >= t.time); }
 		const Time& operator = (const Time& t) { time = t.time; return *this; }
@@ -27,9 +27,9 @@ namespace ssh
 		// Атрибуты
 		struct tm* local() const;
 		struct tm* gmt() const;
-		void getAsSystemTime(SYSTEMTIME& timeDest) const;
+		SYSTEMTIME getAsSystemTime() const;
 		time_t	getTime() const { return time; }
-		int	year() const { return(local()->tm_year) + 1900; }
+		int	year() const { return local()->tm_year + 1900; }
 		int	month() const { return local()->tm_mon + 1; }
 		int	day() const { return local()->tm_mday; }
 		int	hour() const { return local()->tm_hour; }

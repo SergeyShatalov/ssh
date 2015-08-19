@@ -89,6 +89,8 @@ namespace ssh
 	bool SSH ssh_dlg_sel_folder(ssh_wcs title, String& folder, HWND hWnd);
 	bool SSH ssh_make_wnd(const DESC_WND& desc, bool is_show_wnd);
 	bool SSH ssh_is_wrong_lex(const String& str, ssh_wcs errLexs);
+	String SSH ssh_make_params(ssh_wcs fmt, ...);
+	String SSH ssh_translate(ssh_wcs text, bool to_eng);
 	String SSH ssh_num_volume(ssh_u num);
 	String SSH ssh_path_in_range(const String& path, ssh_u range);
 	String SSH ssh_make_guid(const GUID& guid);

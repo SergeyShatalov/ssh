@@ -155,12 +155,51 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
+		String trans = ssh_translate(L"Шаталов Сергей Викторович - дата рождения - 06.06.1979, место рожденья - СССР, СОАССР, г.Орджоникидзе, ул. Владикавказская, 32/2 кв.79", true);
+		String trans1 = ssh_translate(trans, false);
 		Map<String, String, SSH_TYPE, SSH_TYPE>* m;
 		Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> arr(550, 10, 20);
 		MySql _sql(L"localhost", L"root", L"", L"sergey");
 		_sql.del_table(L"shatalov");
-		_sql.add_table(L"shatalov", L"id", L"_blob,_int,_year,_datetime,_decimal,_date,_time,_bigint,_varchar,_tinyint", L"text, int, year, datetime, decimal,date, time, bigint, varchar(255), tinyint unsigned", L",,,,10", L"моя вторая таблица");
-		_sql.insert(L"shatalov", L"_blob,_int,_year,_datetime,_decimal,_date,_time,_bigint,_varchar,_tinyint", L"Шаталов Сергей Викторович 1979 года рождения!,10101,2015,2015-10-10 11:11:11,22,2015-05-05,23:23:23,222333444555,Шаталов Сергей,200");
+		MySql::FIELD flds[] =
+		{
+			{L"ID", MySql::TypesField::INT, MySql::NOT_NULL | MySql::AUTO_INCREMENT | MySql::PRIMARY | MySql::KEY, 0, nullptr, L"идентификатор"},
+			{ L"бит", MySql::TypesField::BIT, MySql::_NULL, 0, nullptr, L"тип данных - BIT" },
+			{ L"_enum", MySql::TypesField::ENUM, MySql::NOT_NULL, 0, L"serg", L"тип данных - ENUM", 0, 0, L"max,vlad,serg,olga" },
+			{ L"_varchar", MySql::TypesField::VARCHAR, MySql::NOT_NULL | MySql::KEY, 255, L"Шаталов", L"тип данных - VARCHAR", 0, 10 },
+			{ L"_timestamp", MySql::TypesField::TIMESTAMP, MySql::_NULL, 1, nullptr, L"тип данных - TIMESTAMP" },
+			{ L"_double", MySql::TypesField::DOUBLE, MySql::UNSIGNED, 10, nullptr, L"тип данных - DOUBLE", 5 },
+			{ L"_float", MySql::TypesField::FLOAT, MySql::UNSIGNED, 10, L"1.0", L"тип данных - FLOAT", 6 },
+			{ L"_decimal", MySql::TypesField::DECIMAL, MySql::UNSIGNED, 20, L"100.0", L"тип данных - DECIMAL", 10 },
+			{ L"_char", MySql::TypesField::CHAR, MySql::_NULL, 10, L"c", L"тип данных - CHAR" },
+			{ L"_tinyint", MySql::TypesField::TINYINT, MySql::NOT_NULL, 0, L"10", L"тип данных - TINYINT" },
+			{ L"_smallint", MySql::TypesField::SMALLINT, MySql::NOT_NULL, 0, L"20", L"тип данных - SMALLINT" },
+			{ L"_mediumint", MySql::TypesField::MEDIUMINT, MySql::NOT_NULL, 0, L"30", L"тип данных - MEDIUMINT" },
+			{ L"_bigint", MySql::TypesField::BIGINT, MySql::NOT_NULL, 0, L"40", L"тип данных - BIGINT" },
+			{ L"_int", MySql::TypesField::INT, MySql::NOT_NULL, 0, L"50", L"тип данных - INT" },
+			{ L"_year", MySql::TypesField::YEAR, MySql::_NULL, 2, nullptr, L"тип данных - YEAR" },
+			{ L"_set", MySql::TypesField::SET, MySql::NOT_NULL, 0, L"max", L"тип данных - SET", 0, 0, L"max,vlad,serg,olga" },
+			{ L"_tinyblob", MySql::TypesField::TINYBLOB, MySql::_NULL, 0, nullptr, L"тип данных - TINYBLOB" },
+			{ L"_mediumblob", MySql::TypesField::MEDIUMBLOB, MySql::_NULL, 0, nullptr, L"тип данных - MEDIUMBLOB" },
+			{ L"_longblob", MySql::TypesField::LONGBLOB, MySql::_NULL, 0, nullptr, L"тип данных - LONGBLOB" },
+			{ L"_blob", MySql::TypesField::BLOB, MySql::_NULL, 0, nullptr, L"тип данных - BLOB" },
+			{ L"_tinytext", MySql::TypesField::TINYTEXT, MySql::_NULL, 0, nullptr, L"тип данных - TINYTEXT" },
+			{ L"_mediumtext", MySql::TypesField::MEDIUMTEXT, MySql::_NULL, 0, nullptr, L"тип данных - MEDIUMTEXT" },
+			{ L"_longtext", MySql::TypesField::LONGTEXT, MySql::_NULL, 0, nullptr, L"тип данных - LONGTEXT" },
+			{ L"_text", MySql::TypesField::TEXT, MySql::_NULL, 0, nullptr, L"тип данных - TEXT" },
+			{ L"_date", MySql::TypesField::DATE, MySql::_NULL, 0, nullptr, L"тип данных - DATE" },
+			{ L"_time", MySql::TypesField::TIME, MySql::_NULL, 0, nullptr, L"тип данных - TIME" },
+			{ L"_datetime", MySql::TypesField::DATETIME, MySql::_NULL, 0, nullptr, L"тип данных - DATETIME" },
+			{ nullptr },
+		};
+		Time tt(Time::current());
+		int y = tt.year();
+		Time t(1970, 1, 1, 4, 0, 0);
+		y = t.year();
+		//		_sql.query(L"CREATE TABLE `shatalov` (`id` int UNSIGNED NOT NULL AUTO_INCREMENT, PRIMARY KEY `idx_id`(`id`), `str` varchar(255) NOT NULL UNIQUE DEFAULT 'serg', FULLTEXT KEY `idx_str`(`str`(10)))");
+		_sql.add_table(flds, L"shatalov", L"Таблица для проверки всех типов данных mysql!");
+		_sql.insert(L"shatalov", L"_varchar,_timestamp,_enum,_double,_float,_decimal,_char,_tinyint,_smallint,_mediumint,_bigint,_int,_year,_set,_tinyblob,_mediumblob,_longblob,_blob,_tinytext,_mediumtext,_longtext,_text,бит,_date,_time,_datetime",
+					L"Сергей,2015-10-10 11:12:13,max,25.10,11.234,100.25678,ccc,1,2,3,4,5,16,vlad,aaa,bbb,ccc,ddd,qqq,www,eee,rrr,0,2010-08-08,01:02:03,2008-05-05 03:04:05");
 		arr = _sql.select(L"*", L"shatalov", nullptr);
 		for(ssh_u i = 0; i < arr.size(); i++)
 		{
