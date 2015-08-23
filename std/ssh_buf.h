@@ -9,7 +9,7 @@ namespace ssh
 		// по умолчанию
 		Buffer() : sz(0), data(nullptr), is_owner(false) {}
 		// конструктор копии
-		Buffer(const Buffer& buf, ssh_u size) : sz(size), is_owner(true) { const_cast<Buffer<T>*>(&buf)->is_owner = false; data = buf.data; }
+		Buffer(const Buffer& buf, ssh_u size = 0) : sz(size ? size : buf.size()), is_owner(true) { const_cast<Buffer<T>*>(&buf)->is_owner = false; data = buf.data; }
 		// конструктор переноса
 		Buffer(Buffer&& buf) : data(buf.data), sz(buf.sz), is_owner(buf.is_owner) {buf.data = nullptr;}
 		// создать буфер определённого размера

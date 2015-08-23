@@ -137,7 +137,10 @@
     <ClCompile Include="ssh_gamepad.cpp" />
     <ClCompile Include="ssh_globals.cpp" />
     <ClCompile Include="ssh_img.cpp" />
-    <ClCompile Include="ssh_img_io.cpp" />
+    <ClCompile Include="ssh_img_cnv.cpp" />
+    <ClCompile Include="ssh_img_mod.cpp" />
+    <ClCompile Include="ssh_img_map.cpp" />
+    <ClCompile Include="ssh_img_txt.cpp" />
     <ClCompile Include="ssh_jpg.cpp" />
     <ClCompile Include="ssh_log.cpp" />
     <ClCompile Include="ssh_mail.cpp" />
@@ -158,7 +161,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="ssh_asm.asm">
+    <MASM Include="asm_ssh_img_cnv.asm">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</WarningLevel>
+    </MASM>
+    <MASM Include="asm_ssh_common.asm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </MASM>

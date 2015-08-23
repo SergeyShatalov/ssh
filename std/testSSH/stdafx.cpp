@@ -155,6 +155,13 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	try
 	{
+		ssh_u h1 = ssh_hash(L"bmp");
+		ssh_u h2 = ssh_hash(L"bfs");
+		ssh_u h3 = ssh_hash(L"fse");
+		ssh_u h4 = ssh_hash(L"jpg");
+		ssh_u h5 = ssh_hash(L"tga");
+		ssh_u h6 = ssh_hash(L"dds");
+		ssh_u h7 = ssh_hash(L"gif");
 		String trans = ssh_translate(L"Шаталов Сергей Викторович - дата рождения - 06.06.1979, место рожденья - СССР, СОАССР, г.Орджоникидзе, ул. Владикавказская, 32/2 кв.79", true);
 		String trans1 = ssh_translate(trans, false);
 		Map<String, String, SSH_TYPE, SSH_TYPE>* m;

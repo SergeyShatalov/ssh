@@ -4,7 +4,49 @@
 
 namespace ssh
 {
+	void Image::set_map(ssh_wcs path, int layer, int mip, int src_layer, int src_mip)
+	{
+		ImgCnv cnv(path, src_layer, src_mip);
+		if(cnv.pix.size())
+		{
+			ImgMap* _new_map(new ImgMap(cnv.wh, cnv.pix));
+			ImgMap* map(maps[layer]);
+			if(map) map->set_mip(mip, _new_map); else maps[layer] = _new_map;
+		}
+	}
 
+	QUAD Image::quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen, const color & col) const
+	{
+		return QUAD();
+	}
+
+	Image::ImgMap* Image::duplicate(int layer, int mip)
+	{
+		return nullptr;
+	}
+
+	Buffer<ssh_cs> Image::histogramm(int layer, int mip, const Range<int>& wh, ImgMod::Histogramms type, const color & bkg, const color & frg)
+	{
+		return Buffer<ssh_cs>();
+	}
+
+	Buffer<ssh_cs> Image::make() const
+	{
+		return Buffer<ssh_cs>();
+	}
+
+	ssh_u Image::get_mips() const
+	{
+		return ssh_u();
+	}
+	
+	void Image::save(ssh_wcs path, bool is_xml)
+	{
+	}
+
+	void Image::make(const Buffer<ssh_cs>& buf)
+	{
+	}
 }
 
 /*

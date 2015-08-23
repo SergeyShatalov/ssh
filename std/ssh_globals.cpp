@@ -753,8 +753,8 @@ namespace ssh
 		String q;
 
 		va_list args;
-		va_start(args, wcs);
-		q.fmt(wcs, args);
+		va_start(args, fmt);
+		q.fmt(fmt, args);
 		va_end(args);
 
 		return q;

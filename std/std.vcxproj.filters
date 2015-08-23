@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Файлы исходного кода\изображение">
+      <UniqueIdentifier>{a813b54e-fed1-4c0e-8b17-fc2268f5778d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -116,9 +119,6 @@
     <ClCompile Include="ssh_globals.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="ssh_img.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="ssh_jpg.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
@@ -161,12 +161,27 @@
     <ClCompile Include="ssh_srlz.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="ssh_img_io.cpp">
-      <Filter>Файлы исходного кода</Filter>
+    <ClCompile Include="ssh_img.cpp">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh_img_cnv.cpp">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh_img_txt.cpp">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh_img_mod.cpp">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </ClCompile>
+    <ClCompile Include="ssh_img_map.cpp">
+      <Filter>Файлы исходного кода\изображение</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="ssh_asm.asm">
+    <MASM Include="asm_ssh_img_cnv.asm">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </MASM>
+    <MASM Include="asm_ssh_common.asm">
       <Filter>Файлы исходного кода</Filter>
     </MASM>
   </ItemGroup>
