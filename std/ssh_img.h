@@ -374,11 +374,9 @@ namespace ssh
 
 	extern "C"
 	{
-		void asm_ssh_to_bgra8(const Range<int>& wh, int crop_w, void* dst, void* src, FormatsMap fmt);
-		void asm_ssh_from_bgra8(const Range<int>& wh, void* dst, void* src, FormatsMap fmt);
-		void asm_ssh_bmp(void* buf, const Range<int>& wh, int crop_w, void* src, void* pal, int flags, int bpp, FormatsMap fmt);
-		void asm_ssh_tga(void* buf, const Range<int>& wh, int crop_w, void* src, void* pal, int flags, int bpp, FormatsMap fmt);
-		void asm_ssh_gif(int crop_w, void* dst, void* pal, void* stk, void* plzw, int iTrans);
+		void asm_ssh_cnv_bgra8(const Range<int>& wh, void* dst, void* src, FormatsMap fmt);
+		void asm_ssh_bmp_tga(const Range<int>& wh, void* dst, void* src, void* pal, ssh_u flags, ssh_u bpp, ssh_u alpha, FormatsMap fmt);
+		void asm_ssh_gif(void* dst, void* pal, void* stk, void* plzw, int iTrans);
 		ssh_d asm_ssh_bfs(void* src);
 		void asm_ssh_h_flip(void* buf, const Bar<int>& bar, const Range<int>& wh);
 		void asm_ssh_v_flip(void* buf, const Bar<int>& bar, const Range<int>& wh);

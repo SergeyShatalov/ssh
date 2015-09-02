@@ -24,7 +24,6 @@ public:
 public:
 	virtual BOOL InitInstance();
 	virtual int ExitInstance();
-	Singlton<Helpers> _hlp;
 	Singlton<Log> _lg;
 	Singlton<Gamepad> _gp;
 
