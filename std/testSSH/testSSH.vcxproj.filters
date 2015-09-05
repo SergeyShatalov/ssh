@@ -27,4 +27,9 @@
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <MASM Include="asm.asm">
+      <Filter>Файлы исходного кода</Filter>
+    </MASM>
+  </ItemGroup>
 </Project>

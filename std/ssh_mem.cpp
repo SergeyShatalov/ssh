@@ -120,7 +120,7 @@ namespace ssh
 	{
 		Section cs;
 		
-		ssh_b* p((ssh_b*)::malloc(sz + sizeof(NodeMem*)));
+		ssh_b* p((ssh_b*)::malloc(sz + sizeof(NodeMem*) + 4));
 		if(!is_disabled)
 		{
 			is_disabled = true;

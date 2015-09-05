@@ -451,7 +451,7 @@ namespace Jpeg
 				case 0xDD: _DecodeDRI();  break;
 				case 0xDA: _DecodeScan(); _Convert(); return;
 				case 0xFE: _SkipMarker(); break;
-				default: if((ctx.pos[-1] & 0xF0) == 0xE0) _SkipMarker(); else throw;
+				default: if((ctx.pos[-1] & 0xF0) == 0xE0) _SkipMarker();// else throw;
 			}
 		}
 		throw;

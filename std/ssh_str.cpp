@@ -213,7 +213,7 @@ namespace ssh
 	const String& String::replace(ssh_wcs* _old, ssh_wcs _new)
 	{
 		ssh_u idx(0);
-		while(*_new) replace(_old[idx++], _new), _new += (wcslen(_new) + 1);
+		while(_old[idx]) replace(_old[idx++], _new), _new += (wcslen(_new) + 1);
 		return *this;
 	}
 

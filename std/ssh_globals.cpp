@@ -261,9 +261,8 @@ namespace ssh
 	// извлечь расширение файла
 	String SSH ssh_file_ext(const String& path, bool is_pt)
 	{
-		ssh_l sl(wcsrchr(path, L'\\') - (ssh_wcs)path);
 		ssh_l pt((wcsrchr(path, L'.') - (ssh_wcs)path) + is_pt);
-		return path.substr(sl, pt - sl);
+		return path.substr(pt);
 	}
 	// извлечь имя файла с расширением
 	String SSH ssh_file_name(const String& path)
@@ -736,11 +735,11 @@ namespace ssh
 	String SSH ssh_translate(ssh_wcs text, bool to_eng)
 	{
 		static ssh_wcs rus1[] = {	L"Ч", L"Ш", L"Э", L"А", L"Б", L"В", L"Г", L"Д", L"Е", L"Ё", L"Ж", L"З", L"И", L"Й", L"К", L"Л", L"М", L"Н", L"О", L"П", L"Р", L"С", L"Т", L"У", L"Ф", L"Х", L"Ц", L"Щ", L"Ю", L"Я", L"Ь", L"Ъ", L"Ы",
-									L"ч", L"ш", L"э", L"а", L"б", L"в", L"г", L"д", L"е", L"ё", L"ж", L"з", L"и", L"й", L"к", L"л", L"м", L"н", L"о", L"п", L"р", L"с", L"т", L"у", L"ф", L"х", L"ц", L"щ", L"ю", L"я", L"ь", L"ъ", L"ы" };
+									L"ч", L"ш", L"э", L"а", L"б", L"в", L"г", L"д", L"е", L"ё", L"ж", L"з", L"и", L"й", L"к", L"л", L"м", L"н", L"о", L"п", L"р", L"с", L"т", L"у", L"ф", L"х", L"ц", L"щ", L"ю", L"я", L"ь", L"ъ", L"ы", nullptr };
 		static ssh_wcs eng1 = L"Ch\0Sh\0Je\0A\0B\0V\0G\0D\0E\0Jo\0Zh\0Z\0I\0J\0K\0L\0M\0N\0O\0P\0R\0S\0T\0U\0F\0H\0C\0W\0Yu\0Ya\0Q\0X\0Y\0ch\0sh\0je\0a\0b\0v\0g\0d\0e\0jo\0zh\0z\0i\0j\0k\0l\0m\0n\0o\0p\0r\0s\0t\0u\0f\0h\0c\0w\0yu\0ya\0q\0x\0y\0\0";
 
 		static ssh_wcs eng2[] = {	L"Ch", L"Sh", L"Je", L"Yu", L"Ya", L"A", L"B", L"V", L"G", L"D", L"E", L"Jo", L"Zh", L"Z", L"I", L"J", L"K", L"L", L"M", L"N", L"O", L"P", L"R", L"S", L"T", L"U", L"F", L"H", L"C", L"W", L"Q", L"X", L"Y",
-									L"ch", L"sh", L"je", L"yu", L"ya", L"a", L"b", L"v", L"g", L"d", L"e", L"jo", L"zh", L"z", L"i", L"j", L"k", L"l", L"m", L"n", L"o", L"p", L"r", L"s", L"t", L"u", L"f", L"h", L"c", L"w", L"q", L"x", L"y"};
+									L"ch", L"sh", L"je", L"yu", L"ya", L"a", L"b", L"v", L"g", L"d", L"e", L"jo", L"zh", L"z", L"i", L"j", L"k", L"l", L"m", L"n", L"o", L"p", L"r", L"s", L"t", L"u", L"f", L"h", L"c", L"w", L"q", L"x", L"y", nullptr};
 		static ssh_wcs rus2 = L"Ч\0Ш\0Э\0Ю\0Я\0А\0Б\0В\0Г\0Д\0Е\0Ё\0Ж\0З\0И\0Й\0К\0Л\0М\0Н\0О\0П\0Р\0С\0Т\0У\0Ф\0Х\0Ц\0Щ\0Ь\0Ъ\0Ы\0ч\0ш\0э\0ю\0я\0а\0б\0в\0г\0д\0е\0ё\0ж\0з\0и\0й\0к\0л\0м\0н\0о\0п\0р\0с\0т\0у\0ф\0х\0ц\0щ\0ь\0ъ\0ы\0\0" ;
 
 		String txt(text);

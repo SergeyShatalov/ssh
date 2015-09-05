@@ -151,10 +151,37 @@ protected:
 	}
 };
 
+extern "C"
+{
+	ssh_u asm_ssh_shufb(ssh_u v);
+}
 int _tmain(int argc, _TCHAR* argv[])
 {
+	Singlton<Log> _lg;
 	try
 	{
+		Log::LOG _log;
+		_log._out = Log::TypeOutput::Debug;
+		_lg->init(&_log);
+		String trans = ssh_translate(L"Шаталов Сергей Викторович - дата рождения - 06.06.1979, место рожденья - СССР, СОАССР, г.Орджоникидзе, ул. Владикавказская, 32/2 кв.79", true);
+		String trans1 = ssh_translate(trans, false);
+		//ssh_u resss = asm_ssh_shufb(0x0102030405060708);
+		Image* img;
+		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
+		img->set_map(L"e:\\11.gif", 0, 0);
+		img->save(L"e:\\gifi", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
+		img->release();
+		return 0;
+		img->save(L"e:\\rgb5a1", ImgCnv::Types::bmp, FormatsMap::rgb5a1, 0);
+		img->save(L"e:\\rgb8", ImgCnv::Types::bmp, FormatsMap::rgb8, 0);
+		img->save(L"e:\\rgba8", ImgCnv::Types::bmp, FormatsMap::rgba8, 0);
+		img->save(L"e:\\rgba4", ImgCnv::Types::bmp, FormatsMap::rgba4, 0);
+		img->save(L"e:\\bgra8", ImgCnv::Types::bmp, FormatsMap::bgra8, 0);
+		img->save(L"e:\\r5g6b5", ImgCnv::Types::bmp, FormatsMap::r5g6b5, 0);
+		img->save(L"e:\\bgr8", ImgCnv::Types::bmp, FormatsMap::bgr8, 0);
+		img->save(L"e:\\a8", ImgCnv::Types::bmp, FormatsMap::a8, 0);
+		return 0;
+		ssh_u is_c = ssh_system_info(SystemInfo::siCpuCaps, CpuCaps::SUPPORTS_BMI1);
 		ssh_u h1 = ssh_hash(L"bmp");
 		ssh_u h2 = ssh_hash(L"bfs");
 		ssh_u h3 = ssh_hash(L"fse");
@@ -162,8 +189,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		ssh_u h5 = ssh_hash(L"tga");
 		ssh_u h6 = ssh_hash(L"dds");
 		ssh_u h7 = ssh_hash(L"gif");
-		String trans = ssh_translate(L"Шаталов Сергей Викторович - дата рождения - 06.06.1979, место рожденья - СССР, СОАССР, г.Орджоникидзе, ул. Владикавказская, 32/2 кв.79", true);
-		String trans1 = ssh_translate(trans, false);
 		Map<String, String, SSH_TYPE, SSH_TYPE>* m;
 		Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> arr(550, 10, 20);
 		MySql _sql(L"localhost", L"root", L"", L"sergey");
@@ -228,7 +253,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		e.add(L"");
 	}
 	return 0;
-	Singlton<Log> _lg;
 	try
 	{
 		Log::LOG _log;

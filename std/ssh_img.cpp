@@ -4,15 +4,20 @@
 
 namespace ssh
 {
-	void Image::set_map(ssh_wcs path, int layer, int mip, int src_layer, int src_mip)
+	const ImgMap* Image::set_map(ssh_wcs path, int layer, int mip)
 	{
-		ImgCnv cnv(path, src_layer, src_mip);
-		if(cnv.pix.size())
+		SSH_TRACE;
+		ImgCnv cnv(path);
+		ImgMap* _new_map(nullptr);
+		const ImgCnv::IMAGE* img(nullptr);
+		while(img = cnv.enumerate(img == nullptr))
 		{
-			ImgMap* _new_map(new ImgMap(cnv.wh, cnv.pix));
+			_new_map = new ImgMap(img->wh, img->pix);
 			ImgMap* map(maps[layer]);
-			if(map) map->set_mip(mip, _new_map); else maps[layer] = _new_map;
+			if(map && mip != -1) map->set_mip(mip, _new_map); else maps[layer] = _new_map;
+			layer++;
 		}
+		return _new_map;
 	}
 
 	QUAD Image::quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen, const color & col) const
@@ -20,7 +25,7 @@ namespace ssh
 		return QUAD();
 	}
 
-	Image::ImgMap* Image::duplicate(int layer, int mip)
+	const ImgMap* Image::duplicate(int nlayer, int nmip, int olayer, int omip)
 	{
 		return nullptr;
 	}
@@ -30,7 +35,7 @@ namespace ssh
 		return Buffer<ssh_cs>();
 	}
 
-	Buffer<ssh_cs> Image::make() const
+	Buffer<ssh_cs> Image::make(const ImgMap* map) const
 	{
 		return Buffer<ssh_cs>();
 	}

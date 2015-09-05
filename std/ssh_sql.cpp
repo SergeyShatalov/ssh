@@ -45,6 +45,7 @@ namespace ssh
 	
 	void MySql::add_table(const FIELD flds[], ssh_wcs name, ssh_wcs comment, TypesTable type, TypesRow row)
 	{
+		SSH_TRACE;
 		String q;
 		const FIELD* f(&flds[0]);
 		// поля
@@ -134,6 +135,7 @@ namespace ssh
 	
 	ssh_u MySql::truncate_table(ssh_wcs name, bool is_locked)
 	{
+		SSH_TRACE;
 		if(is_locked) lock_table(name, true);
 		_query(L"TRUNCATE TABLE `%s`", name);
 		if(is_locked) lock_table(name, false);
@@ -251,6 +253,7 @@ namespace ssh
 	
 	String MySql::make_opts(int opt, MySql::ClassType cls) const
 	{
+		SSH_TRACE;
 		String ret;
 		switch(cls)
 		{
@@ -276,6 +279,7 @@ namespace ssh
 
 	String MySql::make_field(const MySql::FIELD* f) const
 	{
+		SSH_TRACE;
 		String len, def, com, idx, tmp;
 		ClassType cls(get_class_type(f->type));
 		if(f->type < TypesField::TINYBLOB)
