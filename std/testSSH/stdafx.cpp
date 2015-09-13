@@ -157,15 +157,27 @@ extern "C"
 }
 int _tmain(int argc, _TCHAR* argv[])
 {
+	int i_alpha1 = INT_MAX, i_alpha2 = 160;
+	i_alpha1 >>= 4;
+	i_alpha2 >>= 4;
+	
+
+	int i_alpha = i_alpha1 | (i_alpha2 << 4);
+
+	float a = (float)i_alpha * (15.0f / 255.0f);
+	int i = (int)(a + 0.5f);
+	if(i < 0) i = 0;
+	else if(i > 15) i = 15;
+
 	Singlton<Log> _lg;
 	try
 	{
+		ssh_u resss = asm_ssh_shufb(0x0102030405060708);
 		Log::LOG _log;
 		_log._out = Log::TypeOutput::Debug;
 		_lg->init(&_log);
 		String trans = ssh_translate(L"Шаталов Сергей Викторович - дата рождения - 06.06.1979, место рожденья - СССР, СОАССР, г.Орджоникидзе, ул. Владикавказская, 32/2 кв.79", true);
 		String trans1 = ssh_translate(trans, false);
-		//ssh_u resss = asm_ssh_shufb(0x0102030405060708);
 		Image* img;
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
 		img->set_map(L"e:\\11.gif", 0, 0);

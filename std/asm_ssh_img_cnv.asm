@@ -261,7 +261,6 @@ _rgba4:	mov r12, offset rgba4_pack
 
 ;rcx(fmt), rdx(wh), r8(dst), r9(src), is
 asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:QWORD, dst:QWORD, src:QWORD, is:DWORD
-		vmovups ymm1, _gamma
 		movsxd r11, is
 		movsxd rax, ecx
 		movsxd rcx, dword ptr [rdx]
@@ -274,6 +273,7 @@ asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:Q
 		imul ecx, dword ptr [rdx + 4]
 		shr rcx, 1
 		jz _fin
+		vmovups ymm1, _gamma
 @@:		call qword ptr [r10]
 		loop @b
 		emms

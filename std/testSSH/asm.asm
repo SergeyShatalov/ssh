@@ -1,6 +1,9 @@
 
 .data
 align 16
+vm1		dd 1.0, 2.0, 3.0, 4.0
+vm2		dd 5.0, 6.0, 7.0, 8.0
+vm3		dd 10.0, 20.0, 30.0, 40.0
 v0		dd -1, 255, 255, 255
 v1		db 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
 v2		db 32 dup(20)
@@ -15,6 +18,17 @@ _dep_b3 dd 00000000111111110000000000000000b
 .code
 
 asm_ssh_shufb proc public
+		mov rax, 255
+		mov rcx, 160
+		shr rax, 4
+		shr rcx, 4
+		shl cl, 4
+		or al, cl
+		movaps xmm1, vm1
+		movaps xmm2, vm2
+		movaps xmm3, vm3
+		VFMsubADD231Ps xmm1, xmm2, xmm3
+		ret
 		movq mm0, qword ptr v1
 		pavgb mm0, mm0
 		mov ecx, dword ptr [v0]
