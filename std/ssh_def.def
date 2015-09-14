@@ -8,3 +8,4 @@ asm_ssh_from_base64		@5
 asm_ssh_parse_xml		@6
 asm_compress_colors		@7
 asm_set_colors			@8
+comp_dxt5				@9

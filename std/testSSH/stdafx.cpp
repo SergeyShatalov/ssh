@@ -156,8 +156,114 @@ extern "C"
 	ssh_u asm_ssh_shufb(ssh_u v);
 }
 
+vec3 m_points[16];
+float m_weights[16];
+
+void ColourSet(ssh_b const* rgba)
+{
+	for(int i = 0; i < 16; ++i)
+	{
+		// normalise coordinates to [0,1]
+		float w = (float)rgba[4 * i + 3] / 255.0f;
+		float x = (float)rgba[4 * i + 2] / 255.0f;
+		float y = (float)rgba[4 * i + 1] / 255.0f;
+		float z = (float)rgba[4 * i + 0] / 255.0f;
+		// ensure there is always non-zero weight even for zero alpha
+		// add the point
+		m_points[i] = vec3(x, y, z);
+		m_weights[i] = w;
+	}
+}
+
+
+struct BC1
+{
+	ssh_w rgb[2];
+	ssh_d bitmap;
+};
+
+struct BC3
+{
+	ssh_b alpha[2];
+	ssh_b bitmap[6];
+	BC1 bc1;
+};
+
+void D3DXEncodeBC3(BC3* pBC3)
+{
+	float fMinAlpha = FLT_MAX;
+	float fMaxAlpha = 0.0f;
+	for(size_t i = 0; i < 16; ++i)
+	{
+		float fAlph = m_weights[i];
+		if(fAlph < fMinAlpha) fMinAlpha = fAlph;
+		else if(fAlph > fMaxAlpha) fMaxAlpha = fAlph;
+	}
+	size_t uSteps = ((0.0f == fMinAlpha) || (1.0f == fMaxAlpha)) ? 6 : 8;
+	float fAlphaA(fMinAlpha), fAlphaB(fMaxAlpha);
+	//OptimizeAlpha(&fAlphaA, &fAlphaB, uSteps);
+	uint8_t bAlphaA = (uint8_t) static_cast<int32_t>(fAlphaA * 255.0f + 0.0f);
+	uint8_t bAlphaB = (uint8_t) static_cast<int32_t>(fAlphaB * 255.0f + 0.0f);
+	//fAlphaA = (float)bAlphaA / 255.0f;
+	//fAlphaB = (float)bAlphaB / 255.0f;
+	static const size_t pSteps6[] = { 0, 2, 3, 4, 5, 1 };
+	static const size_t pSteps8[] = { 0, 2, 3, 4, 5, 6, 7, 1 };
+	const size_t *pSteps;
+	float fStep[8];
+	if(uSteps == 8)
+	{
+		std::swap(bAlphaA, bAlphaB);
+		std::swap(fAlphaA, fAlphaB);
+	}
+	pBC3->alpha[0] = bAlphaA;
+	pBC3->alpha[1] = bAlphaB;
+	fStep[0] = fAlphaA;
+	fStep[1] = fAlphaB;
+	fStep[6] = 0.0f;
+	fStep[7] = 1.0f;
+	if(6 == uSteps)
+	{
+		for(size_t i = 1; i < 5; ++i) fStep[i + 1] = (fStep[0] * (5 - i) + fStep[1] * i) / 5.0f;
+		pSteps = pSteps6;
+	}
+	else
+	{
+		for(size_t i = 1; i < 7; ++i) fStep[i + 1] = (fStep[0] * (7 - i) + fStep[1] * i) / 7.0f;
+		pSteps = pSteps8;
+	}
+	float fSteps = (float)(uSteps - 1);
+	float fScale = (fStep[0] != fStep[1]) ? (fSteps / (fStep[1] - fStep[0])) : 0.0f;
+	for(size_t iSet = 0; iSet < 2; iSet++)
+	{
+		uint32_t dw = 0;
+		size_t iMin = iSet * 8;
+		size_t iLim = iMin + 8;
+		for(size_t i = iMin; i < iLim; ++i)
+		{
+			float fAlph = m_weights[i];
+			float fDot = (fAlph - fStep[0]) * fScale;
+			uint32_t iStep;
+			if(fDot <= 0.0f) iStep = ((uSteps == 6) && (fAlph <= fStep[0] * 0.5f)) ? 6 : 0;
+			else if(fDot >= fSteps) iStep = ((uSteps == 6) && (fAlph >= (fStep[1] + 1.0f) * 0.5f)) ? 7 : 1;
+			else iStep = static_cast<uint32_t>(pSteps[static_cast<size_t>(fDot + 0.5f)]);
+			dw = (iStep << 21) | (dw >> 3);
+		}
+		pBC3->bitmap[0 + iSet * 3] = ((uint8_t *)&dw)[0];
+		pBC3->bitmap[1 + iSet * 3] = ((uint8_t *)&dw)[1];
+		pBC3->bitmap[2 + iSet * 3] = ((uint8_t *)&dw)[2];
+	}
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	BC3 _bc3_2;
+	ssh_b rgba[] = { 10, 15, 20, 16, 25, 30, 35, 32, 40, 45, 50, 48, 55, 60, 65, 64,
+					70, 75, 80, 80, 85, 90, 95, 96, 100, 105, 110, 112, 115, 120, 125, 128,
+					130, 135, 140, 144, 0, 0, 0, 160, 160, 165, 170, 176, 175, 180, 185, 192,
+					190, 195, 200, 208, 205, 210, 215, 224, 220, 225, 230, 240, 235, 240, 245, 255 };
+	float f_1 = 1.0f;
+	ColourSet(rgba);
+	D3DXEncodeBC3(&_bc3_2);
 	Singlton<Log> _lg;
 	try
 	{
