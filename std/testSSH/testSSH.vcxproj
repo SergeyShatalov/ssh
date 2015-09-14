@@ -59,7 +59,8 @@
       <AdditionalIncludeDirectories>e:\Разработка\Движок\;c:\OpenSSL-Win64\include\</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
-      <FloatingPointExceptions>true</FloatingPointExceptions>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

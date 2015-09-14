@@ -18,16 +18,17 @@ OPTION NOKEYWORD:<width type>
 .const
 
 align 16
+_row		dd 0, 0, 0, 0
+row0		dd 3, 3, 3, 3, 4, 5, 6, 7
+row1		dd 3, 3, 3, 3, 5, 0, 1, 7
+row2		dd 3, 3, 3, 3, 6, 1, 2, 7
 grid		dd 31.0, 63.0, 31.0, 0.0
 half		dd 0.5, 0.5, 0.5, 0.0
+f_255x3_256 dd 255.0, 255.0, 255.0, 256.0
 f_0_33x4	dd 0.33, 0.33, 0.33, 0.0
 f_0_66x4	dd 0.66, 0.66, 0.66, 0.0
 i_0x3_1		dd 0.0, 0.0, 0.0, 1.0
 msk			db -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-f_255x3_256 dd 255.0, 255.0, 255.0, 256.0
-row0		dd 3, 3, 3, 3, 4, 5, 6, 7
-row1		dd 3, 3, 3, 3, 5, 0, 1, 7
-row2		dd 3, 3, 3, 3, 6, 1, 2, 7
 psteps3		dq 0, 2, 1, 0
 psteps4		dq 0, 2, 3, 1
 flt_max		dd 3.402823466e+38F
@@ -103,20 +104,20 @@ asm_encode565 proc USES rcx rdx
 		ret
 asm_encode565 endp
 
-asm_set_colors proc USES r9 r12 rsi rdi rcx rdx
-		vrcpps xmm2, xmm12
+asm_set_colors proc public USES r9 r12 rsi rdi rcx rdx
 		mov rdi, r10
 		mov rsi, r11
 		mov rcx, 4
 __loop:	mov r12, r9
 		mov rdx, 4
 @@:		vpmovzxbd xmm0, dword ptr [r12]
+		vpshufd xmm0, xmm0, 11000110b
 		vpshufd xmm1, xmm0, 11111111b
 		vmovss dword ptr [rsi], xmm1			; alpha
 		vcvtdq2ps xmm0, xmm0
 		vpshufd xmm0, xmm0, 11100100b
 		vaddps xmm0, xmm0, i_0x3_1
-		vmulps xmm0, xmm0, xmm12				; 1/f_255x3_256
+		vdivps xmm0, xmm0, xmm12				; 1/f_255x3_256
 		vmovaps [rdi], xmm0						; points
 		add rsi, 4
 		add r12, 4
@@ -128,8 +129,8 @@ __loop:	mov r12, r9
 		ret
 asm_set_colors endp
 
-; r10 - points, r11 - weights(alpha), rbx(3 or 4), r15(pitch)
-asm_compress_colors proc USES r10 r11 r12 r13 r14 r15 rsi rdi rbx
+; r10 - points, r11 - weights(alpha), rbx(3 or 4)
+asm_compress_colors proc public USES r12 rdi rcx rdx rbx
 		vxorps xmm0, xmm0, xmm0					; centroid = 0
 		vxorps xmm1, xmm1, xmm1					; total = 0
 		mov rdi, r10
@@ -139,7 +140,6 @@ asm_compress_colors proc USES r10 r11 r12 r13 r14 r15 rsi rdi rbx
 		vpshufd xmm2, xmm2, 11111111b
 		vaddps xmm1, xmm1, xmm2					; total += weights[i]
 		vfmadd231ps xmm0, xmm2, [rdi]			; centroid += weigths[i] * points[i]
-		add rsi, 4
 		add rdi, 16
 		loop @b
 		vdivps xmm0, xmm0, xmm1					; centroid /= total
@@ -150,24 +150,20 @@ asm_compress_colors proc USES r10 r11 r12 r13 r14 r15 rsi rdi rbx
 @@:		vmovaps xmm1, [rdi]
 		vpshufd xmm2, xmm1, 11111111b
 		vsubps xmm1, xmm1, xmm0					; a = (points[i] - centroid)
-		vmulps xmm2, xmm2, xmm1					; b = weights[i] * a
-		vpshufd xmm3, xmm1,	11000000b			; a.x|a.x|a.x|a.w
-		vpshufd xmm1, xmm1,	11100101b			; a.y|a.y|a.z|a.w
-		vpshufd xmm4, xmm2, 11100100b			; b.x|b.y|b.z|b.w
-		vpshufd xmm2, xmm2, 11101001b			; b.y|b.z|b.z|b.w
-		vfmadd231ps xmm14, xmm3, xmm4			; c.x|c.y|c.z|c.w
-		vfmadd231ps xmm15, xmm1, xmm2			; d.x|d.y|d.z|d.w
-		add rsi, 4
+		vmulps xmm2, xmm2, xmm1					; b = weights[i] * a - b.x|b.y|b.z|b.w
+		vpshufd xmm3, xmm1,	11000000b			; a.w|a.x|a.x|a.x
+		vpshufd xmm1, xmm1,	11100101b			; a.w|a.z|a.y|a.y
+		vpshufd xmm4, xmm2, 11101001b			; b.w|b.z|b.z|b.y
+		vfmadd231ps xmm14, xmm3, xmm2			; c.w|c.z|c.y|c.x
+		vfmadd231ps xmm15, xmm1, xmm4			; d.w|d.z|d.y|d.x
 		add rdi, 16
 		loop @b
-		vinsertf128 ymm14, ymm14, xmm15, 1		; d.x|d.y|d.z|d.w|c.x|c.y|c.z|c.w
 		; principle
-		vmovaps ymm15, row0
-		vpermps ymm0, ymm15, ymm14				; xx|xx|xx|xx|c.x|c.y|c.z|c.w
-		vmovaps ymm15, row1
-		vpermps ymm1, ymm15, ymm14				; xx|xx|xx|xx|c.y|d.x|d.y|c.w
-		vmovaps ymm15, row2
-		vpermps ymm2, ymm15, ymm14				; xx|xx|xx|xx|c.z|d.y|d.z|c.w
+		vmovaps xmm0, xmm14						; row0 - c.w|c.z|c.y|c.x
+		vshufps xmm1, xmm14, xmm15, 01001101b	; row1 - d.y|d.x|c.w|c.y
+		vpshufd xmm1, xmm1, 01111000b			; c.w|d.y|d.x|c.y
+		vshufps xmm2, xmm14, xmm15, 10011110b	; row2 - d.z|d.y|c.w|c.z
+		vpshufd xmm2, xmm2, 01111000b			; c.w|d.z|d.y|c.z
 		; EstimatePrincipleComponent
 		vdpps xmm3, xmm0, xmm0, 01110001b		; r0
 		vdpps xmm4, xmm1, xmm1, 01110001b		; r1
@@ -178,16 +174,16 @@ asm_compress_colors proc USES r10 r11 r12 r13 r14 r15 rsi rdi rbx
 		vucomiss xmm3, xmm5						; r0 > r2
 		ja _next
 @@:		vmovaps xmm6, xmm1
-		vucomiss xmm4, xmm5
+		vucomiss xmm4, xmm5						; r1 > r2
 		ja _next
 		movaps xmm6, xmm2
 _next:	mov rcx, 8
-@@:		vpshufd xmm3, xmm6, 11000000b			; tmp = v.x|v.x|v.x|v.w
+@@:		vpshufd xmm3, xmm6, 11000000b			; tmp = v.w|v.x|v.x|v.x
 		vmulps xmm4, xmm0, xmm3					; w = row0 * tmp
-		vpshufd xmm3, xmm6, 11010101b			; tmp = v.y|v.y|v.y|v.w
-		vfmadd231ps xmm4, xmm1, xmm3
-		vpshufd xmm3, xmm6, 11101010b			; tmp = v.z|v.z|v.z|v.w
-		vfmadd231ps xmm4, xmm2, xmm3
+		vpshufd xmm3, xmm6, 11010101b			; tmp = v.w|v.y|v.y|v.y
+		vfmadd231ps xmm4, xmm1, xmm3			; w += row1 * tmp
+		vpshufd xmm3, xmm6, 11101010b			; tmp = v.w|v.z|v.z|v.z
+		vfmadd231ps xmm4, xmm2, xmm3			; w += row2 * tmp
 		vpshufd xmm5, xmm4, 11000000b			; tmp1 = w.splatx
 		vpshufd xmm7, xmm4, 11010101b			; tmp2 = w.splaty
 		vpshufd xmm8, xmm4, 11101010b			; tmp3 = w.splatz
@@ -213,198 +209,54 @@ _loop:	vmovaps xmm5, [rdi]
 		vmovaps xmm1, xmm5
 		vmovss xmm2, xmm2, xmm4
 @@:		loop _loop
-		;vfmadd213ps xmm0, xmm10, xmm11		; start * grid + half
-		;vfmadd213ps xmm1, xmm10, xmm11		; end * grid + half
-		;vdivps xmm0, xmm0, xmm10			; start /= grid
-		;vdivps xmm1, xmm1, xmm10			; end /= grid
-
-
-		vmovaps xmm2, xmm0
+		; запаковка
+		movaps xmm2, xmm0
 		call asm_encode565
-		mov rcx, rax									; wColorA
-		vmovaps xmm2, xmm1
+		mov rcx, rax					; wColorA
+		movaps xmm2, xmm1
 		call asm_encode565
-		mov rdx, rax									; wColorB
-		cmp ecx, edx
-		jnz @f
-		cmp rbx, 4
-		jnz @f
-		mov [r8 + 0], cx
-		mov [r8 + 2], dx
-		mov dword ptr [r8 + 4], 0
-		ret
-@@:		vmovaps xmm2, xmm0
-		vmovaps xmm3, xmm1
-		cmp rbx, 3
-		jnz @f
-		cmp ecx, edx
-		jbe _next
-@@:		xchg rcx, rdx
-		vmovaps xmm2, xmm1
-		vmovaps xmm3, xmm0
-_next:	mov [r8 + 0], cx
-		mov [r8 + 2], dx
-		vmovaps xmm4, half
-		mov r12, offset psteps3
-		cmp rbx, 3
-		jz @f
+		mov rdx, rax					; wColorB
 		mov r12, offset psteps4
-		vmovaps xmm4, f_0_33x4
-		vsubps xmm1, xmm3, xmm2				; tmp = step[1] - step[0]
-		vmulps xmm1, xmm1, f_0_66x4			; tmp *= s
-		vaddps xmm1, xmm2, xmm1				; step[3] = step[0] + tmp
-@@:		vsubps xmm0, xmm3, xmm2				; tmp = step[1] - step[0]
-		vmulps xmm0, xmm0, xmm4				; tmp *= s
-		vaddps xmm0, xmm2, xmm0				; step[2] = step[0] + tmp
-		vsubps xmm4, xmm3, xmm2				; dir = step[1] - step[0]
-		vxorps xmm0, xmm0, xmm0
-		dec rbx								; iSteps
+		cmp rbx, 4
+		jz @f
+		mov r12, offset psteps3
 		cmp ecx, edx
-		jz @f
-		vcvtsi2ss xmm3, xmm3, rbx			; fSteps
-		vdpps xmm1, xmm4, xmm4, 01110001b	; dot(dir, dir)
-		vdivss xmm0, xmm3, xmm1				; fScale = fSteps / dot(dir, dir)
-		vpshufd xmm0, xmm0, 11111111b		; fScale
-@@:		vmulps xmm4, xmm4, xmm0				; dir *= fScale
-		xor rax, rax						; dw = 0
-		mov rcx, 16
-_loop:	mov rdx, 3
-		cmp rbx, 2
-		jz @f
-		vmovaps xmm0, [r10]					; tmp = pColor[i]
-		vsubps xmm0, xmm0, xmm2				; tmp -= step[0]
-		vdpps xmm0, xmm0, xmm4, 01110001b	; fDot = dot(tmp, dir)
-		xor rdx, rdx						; iStep
-		vucomiss xmm0, f_0_0x4
-		jc @f
-		inc rdx
-		vucomiss xmm0, xmm3	
-		jae @f
-		vaddss xmm0, xmm0, xmm14
-		vcvtss2si rdx, xmm0
-		mov rdx, [r12 + rdx * 8]
-@@:		shl rdx, 30
-		shr rax, 2
-		or rax, rdx
-		loop _loop
-		mov [r8 + 4], eax
-		ret
-
-
-
-
-
-
-
-
-
-
-
-
-		; compress4
-		mov r12, offset codes
-		vmovaps [r12 + 00], xmm0
-		vmovaps [r12 + 16], xmm1
-		vmovaps xmm4, half
-		vmovaps xmm5, xmm4
-		cmp rbx, 3
-		jz @f
-		vmovaps xmm4, f_0_33x4
-		vmovaps xmm5, f_0_66x4
-@@:		vmulps xmm3, xmm0, xmm4
-		vfmadd231ps xmm3, xmm1, xmm5
-		vmulps xmm2, xmm0, xmm5
-		vfmadd231ps xmm2, xmm1, xmm4
-		vmovaps [r12 + 32], xmm2
-		vmovaps [r12 + 48], xmm3
-		mov rsi, offset closest
-		mov rdi, r10
-		xor rcx, rcx
-_loop0:	vmovss xmm3, flt_max				; distance
-		vmovaps xmm4, [rdi]					; color[i]
-		mov r12, offset codes
-		xor rax, rax						; idx = 0
-		xor r14, r14
-_loop1:	vsubps xmm5, xmm4, [r12]
-		vdpps xmm5, xmm5, xmm5, 01110001b
-		vucomiss xmm5, xmm3
-		jae @f
-		vmovss xmm3, xmm3, xmm5
-		mov rax, r14
-@@:		add r12, 16
-		inc r14
-		cmp r14, rbx
-		jb _loop1
-		mov [rsi + rcx], al
-		add rdi, 16
-		inc rcx
-		cmp rcx, 16
-		jb _loop0
-		mov rdi, offset indices
-		; remap_indices
-		; write_color_block4(3)
-		vmovaps xmm2, xmm0
-		call asm_encode565
-		mov rcx, rax
-		vmovaps xmm2, xmm1
-		call asm_encode565
-		mov rdx, rax
-		cmp rbx, 3
-		jz _a3b3
-		cmp ecx, edx
-		jb a4LSb4
-		jz a4EQb4
-		movsq				; a > b
-		movsq
-		jmp _next1
-a4EQb4:	xor rax, rax		; a = b
-		stosq
-		stosq
-		jmp _next1
-a4LSb4:	xchg rcx, rdx
-		mov ah, 16
-a4LSb4_:lodsb
-		xor al, 1
-		and al, 3
-		stosb
-		dec ah
-		jnz a4LSb4_
-_a3b3:	cmp ecx, edx
-		ja a3GSb3
-		movsq
-		movsq
-		jmp _next1
-a3GSb3:	xchg rcx, rdx
-		mov bh, 16
-a3GSb3_:lodsb
-		xor ah, ah
-		cmp al, 1
-		jz @f
-		inc ah
-		cmp al, 0
-		jz @f
-		mov ah, al
-@@:		mov al, ah
-		stosb
-		dec bh
-		jnz a3GSb3_
-_next1:	; write_color_block
-		sub rdi, 16
-		mov [r8 + 0], cx
+		ja @f
+		xchg rcx, rdx
+		movaps xmm2, xmm0
+		movaps xmm0, xmm1
+		movaps xmm1, xmm2
+@@:		mov [r8 + 0], cx
 		mov [r8 + 2], dx
-		mov rcx, 4
-@@:		mov ax, [rdi + 0]
-		mov dx, [rdi + 2]
-		shl ah, 2
-		shl dl, 4
-		shl dh, 6
-		or al, ah
-		or dl, dh
-		or al, dl
-		mov [r8], al
-		inc r8
-		add rdi, 4
-		loop @b
+		vsubps xmm2, xmm1, xmm0				; dir = colorB - colorA
+		dec rbx
+		vcvtsi2ss xmm3, xmm3, rbx			; fStep = uSteps - 1
+		vxorps xmm4, xmm4, xmm4				; fScale = 0
+		cmp ecx, edx
+		jz @f
+		vdpps xmm5, xmm2, xmm2, 01110001b	; tmp = dot(dir, dir)
+		vdivss xmm4, xmm3, xmm5				; fScale = fSteps / tmp
+@@:		vpshufd xmm4, xmm4, 0
+		vmulps xmm2, xmm2, xmm4				; dir *= fScale
+		xor rdx, rdx						; dw = 0
+		mov rdi, r10
+		mov rcx, 16							; i
+_loop_:	vmovaps xmm4, [rdi]					; tmp = colors[i]
+		vsubps xmm4, xmm4, xmm0
+		vdpps xmm4, xmm4, xmm2, 01110001b	; fDot
+		mov rax, 1							; iStep = 1
+		vucomiss xmm4, xmm3					; fDot >= fStep
+		jae @f
+		vaddss xmm4, xmm4, half				; fDot += 0.5
+		vcvtss2si rax, xmm4
+		mov rax, [r12 + rax * 8]			; iStep
+@@:		shl rax, 30
+		shr rdx, 2
+		or rdx, rax
+		add rdi, 16
+		loop _loop_
+		mov [r8 + 4], edx
+		add r8, 8
 		ret
 asm_compress_colors endp
 
@@ -656,6 +508,79 @@ _loop3:	push rcx
 		loop _loop3
 		ret
 comp_dxt5 endp
+
+end
+
+void D3DXEncodeBC3(uint8_t *pBC, const XMVECTOR *pColor, DWORD flags)
+{
+    HDRColorA Color[NUM_PIXELS_PER_BLOCK];
+    for(size_t i = 0; i < NUM_PIXELS_PER_BLOCK; ++i) XMStoreFloat4( reinterpret_cast<XMFLOAT4*>( &Color[i] ), pColor[i] );
+    auto pBC3 = reinterpret_cast<D3DX_BC3 *>(pBC);
+    float fAlpha[NUM_PIXELS_PER_BLOCK];
+    float fError[NUM_PIXELS_PER_BLOCK];
+    float fMinAlpha = Color[0].a;
+    float fMaxAlpha = Color[0].a;
+    for(size_t i = 0; i < NUM_PIXELS_PER_BLOCK; ++i)
+    {
+        float fAlph = Color[i].a;
+        fAlpha[i] = static_cast<int32_t>(fAlph * 255.0f + 0.5f) * (1.0f / 255.0f);
+        if(fAlpha[i] < fMinAlpha) fMinAlpha = fAlpha[i];
+        else if(fAlpha[i] > fMaxAlpha) fMaxAlpha = fAlpha[i];
+    }
+    EncodeBC1(&pBC3->bc1, Color, false, 0.f, flags);
+    size_t uSteps = ((0.0f == fMinAlpha) || (1.0f == fMaxAlpha)) ? 6 : 8;
+    float fAlphaA, fAlphaB;
+    OptimizeAlpha<false>(&fAlphaA, &fAlphaB, fAlpha, uSteps);
+    uint8_t bAlphaA = (uint8_t) static_cast<int32_t>(fAlphaA * 255.0f + 0.5f);
+    uint8_t bAlphaB = (uint8_t) static_cast<int32_t>(fAlphaB * 255.0f + 0.5f);
+    fAlphaA = (float) bAlphaA * (1.0f / 255.0f);
+    fAlphaB = (float) bAlphaB * (1.0f / 255.0f);
+    static const size_t pSteps6[] = { 0, 2, 3, 4, 5, 1 };
+    static const size_t pSteps8[] = { 0, 2, 3, 4, 5, 6, 7, 1 };
+    const size_t *pSteps;
+    float fStep[8];
+    if(6 == uSteps)
+    {
+        pBC3->alpha[0] = bAlphaA;
+        pBC3->alpha[1] = bAlphaB;
+        fStep[0] = fAlphaA;
+        fStep[1] = fAlphaB;
+        for(size_t i = 1; i < 5; ++i) fStep[i + 1] = (fStep[0] * (5 - i) + fStep[1] * i) * (1.0f / 5.0f);
+        fStep[6] = 0.0f;
+        fStep[7] = 1.0f;
+        pSteps = pSteps6;
+    }
+    else
+    {
+        pBC3->alpha[0] = bAlphaB;
+        pBC3->alpha[1] = bAlphaA;
+        fStep[0] = fAlphaB;
+        fStep[1] = fAlphaA;
+        for(size_t i = 1; i < 7; ++i) fStep[i + 1] = (fStep[0] * (7 - i) + fStep[1] * i) * (1.0f / 7.0f);
+        pSteps = pSteps8;
+    }
+    float fSteps = (float) (uSteps - 1);
+    float fScale = (fStep[0] != fStep[1]) ? (fSteps / (fStep[1] - fStep[0])) : 0.0f;
+    for(size_t iSet = 0; iSet < 2; iSet++)
+    {
+        uint32_t dw = 0;
+        size_t iMin = iSet * 8;
+        size_t iLim = iMin + 8;
+        for(size_t i = iMin; i < iLim; ++i)
+        {
+            float fAlph = Color[i].a;
+            float fDot = (fAlph - fStep[0]) * fScale;
+            uint32_t iStep;
+            if(fDot <= 0.0f) iStep = ((6 == uSteps) && (fAlph <= fStep[0] * 0.5f)) ? 6 : 0;
+            else if(fDot >= fSteps) iStep = ((6 == uSteps) && (fAlph >= (fStep[1] + 1.0f) * 0.5f)) ? 7 : 1;
+            else iStep = static_cast<uint32_t>( pSteps[static_cast<size_t>(fDot + 0.5f)] );
+            dw = (iStep << 21) | (dw >> 3);
+        }
+        pBC3->bitmap[0 + iSet * 3] = ((uint8_t *) &dw)[0];
+        pBC3->bitmap[1 + iSet * 3] = ((uint8_t *) &dw)[1];
+        pBC3->bitmap[2 + iSet * 3] = ((uint8_t *) &dw)[2];
+    }
+}
 
 null_dxt1 proc
 		ret
