@@ -57,15 +57,12 @@ namespace ssh
 		struct timeval tv;
 		tv.tv_sec = 60;
 		tv.tv_usec = 0;
-		while(sock->status && Socket::THREAD)
+		while((sock->status & Socket::THREAD))
 		{
 			fd_set fd_read, fd_write, fd_exc;
-			if(sock->fd_flags & Socket::fd_read)
-				memcpy(&fd_read, &sock->fds, sizeof(fd_set));
-			if(sock->fd_flags & Socket::fd_write)
-				memcpy(&fd_write, &sock->fds, sizeof(fd_set));
-			if(sock->fd_flags & Socket::fd_except)
-				memcpy(&fd_exc, &sock->fds, sizeof(fd_set));
+			if(sock->fd_flags & Socket::fd_read) memcpy(&fd_read, &sock->fds, sizeof(fd_set));
+			if(sock->fd_flags & Socket::fd_write) memcpy(&fd_write, &sock->fds, sizeof(fd_set));
+			if(sock->fd_flags & Socket::fd_except) memcpy(&fd_exc, &sock->fds, sizeof(fd_set));
 			if((result = select(0, &fd_read, &fd_write, &fd_exc, &tv)) == SOCKET_ERROR)
 			{
 				sock->close();

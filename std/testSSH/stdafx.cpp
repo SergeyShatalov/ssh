@@ -155,8 +155,44 @@ extern "C"
 {
 	ssh_u asm_ssh_shufb(ssh_u v);
 }
+
+static int FloatToInt(float a, int limit)
+{
+	// use ANSI round-to-zero behaviour to get round-to-nearest
+	int i = (int)(a + 0.5f);
+
+	// clamp to the limit
+	if(i < 0) i = 0;
+	else if(i > limit) i = limit;
+
+	// done
+	return i;
+}
+
+static void CompressAlphaDxt3(ssh_b const* rgba, void* block)
+{
+	ssh_b* bytes = reinterpret_cast< ssh_b* >(block);
+
+	// quantise and pack the alpha values pairwise
+	for(int i = 0; i < 8; ++i)
+	{
+		// quantise down to 4 bits
+		ssh_b ff = rgba[8 * i];
+		float alpha1 = (float)rgba[8 * i] * (15.0f / 255.0f);
+		float alpha2 = (float)rgba[8 * i + 4] * (15.0f / 255.0f);
+		int quant1 = FloatToInt(alpha1, 15);
+		int quant2 = FloatToInt(alpha2, 15);
+
+		// pack into the byte
+		bytes[i] = (ssh_b)(quant1 | (quant2 << 4));
+	}
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	ssh_d rgba[16] = { 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255 };
+	ssh_b block[16];
+	CompressAlphaDxt3((ssh_b*)rgba, block);
 	int i_alpha1 = INT_MAX, i_alpha2 = 160;
 	i_alpha1 >>= 4;
 	i_alpha2 >>= 4;

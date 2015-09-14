@@ -263,14 +263,15 @@ _rgba4:	mov r12, offset rgba4_pack
 asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:QWORD, dst:QWORD, src:QWORD, is:DWORD
 		movsxd r11, is
 		movsxd rax, ecx
-		movsxd rcx, dword ptr [rdx]
-		cmp rax, 5						; проверить на запакованные форматы
-		jl _bc_x
+		movsxd rcx, dword ptr [rdx]			; width
+		movsxd rdx, dword ptr [rdx + 4]		; height
+		cmp rax, 5							; проверить на запакованные форматы
+		jl asm_ssh_bc_x
 		mov r10, offset cnvFuncs - 5 * 16
 		shl rax, 4
 		add r10, rax
-		lea r10, [r10 + r11 * 8]		; адрес функции преобразования
-		imul ecx, dword ptr [rdx + 4]
+		lea r10, [r10 + r11 * 8]			; адрес функции преобразования
+		imul rcx, rdx
 		shr rcx, 1
 		jz _fin
 		vmovups ymm1, _gamma
@@ -278,8 +279,6 @@ asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:Q
 		loop @b
 		emms
 _fin:	ret
-_bc_x:	call asm_ssh_bc_x
-		ret
 asm_ssh_cnv endp
 
 ; rcx(ww) rdx(pal) r8(dst) r9(src)
@@ -365,32 +364,6 @@ skip:	sub r9, r11
 		jnz _height
 		ret
 asm_ssh_unpack_bmp endp
-
-asm_ssh_bfs proc public
-		xor rax, rax
-		mov eax, [rcx]
-		mov rcx, rax
-		mov rdx, rax
-		and rax, 00f0f0f0h
-		jz _fin
-		mov rax, rcx
-		or eax, 0ff000000h
-		jmp _fin
-		and rdx, 00a0a0a0h
-		jz _fin
-		movd xmm7, ecx
-		pmovzxbd xmm7, xmm7
-		cvtdq2ps xmm7, xmm7
-		dpps xmm7, xmm5, 01111000b
-		cvtps2dq xmm7, xmm7
-		packssdw xmm7, xmm7
-		packuswb xmm7, xmm7
-		movd eax, xmm7
-		and rax, 0ff000000h
-		and rcx, 00ffffffh
-		or rax, rcx
-_fin:	ret
-asm_ssh_bfs endp
 
 ;rcx(iTrans) rdx(pal) r8(dst) r9(stk)
 asm_ssh_unpack_gif proc public iTrans:DWORD, pal:QWORD, dst:QWORD, src:QWORD, stk:QWORD

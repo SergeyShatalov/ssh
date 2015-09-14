@@ -114,8 +114,6 @@ namespace ssh
 	protected:
 		// декодировка
 		String encode(const Buffer<ssh_cs>& buf);
-		// вернуть BOM в зависимости от выходной кодировки
-		ssh_w bom_coder() const;
 		// формирование дерева узлов
 		void make(HXML hp, ssh_u lev);
 		void _make(const Buffer<ssh_cs>& buf);

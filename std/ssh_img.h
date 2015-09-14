@@ -397,7 +397,6 @@ namespace ssh
 		void asm_ssh_unpack_bmp(ssh_u w, ssh_u h, void* dst, void* src, void* pal);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
-		ssh_d asm_ssh_bfs(void* src);
 	}
 }
 

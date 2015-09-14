@@ -1,63 +1,66 @@
 
 .data
 align 16
-vm1		dd 1.0, 2.0, 3.0, 4.0
-vm2		dd 5.0, 6.0, 7.0, 8.0
-vm3		dd 10.0, 20.0, 30.0, 40.0
-v0		dd -1, 255, 255, 255
-v1		db 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,16,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
-v2		db 32 dup(20)
-_pp		db 0, 3, 2, 1, 4, 7, 6, 5
-_pos	dd 0402h
-_ext_b1	dd 00000000000000000000000000011111b
-_ext_b2	dd 00000000000000000100011111100000b
-_ext_b3	dd 00000000000000001111100000000000b
-_dep_b1 dd 00000000000000000000000011111111b
-_dep_b2 dd 00000000000000001111111100000000b
-_dep_b3 dd 00000000111111110000000000000000b
+ind		db 0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0
+v1		dd 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255
+v2		dd 32 dup(0)
+v3		dd -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0
+and0	dw 0, -1, 0, -1, 0, -1, 0, -1
+and1	dw -1, 0, -1, 0, -1, 0, -1, 0
+y_shift dd 1, 1, 1, 1, 1, 1, 1, 1
+msk		db -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .code
 
 asm_ssh_shufb proc public
-		mov rax, 255
-		mov rcx, 160
-		shr rax, 4
-		shr rcx, 4
-		shl cl, 4
-		or al, cl
-		movaps xmm1, vm1
-		movaps xmm2, vm2
-		movaps xmm3, vm3
-		VFMsubADD231Ps xmm1, xmm2, xmm3
+		mov rsi, offset ind
+		mov rdi, offset v2
+		vpmovzxbd xmm0, dword ptr [rsi + 00]
+		vpmovzxbd xmm1, dword ptr [rsi + 04]
+		vpmovzxbd xmm2, dword ptr [rsi + 08]
+		vpmovzxbd xmm3, dword ptr [rsi + 12]
+		vpslld xmm1, xmm1, 2
+		vpslld xmm2, xmm2, 4
+		vpslld xmm3, xmm3, 6
+		vorps xmm1, xmm1, xmm2
+		vorps xmm0, xmm0, xmm1
+		vorps xmm0, xmm0, xmm3
+		vpackusdw xmm0, xmm0, xmm0
+		vpackuswb xmm0, xmm0, xmm0
+		movd dword ptr [rdi], xmm0
 		ret
-		movq mm0, qword ptr v1
-		pavgb mm0, mm0
-		mov ecx, dword ptr [v0]
-		pext eax, ecx, _ext_b1
-		pext edx, ecx, _ext_b2
-		pext ebx, ecx, _ext_b3
-		pdep eax, edx, _dep_b2
-		pdep eax, eax, _dep_b1
-		pdep ebx, ebx, _dep_b3
-		movzx rcx, word ptr _pos
-		mov edx, [v0]
-		bextr eax, edx, ecx
-		vpmovzxbd ymm0, dword ptr [v1]
-		vcvtdq2ps ymm0, ymm0
-		vdpps ymm0, ymm0, ymm0, 01111111b
-		vcvtps2dq ymm0, ymm0
-		vpackusdw ymm0, ymm0, ymm0
-		vpackuswb ymm0, ymm0, ymm0
-		mov rdx, offset v1
-		movd dword ptr [v1], xmm0
-		vextracti128 xmm0, ymm0, 1
-		movd ecx, xmm0
-		vmovaps ymm0, ymmword ptr v1
-		vmovaps ymm1, ymmword ptr v2
-		vpshufb ymm0, ymm0, ymm1
-		vdpps ymm0, ymm0, ymm1, 01110111b
-		movd mm0, rcx
-		movq mm1, qword ptr _pp
-		pshufb mm0, mm1
+		mov rsi, offset v1
+		mov rdi, offset v2
+		movups xmm3, xmmword ptr msk
+		mov rcx, 2
+@@:		vpshufd ymm1, [rsi], 00001000b
+		vpshufd ymm2, [rsi], 00001101b
+		vpsrld ymm1, ymm1, 4
+		vpsrld ymm2, ymm2, 4
+		vpslld ymm2, ymm2, 4
+		vorps ymm1, ymm1, ymm2
+		vpackusdw ymm1, ymm1, ymm1
+		vpackuswb ymm1, ymm1, ymm1
+		vextractf128 xmm2, ymm1, 1
+		vmaskmovdqu xmm1, xmm3
+		add rdi, 2
+		maskmovdqu xmm2, xmm3
+		add rdi, 2
+		add rsi, 32
+		loop @b
+		mov r8, rdi
+		ret
+		xor rax, rax
+@@:		mov ecx, [r11 + rax * 8]
+		mov edx, [r11 + rax * 8 + 4]
+		shr rcx, 4
+		shr edx, 4
+		shl dl, 4
+		or cl, dl
+		mov [r8], cl
+		inc r8
+		inc rax
+		cmp rax, 8
+		jb @b
 		ret
 asm_ssh_shufb endp
 

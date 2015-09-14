@@ -22,16 +22,19 @@ grid		dd 31.0, 63.0, 31.0, 0.0
 half		dd 0.5, 0.5, 0.5, 0.0
 f_0_33x4	dd 0.33, 0.33, 0.33, 0.0
 f_0_66x4	dd 0.66, 0.66, 0.66, 0.0
-i_0x3_1		dd 0, 0, 0, 1
+i_0x3_1		dd 0.0, 0.0, 0.0, 1.0
+msk			db -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 f_255x3_256 dd 255.0, 255.0, 255.0, 256.0
 row0		dd 3, 3, 3, 3, 4, 5, 6, 7
 row1		dd 3, 3, 3, 3, 5, 0, 1, 7
 row2		dd 3, 3, 3, 3, 6, 1, 2, 7
+psteps3		dq 0, 2, 1, 0
+psteps4		dq 0, 2, 3, 1
 flt_max		dd 3.402823466e+38F
 
-alpha_func	dq null_dxt1, 0, null_dxt1, 0
-			dq decomp_dxt3, 8, comp_dxt3, 8
-			;dq decomp_dxt5, 8, comp_dxt5, 8
+alpha_func	dq null_dxt1, 3, null_dxt1, 3
+			dq decomp_dxt3, 4, comp_dxt3, 4
+			dq decomp_dxt5, 4, comp_dxt5, 4
 
 .data?
 
@@ -47,7 +50,6 @@ weights		dd 16 dup(?)
 .code
 
 asm_ssh_bc_x proc USES rbx r12
-		movsxd rdx, dword ptr [rdx + 4]			; height
 		lea r15, [rcx * 4]						; pitch
 		shr rcx, 2
 		jz fin
@@ -58,12 +60,10 @@ asm_ssh_bc_x proc USES rbx r12
 		vmovaps xmm12, f_255x3_256
 		mov r12, offset alpha_func
 		shl rax, 5
-		setnz bl
-		movzx rbx, bl
-		add rbx, 3
 		shl r11, 4
 		add r12, rax
 		add r12, r11							; адрес функции работы с альфой
+		mov rbx, [r12 + 8]
 		test r11, r11
 		jz _decompress
 		; компрессор
@@ -73,7 +73,6 @@ _loop:	push r9
 		push rcx
 @@:		call asm_set_colors
 		call qword ptr [r12]					; пакуем альфу
-		add r8, [r12 + 8]						; сдвиг к цвету
 		call asm_compress_colors
 		add r8, 8
 		add r9, 16
@@ -105,20 +104,20 @@ asm_encode565 proc USES rcx rdx
 asm_encode565 endp
 
 asm_set_colors proc USES r9 r12 rsi rdi rcx rdx
+		vrcpps xmm2, xmm12
 		mov rdi, r10
 		mov rsi, r11
 		mov rcx, 4
 __loop:	mov r12, r9
 		mov rdx, 4
 @@:		vpmovzxbd xmm0, dword ptr [r12]
+		vpshufd xmm1, xmm0, 11111111b
+		vmovss dword ptr [rsi], xmm1			; alpha
 		vcvtdq2ps xmm0, xmm0
 		vpshufd xmm0, xmm0, 11100100b
-		vpshufd xmm1, xmm0, 11111111b
 		vaddps xmm0, xmm0, i_0x3_1
-		vdivps xmm0, xmm0, xmm12				; f_255x3_256
+		vmulps xmm0, xmm0, xmm12				; 1/f_255x3_256
 		vmovaps [rdi], xmm0						; points
-		vcvtps2dq xmm1, xmm1
-		vmovss dword ptr [rsi], xmm1			; weights
 		add rsi, 4
 		add r12, 4
 		add rdi, 16
@@ -197,32 +196,111 @@ _next:	mov rcx, 8
 		vrcpps xmm5, xmm5
 		vmulps xmm6, xmm4, xmm5					; v = w * rcp(a)
 		loop @b
-		vmovss xmm14, flt_max
-		vmovaps xmm0, [r10]						; start = points[0]
-		vmovaps xmm1, xmm0						; end = start
-		vdpps xmm2, xmm0, xmm6, 01110001b		; max = dot(points[0], principle)
-		vmovaps xmm3, xmm3						; min
-		lea rdi, [r10 + 16]
-		mov rcx, 1
+		; поиск начальной и конечной точки
+		vmovss xmm2, flt_max					; min
+		vxorps xmm3, xmm3, xmm3					; max
+		mov rdi, r10
+		mov rcx, 16
 _loop:	vmovaps xmm5, [rdi]
+		add rdi, 16
 		vdpps xmm4, xmm5, xmm6, 01110001b		; val = dot(points[i], principle)
-		vucomiss xmm4, xmm3
-		jae @f
+		vucomiss xmm4, xmm3						; val > max
+		jb @f
 		vmovaps xmm0, xmm5
-		vmovaps xmm3, xmm4
-		jmp _next0
-@@:		vucomiss xmm4, xmm2
-		jbe _next0
+		vmovss xmm3, xmm3, xmm4
+@@:		vucomiss xmm4, xmm2						; val < min
+		ja @f
 		vmovaps xmm1, xmm5
-		vmovaps xmm2, xmm4
-_next0: add rdi, 16
+		vmovss xmm2, xmm2, xmm4
+@@:		loop _loop
+		;vfmadd213ps xmm0, xmm10, xmm11		; start * grid + half
+		;vfmadd213ps xmm1, xmm10, xmm11		; end * grid + half
+		;vdivps xmm0, xmm0, xmm10			; start /= grid
+		;vdivps xmm1, xmm1, xmm10			; end /= grid
+
+
+		vmovaps xmm2, xmm0
+		call asm_encode565
+		mov rcx, rax									; wColorA
+		vmovaps xmm2, xmm1
+		call asm_encode565
+		mov rdx, rax									; wColorB
+		cmp ecx, edx
+		jnz @f
+		cmp rbx, 4
+		jnz @f
+		mov [r8 + 0], cx
+		mov [r8 + 2], dx
+		mov dword ptr [r8 + 4], 0
+		ret
+@@:		vmovaps xmm2, xmm0
+		vmovaps xmm3, xmm1
+		cmp rbx, 3
+		jnz @f
+		cmp ecx, edx
+		jbe _next
+@@:		xchg rcx, rdx
+		vmovaps xmm2, xmm1
+		vmovaps xmm3, xmm0
+_next:	mov [r8 + 0], cx
+		mov [r8 + 2], dx
+		vmovaps xmm4, half
+		mov r12, offset psteps3
+		cmp rbx, 3
+		jz @f
+		mov r12, offset psteps4
+		vmovaps xmm4, f_0_33x4
+		vsubps xmm1, xmm3, xmm2				; tmp = step[1] - step[0]
+		vmulps xmm1, xmm1, f_0_66x4			; tmp *= s
+		vaddps xmm1, xmm2, xmm1				; step[3] = step[0] + tmp
+@@:		vsubps xmm0, xmm3, xmm2				; tmp = step[1] - step[0]
+		vmulps xmm0, xmm0, xmm4				; tmp *= s
+		vaddps xmm0, xmm2, xmm0				; step[2] = step[0] + tmp
+		vsubps xmm4, xmm3, xmm2				; dir = step[1] - step[0]
+		vxorps xmm0, xmm0, xmm0
+		dec rbx								; iSteps
+		cmp ecx, edx
+		jz @f
+		vcvtsi2ss xmm3, xmm3, rbx			; fSteps
+		vdpps xmm1, xmm4, xmm4, 01110001b	; dot(dir, dir)
+		vdivss xmm0, xmm3, xmm1				; fScale = fSteps / dot(dir, dir)
+		vpshufd xmm0, xmm0, 11111111b		; fScale
+@@:		vmulps xmm4, xmm4, xmm0				; dir *= fScale
+		xor rax, rax						; dw = 0
+		mov rcx, 16
+_loop:	mov rdx, 3
+		cmp rbx, 2
+		jz @f
+		vmovaps xmm0, [r10]					; tmp = pColor[i]
+		vsubps xmm0, xmm0, xmm2				; tmp -= step[0]
+		vdpps xmm0, xmm0, xmm4, 01110001b	; fDot = dot(tmp, dir)
+		xor rdx, rdx						; iStep
+		vucomiss xmm0, f_0_0x4
+		jc @f
+		inc rdx
+		vucomiss xmm0, xmm3	
+		jae @f
+		vaddss xmm0, xmm0, xmm14
+		vcvtss2si rdx, xmm0
+		mov rdx, [r12 + rdx * 8]
+@@:		shl rdx, 30
+		shr rax, 2
+		or rax, rdx
 		loop _loop
-		;vmovaps xmm2, half
-		;vmovaps xmm3, grid
-		vfmadd213ps xmm0, xmm10, xmm11		; start * grid + half
-		vfmadd213ps xmm1, xmm10, xmm11		; end * grid + half
-		vdivps xmm0, xmm0, xmm3				; start /= grid
-		vdivps xmm1, xmm1, xmm3				; end /= grid
+		mov [r8 + 4], eax
+		ret
+
+
+
+
+
+
+
+
+
+
+
+
 		; compress4
 		mov r12, offset codes
 		vmovaps [r12 + 00], xmm0
@@ -233,32 +311,31 @@ _next0: add rdi, 16
 		jz @f
 		vmovaps xmm4, f_0_33x4
 		vmovaps xmm5, f_0_66x4
-		vmulps xmm3, xmm0, xmm4
+@@:		vmulps xmm3, xmm0, xmm4
 		vfmadd231ps xmm3, xmm1, xmm5
-@@:		vmulps xmm2, xmm0, xmm5
+		vmulps xmm2, xmm0, xmm5
 		vfmadd231ps xmm2, xmm1, xmm4
 		vmovaps [r12 + 32], xmm2
 		vmovaps [r12 + 48], xmm3
-		vxorps xmm2, xmm2, xmm2				; error = 0
 		mov rsi, offset closest
 		mov rdi, r10
 		xor rcx, rcx
-_loop0:	vmovss xmm3, flt_max				; dist
-		vmovaps xmm4, [rdi]
+_loop0:	vmovss xmm3, flt_max				; distance
+		vmovaps xmm4, [rdi]					; color[i]
+		mov r12, offset codes
 		xor rax, rax						; idx = 0
 		xor r14, r14
-_loop1:	lea rdx, [r14 * 8]
-		vsubps xmm5, xmm4, [r12 + rdx * 2]
+_loop1:	vsubps xmm5, xmm4, [r12]
 		vdpps xmm5, xmm5, xmm5, 01110001b
 		vucomiss xmm5, xmm3
 		jae @f
-		vmovaps xmm3, xmm5
+		vmovss xmm3, xmm3, xmm5
 		mov rax, r14
-@@:		inc r14
+@@:		add r12, 16
+		inc r14
 		cmp r14, rbx
 		jb _loop1
-		mov [rsi + rcx], dl
-		vaddss xmm2, xmm2, xmm3
+		mov [rsi + rcx], al
 		add rdi, 16
 		inc rcx
 		cmp rcx, 16
@@ -331,19 +408,41 @@ _next1:	; write_color_block
 		ret
 asm_compress_colors endp
 
-comp_dxt3 proc
-		xor rax, rax
-@@:		mov ecx, [r11 + rax * 4]
-		mov edx, [r11 + rax * 4 + 4]
-		shr rcx, 4
-		shr edx, 4
-		shl dl, 4
-		or cl, dl
-		mov [r8 + rax], cl
-		inc rax
-		cmp rax, 16
-		jb @b
+comp_dxt3 proc USES rcx
+		movaps xmm3, xmmword ptr msk
+		mov rdi, r8
+		mov rsi, r11
+		mov rcx, 2
+@@:		vpshufd ymm1, [rsi], 00001000b
+		vpshufd ymm2, [rsi], 00001101b
+		vpsrld ymm1, ymm1, 4
+		vpsrld ymm2, ymm2, 4
+		vpslld ymm2, ymm2, 4
+		vorps ymm1, ymm1, ymm2
+		vpackusdw ymm1, ymm1, ymm1
+		vpackuswb ymm1, ymm1, ymm1
+		vextractf128 xmm2, ymm1, 1
+		vmaskmovdqu xmm1, xmm3
+		add rdi, 2
+		maskmovdqu xmm2, xmm3
+		add rdi, 2
+		add rsi, 32
+		loop @b
+		mov r8, rdi
 		ret
+;		xor rax, rax
+;@@:		mov ecx, [r11 + rax * 8]
+;		mov edx, [r11 + rax * 8 + 4]
+;		shr rcx, 4
+;		shr edx, 4
+;		shl dl, 4
+;		or cl, dl
+;		mov [r8], cl
+;		inc r8
+;		inc rax
+;		cmp rax, 8
+;		jb @b
+;		ret
 comp_dxt3 endp
 
 asm_fit_codes proc USES r12 r13
