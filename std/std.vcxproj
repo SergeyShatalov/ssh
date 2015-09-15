@@ -69,6 +69,7 @@
       <ImportLibrary>e:\Разработка\Lib\$(TargetName).lib</ImportLibrary>
       <ModuleDefinitionFile>ssh_def.def</ModuleDefinitionFile>
       <LargeAddressAware>true</LargeAddressAware>
+      <AdditionalOptions>/SECTION:.text,ERW %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

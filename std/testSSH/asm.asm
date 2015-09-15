@@ -1,10 +1,11 @@
 
 extern asm_compress_colors:near
+extern asm_decompress_colors:near
 extern asm_set_colors:near
-extern comp_dxt5:near
+
 .data
 align 16
-_tmp	dd 0, 0, 0, 0
+;_tmp	dd 0, 0, 0, 0
 f_255x8	dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 grid	dd 31.0, 63.0, 31.0, 0.0
 half	dd 0.5, 0.5, 0.5, 0.0
@@ -15,9 +16,14 @@ rgba	db 10, 15, 20, 16, 25, 30, 35, 32, 40, 45, 50, 48, 55, 60, 65, 64
 		db 190, 195, 200, 208, 205, 210, 215, 224, 220, 225, 230, 240, 235, 240, 245, 255
 colors	dd 64 dup(0)
 result	dd 128 dup(0)
+result1	dd 128 dup(0)
 .code
 
 asm_ssh_shufb proc public USES rbx r15 r10 r11
+		mov rax, offset _1
+		mov byte ptr [rax + 4], 1
+_1:		vpshufd xmm0, xmm0, 0
+		vpshufd xmm0, xmm0, 0
 		vmovaps xmm10, grid
 		vmovaps xmm11, half
 		vmovaps ymm12, f_255x8
@@ -28,7 +34,8 @@ asm_ssh_shufb proc public USES rbx r15 r10 r11
 		mov r10, offset colors
 		mov r11, offset alpha
 		call asm_set_colors
-		call comp_dxt5
+		mov r9, offset result
+		mov r8, offset result1
 		call asm_compress_colors
 		ret
 asm_ssh_shufb endp

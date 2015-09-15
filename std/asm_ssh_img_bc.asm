@@ -1,26 +1,36 @@
 
-; BC1/DXT1 compression (4 bits per texel)
-;uint16_t    rgb[2]; // 565 colors
-;uint32_t    bitmap; // 2bpp rgb bitmap
+bc1 struct
+	dw rgb0
+	dw rgb1
+	dd idx
+bc1 ends
 
-; BC2/DXT2/3 compression (8 bits per texel)
-;uint32_t    bitmap[2];  // 4bpp alpha bitmap
-;D3DX_BC1    bc1;        // BC1 rgb data
+bc2 struct
+	dd idx1
+	dd idx2
+	bc bc1<>
+bc2 ends
 
-; BC3/DXT4/5 compression (8 bits per texel)
-;uint8_t     alpha[2];   // alpha values
-;uint8_t     bitmap[6];  // 3bpp alpha bitmap
-;D3DX_BC1    bc1;        // BC1 rgb data
-
-
-OPTION NOKEYWORD:<width type>
+bc3 struct
+	db alpha0
+	db alpha1
+	db alpha_idx0
+	db alpha_idx1
+	db alpha_idx2
+	db alpha_idx3
+	db alpha_idx4
+	db alpha_idx5
+	bc bc1<>
+bc3 ends
 
 .const
 
 align 16
-_tmp		dd 0, 0, 0, 0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 msk			db -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+f_0_33x3_1	dd 0.33, 0.33, 0.33, 1.0
+f_0_66x3_1	dd 0.66, 0.66, 0.66, 1.0
+f_0_5x3_1	dd 0.5, 0.5, 0.5, 1.0
 grid		dd 31.0, 63.0, 31.0, 0.0
 half		dd 0.5, 0.5, 0.5, 0.0
 psteps3		dq 0, 2, 1, 0
@@ -30,29 +40,21 @@ psteps8		dq 0, 2, 3, 4, 5, 6, 7, 1
 flt_max		dd 3.402823466e+38F
 f_1_0		dd 1.0
 f_0_0		dd 0.0
-alpha_func	dq null_dxt1, 3, null_dxt1, 3
-			dq decomp_dxt3, 4, comp_dxt3, 4
-			dq decomp_dxt5, 4, comp_dxt5, 4
-
-.data?
-
-points		dd 64 dup(?)
-weights		dd 16 dup(?)
-steps		dd 8 dup(?)
-
-.data
 
 .code
 
-asm_ssh_bc_x proc USES rdi rsi rbx r12
+null_bc1 proc
+		ret
+null_bc1 endp
+
+asm_ssh_bc_x proc USES rdi rsi rbx r12 r13 r14 r15
+LOCAL points[64]:DWORD
+LOCAL alpha[16]:DWORD
 		lea r15, [rcx * 4]						; pitch
 		shr rcx, 2
 		jz fin
 		shr rdx, 2
 		jz fin
-		vmovaps xmm10, grid
-		vmovaps xmm11, half
-		vmovaps ymm12, f_255x8
 		mov r12, offset alpha_func
 		shl rax, 5
 		shl r11, 4
@@ -60,28 +62,46 @@ asm_ssh_bc_x proc USES rdi rsi rbx r12
 		add r12, r11							; адрес функции работы с альфой
 		mov rbx, [r12 + 8]
 		test r11, r11
-		mov r10, offset points
-		mov r11, offset weights
 		jz _decompress
 		; компрессор
-_loop:	push r9
+		vmovaps xmm10, grid
+		vmovaps xmm11, half
+		vmovaps ymm12, f_255x8
+		lea r10, points
+		lea r11, alpha
+_compress:
+		push r9
 		push rcx
 @@:		call asm_set_colors
 		call qword ptr [r12]					; пакуем альфу
 		call asm_compress_colors
-		add r8, 8
-		add r9, 16
+		add r9, 4
 		loop @b
 		pop rcx
 		pop r9
 		lea r9, [r9 + r15 * 4]
 		dec rdx
-		jnz _loop
+		jnz _compress
 		ret
 _decompress:
+		vmovaps xmm10, f_0_33x3_1
+		vmovaps xmm11, f_0_66x3_1
+		vmovaps xmm12, f_0_5x3_1
+_loop_:	push r8
+		push rcx
+@@:		call asm_decompress_colors
+		call qword ptr [r12]					; распаковывем альфу
+		add r8, 4
+		add r9, 8
+		loop @b
+		pop rcx
+		pop r8
+		lea r8, [r8 + r15 * 4]
+		dec rdx
+		jnz _loop_
 fin:	ret
+alpha_func	dq null_bc1, 3, null_bc1, 3, decomp_bc2, 4, comp_bc2, 4, decomp_bc3, 4, comp_bc3, 4
 asm_ssh_bc_x endp
-
 
 ; in - xmm2, out - rax
 asm_encode565 proc USES rcx rdx
@@ -98,22 +118,22 @@ asm_encode565 proc USES rcx rdx
 		ret
 asm_encode565 endp
 
-asm_set_colors proc public USES r9 r12 rcx rdx
+asm_set_colors proc public USES r9 rcx rdx
 		mov rdi, r10
 		mov rsi, r11
 		mov rcx, 4
-__loop:	mov r12, r9
+__loop:	mov r13, r9
 		mov rdx, 4
-@@:		vpmovzxbd xmm0, dword ptr [r12]
+@@:		vpmovzxbd xmm0, dword ptr [r13]
 		vpshufd xmm0, xmm0, 11000110b
 		vcvtdq2ps xmm0, xmm0
-		vpshufd xmm1, xmm0, 00000011b
-		vmovss dword ptr [rsi], xmm1			; alpha
 		vpshufd xmm0, xmm0, 11100100b
 		vdivps xmm0, xmm0, xmm12				; f_255x4
 		vmovaps [rdi], xmm0						; points
+		vpshufd xmm1, xmm0, 00000011b
+		vmovss dword ptr [rsi], xmm1			; alpha
 		add rsi, 4
-		add r12, 4
+		add r13, 4
 		add rdi, 16
 		dec rdx
 		jnz @b
@@ -123,7 +143,7 @@ __loop:	mov r12, r9
 asm_set_colors endp
 
 ; r10 - points, r11 - weights(alpha), rbx(3 or 4)
-asm_compress_colors proc public USES r12 rcx rdx
+asm_compress_colors proc public USES rcx rdx
 		vxorps xmm0, xmm0, xmm0					; centroid = 0
 		vxorps xmm1, xmm1, xmm1					; total = 0
 		mov rdi, r10
@@ -209,10 +229,10 @@ _loop:	vmovaps xmm5, [rdi]
 		movaps xmm2, xmm1
 		call asm_encode565
 		mov rdx, rax					; wColorB
-		mov r12, offset psteps4
+		mov r13, offset psteps4
 		cmp rbx, 4
 		jz @f
-		mov r12, offset psteps3
+		mov r13, offset psteps3
 		cmp ecx, edx
 		ja @f
 		xchg rcx, rdx
@@ -242,7 +262,7 @@ _loop_:	vmovaps xmm4, [rdi]					; tmp = colors[i]
 		jae @f
 		vaddss xmm4, xmm4, half				; fDot += 0.5
 		vcvttss2si rax, xmm4
-		mov rax, [r12 + rax * 8]			; iStep
+		mov rax, [r13 + rax * 8]			; iStep
 @@:		shl rax, 30
 		shr rdx, 2
 		or rdx, rax
@@ -253,7 +273,7 @@ _loop_:	vmovaps xmm4, [rdi]					; tmp = colors[i]
 		ret
 asm_compress_colors endp
 
-comp_dxt3 proc USES rcx
+comp_bc2 proc USES rcx
 		movaps xmm3, xmmword ptr msk
 		mov rdi, r8
 		mov rsi, r11
@@ -278,26 +298,26 @@ comp_dxt3 proc USES rcx
 		loop @b
 		mov r8, rdi
 		ret
-comp_dxt3 endp
+comp_bc2 endp
 
-comp_dxt5 proc public USES rbx r12 r13 r14
-		movss xmm0, flt_max		; fMinAlpha
-		vxorps xmm1, xmm1, xmm1	; fMaxAlpha
+comp_bc3 proc USES rcx
+		movss xmm0, flt_max							; alpha0
+		vxorps xmm1, xmm1, xmm1						; alpha1
 		xor rcx, rcx
-@@:		vmovss xmm2, dword ptr [rsi + rcx * 4]
+@@:		vmovss xmm2, dword ptr [r11 + rcx * 4]
 		minss xmm0, xmm2
 		maxss xmm1, xmm2
 		inc rcx
 		cmp rcx, 16
 		jb @b
-		mov rbx, 6					; uSteps
+		mov r14, 6									; uSteps
 		mov r13, offset psteps6
 		vptest xmm0, xmm0
 		jz @f
 		vucomiss xmm1, f_1_0
 		jz @f
 		mov r13, offset psteps8
-		mov rbx, 8
+		mov r14, 8
 		vmovss xmm15, xmm15, xmm0
 		vmovss xmm0, xmm0, xmm1
 		vmovss xmm1, xmm1, xmm15
@@ -308,52 +328,34 @@ comp_dxt5 proc public USES rbx r12 r13 r14
 		vcvttss2si rax, xmm14
 		mov [r8 + 1], al
 		add r8, 2
-		mov r12, offset steps
-		vmovss dword ptr [r12 + 00], xmm0
-		vmovss dword ptr [r12 + 04], xmm1
-		mov dword ptr [r12 + 24], 0
-		mov dword ptr [r12 + 28], 3f800000h
-		lea rdx, [rbx - 1]
 		vcvtsi2ss xmm2, xmm2, rdx					; fSteps
-		mov rcx, 1
-@@:		vcvtsi2ss xmm4, xmm4, rcx
-		vsubss xmm3, xmm2, xmm4
-		vmulss xmm5, xmm0, xmm3						; tmp = fStep[0] * (x - i)
-		vfmadd231ss xmm5, xmm1, xmm4				; tmp += fStep[1] * i
-		vdivss xmm5, xmm5, xmm2						; tmp /= fSteps
-		vmovss dword ptr [r12 + rcx * 4 + 4], xmm5
-		inc rcx
-		cmp rcx, rdx
-		jb @b
-		vxorps xmm3, xmm3, xmm3						; fScale
-		vucomiss xmm0, xmm1
+		vsubss xmm3, xmm1, xmm0						; fScale = fStep[1] - fStep[0]
+		vptest xmm3, xmm3
 		jz @f
-		vsubss xmm4, xmm1, xmm0						; tmp = fStep[1] - fStep[0]
-		vdivss xmm3, xmm2, xmm4						; fScale = fSteps / tmp
+		vdivss xmm3, xmm2, xmm3						; fScale = fSteps / fScale
 @@:		vmulss xmm4, xmm0, xmm11
 		vaddss xmm5, xmm1, f_1_0
 		vmulss xmm5, xmm5, xmm11
-		xor rcx, rcx								; iSet
-_loop_:	push rcx
-		xor rdx, rdx								; dw = 0
-		shl rcx, 3									; iMin
-		lea rdi, [rcx + 8]							; iLim
-@@:		vmovss xmm6, dword ptr [r11 + rcx * 4]		; fAlph
-		vsubss xmm7, xmm6, xmm0
-		vmulss xmm7, xmm7, xmm3						; fDot
+		xor rsi, rsi								; iSet
+_loop_:	xor rdx, rdx								; dw = 0
+		lea rdi, [rsi * 8]
+		mov rcx, 8
+@@:		vmovss xmm6, dword ptr [r11 + rdi * 4]		; fAlph
+		vsubss xmm7, xmm6, xmm0						; tmp = fAlph - alpha0
+		vmulss xmm7, xmm7, xmm3						; fDot = tmp * fScale
 		vucomiss xmm7, f_0_0						; fDot <= 0.0
 		ja _g
  		xor rax, rax
-		cmp rbx, 6
+		cmp r14, 6
 		jnz _next
 		vucomiss xmm6, xmm4
 		ja _next
-		mov rax, rbx
+		mov rax, 6
 		jmp _next
 _g:		vucomiss xmm7, xmm2							; fDot >= fSteps
 		jb _l
 		mov rax, 1
-		cmp rbx, 6
+		cmp r14, 6
 		jnz _next
 		vucomiss xmm6, xmm5
 		jb _next
@@ -365,37 +367,81 @@ _l:		vaddss xmm7, xmm7, xmm11
 _next:	shl rax, 21
 		shr rdx, 3
 		or rdx, rax
-		inc rcx
-		cmp rcx, rdi
-		jb @b
-		pop rcx
+		loop @b
 		mov [r8], edx
 		add r8, 3
-		inc rcx
-		cmp rcx, 2
+		inc rsi
+		cmp rsi, 2
 		jb _loop_
 		ret
-comp_dxt5 endp
+comp_bc3 endp
 
-null_dxt1 proc
+decomp_bc2 proc USES r8 rcx
+		mov rax, [r9]
+		mov r13, 4
+_loop_:	xor rcx, rcx
+@@:		mov rdx, rax
+		and rdx, 15
+		mov r10, rdx
+		shl r10, 4
+		or rdx, r10
+		mov [r8 + rcx * 4 + 3], dl
+		shr rax, 4
+		inc rcx
+		cmp rcx, 4
+		jb @b
+		add r8, r15
+		dec r13
+		jnz _loop_
+		add r9, 8
 		ret
-null_dxt1 endp
+decomp_bc2 endp
 
-decomp_dxt3 proc
+decomp_bc3 proc USES r8 rbx rcx rdx
+LOCAL steps[8]:DWORD
+		lea r10, steps
+		movzx r11, byte ptr [r9]			; alpha0
+		movzx r13, byte ptr [r9 + 1]		; alpha1
+		mov rbx, 7							; iSteps
+		mov rax, 5
+		cmp r11, r13
+		cmovbe rbx, rax
+		mov [r10 + 0], r11b
+		mov [r10 + 1], r13b
+		mov byte ptr [r10 + 6], 0
+		mov byte ptr [r10 + 7], 255
+		mov rcx, 1							; i = 1
+@@:		mov rax, rbx
+		sub rax, rcx						; tmp1 = (iSteps - i)
+		imul rax, r11						; tmp1 *= alpha0
+		mov r14, r13
+		imul r14, rcx						; tmp2 = alpha1 * i
+		add rax, r14						; tmp1 += tmp2
+		xor rdx, rdx
+		div rbx								; tmp1 /= iSteps
+		mov [r10 + rcx + 1], al
+		inc rcx
+		cmp rcx, rbx
+		jb @b
+		mov rax, [r9 + 2]					; index alpha (16 * 3 bits)
+		mov r14, 4
+_loop_0:xor rcx, rcx
+@@:		mov rdx, rax
+		and rdx, 7
+		mov dl, [r10 + rdx]
+		mov [r8 + rcx * 4 + 3], dl
+		shr rax, 3
+		inc rcx
+		cmp rcx, 4
+		jb @b
+		add r8, r15
+		dec r14
+		jnz _loop_0
+		add r9, 8
 		ret
-decomp_dxt3 endp
+decomp_bc3 endp
 
-decomp_dxt5 proc
-		ret
-decomp_dxt5 endp
-
-asm_decompress_colors proc
-		ret
-asm_decompress_colors endp
-
-end
-
-dxtUnpack565 proc USES rcx rdx
+asm_decode565 proc USES rcx rdx
 		mov ecx, eax
 		mov edx, eax
 		and eax, 00000000000000000000000000011111b
@@ -406,177 +452,67 @@ dxtUnpack565 proc USES rcx rdx
 		shl edx, 8
 		or eax, ecx
 		or eax, edx
+		or eax, 0ff000000h
+		vmovd xmm15, eax
+		vpmovzxbd xmm15, xmm15
+		vcvtdq2ps xmm15, xmm15
+;		vdivps xmm2, xmm2, xmm10
 		ret
-dxtUnpack565 endp
+asm_decode565 endp
 
-dxt3dAlpha proc USES rcx
-		mov rsi, r8
-		xor rdi, rdi
-		mov rcx, 4
-@@:		mov ax, [r9]
-		mov dx, ax
-		and ax, 0000111100001111b
-		and dx, 1111000011110000b
-		mov r14w, ax
-		mov r15w, dx
-		shl ax, 4
-		shr dx, 4
-		or ax, r14w
-		or dx, r15w
-		mov [rsi + rdi + 3], al
-		mov [rsi + rdi + 7], dl
-		mov [rsi + rdi + 11], ah
-		mov [rsi + rdi + 15], dh
-		add r9, 2
-		add rdi, r12
-		loop @b
-		ret
-dxt3dAlpha endp
-
-dxt5dAlpha proc USES rcx
-LOCAL @@codes[8]:BYTE
-LOCAL @@indices[16]:BYTE
-		lea rsi, @@codes
-		mov ax, [r9]
-		add r9, 2
-		mov [rsi], ax
-		mov word ptr [rsi + 6], 0ff00h
-		movzx rdi, al
-		mov al, ah
-		movzx rbx, al
-		mov rcx, 1
-		mov r15, 5
-		cmp rdi, rbx						; alpha1 <= alpha2
-		mov r14, 7
-		cmovbe r14, r15
-@@:		mov rax, rdi
-		mov r15, r14
-		sub r15, rcx						; tmp1 = 5(7) - i
-		imul r15, rax						; tmp1 *= alpha0
-		mov rax, rcx
-		imul rax, rbx						; tmp2 = i * alpha1
-		add rax, r15						; tmp2 += tmp1
-		xor rdx, rdx
-		div r14								; tmp2 /= 5(7)
-		mov [rsi + rcx + 1], al				; codes[i + 1] = tmp2
-		inc rcx
-		cmp rcx, r14
-		jb @b
-		lea rdi, @@indices
-		xor rcx, rcx						; i = 0
-		mov r14, rdi
-_loop:	mov eax, [r9]
-		and eax, 0ffffffh					; value
-		add r9, 3
-		xor rdx, rdx						; j = 0
-@@:		mov bl, al
-		and bl, 7
-		shr rax, 3
-		mov [r14 + rdx], bl
-		inc rdx
-		cmp rdx, 8
-		jb @b
-		add r14, 8
-		inc rcx
-		cmp rcx, 2
-		jb _loop
-		xor rcx, rcx
-		xor rdx, rdx
-@@:		movzx rax, byte ptr [rdi + rcx]		; index
-		mov al, [rsi + rax]					; alpha
-		mov byte ptr [r8 + rdx + 3], al
-		add rdx, 4
-		inc rcx
-		test rcx, 3
-		jnz @b
-		sub rdx, 12
-		add rdx, r12
-		cmp rcx, 16
-		jb @b
-		ret
-dxt5dAlpha endp
-
-asm_ssh_bc_x proc public
-		movsxd rdx, dword ptr [rdx + 4]
-		shr rdx, 2
-		jz _fin
-		lea r12, [rcx * 4]
-		shr rcx, 2
-		jle _fin
-		test r11, r11					; проверка на компрессию
-		jnz _dxtC
-		; декомпрессор
-		movaps xmm14, _fpDiv2_0
-		movaps xmm13, _fpDiv3_0
-		movaps xmm12, _or255x4
-		mov r10, offset dDxt
-		shl rax, 4
-		mov r11, [rax + r10 + 8]		; смещение к индексам
-		mov r10, [rax + r10]			; адрес функции распаковки альфа канала
-		mov rax, r12
-		lea r13, [r12 * 2 + rax]
-_height:push rcx
-		push rdx
-_width:	mov eax, [r9 + r11 + 4]			; взять индексы цветов
-		mov byte ptr [_shufd1 + 4], al
-		mov byte ptr [_shufd2 + 4], ah
-		shr eax, 16
-		mov byte ptr [_shufd3 + 4], al
-		mov byte ptr [_shufd4 + 4], ah
-		mov ax, [r9 + r11]				; первый цвет
-		mov bx, ax
-		call dxtUnpack565				; распаковываем
-		movd xmm0, eax
-		pmovzxbd xmm2, xmm0
-		cvtdq2ps xmm2, xmm2
-		mov ax, [r9 + r11 + 2]			; второй цвет
-		call dxtUnpack565				; распаковываем
-		movd xmm1, eax
-		pmovzxbd xmm3, xmm1
-		cvtdq2ps xmm3, xmm3
-		vaddps xmm4, xmm2, xmm3
-		divps xmm4, xmm14
-		xorps xmm5, xmm5
-		test r11, r11				; проверка на отсутствие альфа канала
-		jnz @f
-		cmp bx, [r9 + r11 + 2]
-		jb @f
-		vmulps xmm4, xmm2, xmm14
-		addps xmm4, xmm3
-		vmulps xmm5, xmm3, xmm14
-		addps xmm5, xmm2
-		divps xmm4, xmm13
-		divps xmm5, xmm13
-		cvtps2dq xmm5, xmm5
-		packssdw xmm5, xmm5
-		packuswb xmm5, xmm5
-@@:		cvtps2dq xmm4, xmm4
-		packssdw xmm4, xmm4
-		packuswb xmm4, xmm4
-		unpcklps xmm0, xmm1
-		unpcklps xmm4, xmm5
-		movlhps xmm0, xmm4
-		orps xmm0, xmm12
-_shufd1:pshufd xmm1, xmm0, 0
-		movaps [r8 + 00], xmm1
-_shufd2:pshufd xmm2, xmm0, 0
-		movaps [r8 + r12], xmm2
-_shufd3:pshufd xmm3, xmm0, 0
-		movaps [r8 + r12 * 2], xmm3
-_shufd4:pshufd xmm4, xmm0, 0
-		movaps [r8 + r13], xmm4
-		; распаковываем альфа канал
-		call r10
-		; следующий блок
+asm_decompress_colors proc USES r9 rcx rdx
+		cmp rbx, 3						; пропустить, если это не bc1
+		jz @f
 		add r9, 8
-		add r8, 16
-		dec rcx
-		jnz _width
-		pop rdx
-		pop rcx
-		add r8, r13
-		dec rdx
-		jnz _height
-_fin:	ret
-asm_ssh_bc_x endp
+@@:		mov eax, [r9 + 4]
+		mov rdi, offset idx
+		mov [rdi + 04], al
+		mov [rdi + 09], ah
+		shr rax, 16
+		mov [rdi + 14], al
+		mov [rdi + 19], ah
+		mov cx, [r9]
+		mov ax, cx
+		call asm_decode565
+		vmovd xmm0, eax
+		vmovaps xmm2, xmm15
+		mov dx, [r9 + 2]
+		mov ax, dx
+		call asm_decode565
+		vmovd xmm1, eax
+		vmovaps xmm3, xmm15
+		cmp rbx, 4
+		jz @f
+		vmovaps xmm15, xmm12
+		vxorps xmm5, xmm5, xmm5
+		cmp cx, dx
+		jbe _nbc1
+@@:		vmovaps xmm15, xmm10
+		vsubps xmm5, xmm3, xmm2
+		vmulps xmm5, xmm5, xmm11
+		vaddps xmm5, xmm5, xmm2
+		vcvtps2dq xmm5, xmm5
+		vpackusdw xmm5, xmm5, xmm5
+		vpackuswb xmm5, xmm5, xmm5
+_nbc1:	vsubps xmm4, xmm3, xmm2
+		vmulps xmm4, xmm4, xmm15
+		vaddps xmm4, xmm4, xmm2
+		vcvtps2dq xmm4, xmm4
+		vpackusdw xmm4, xmm4, xmm4
+		vpackuswb xmm4, xmm4, xmm4
+		vunpcklps xmm0, xmm0, xmm1
+		vunpcklps xmm4, xmm4, xmm5
+		vmovlhps xmm0, xmm0, xmm4
+idx:	vpshufd xmm1, xmm0, 0
+		vpshufd xmm2, xmm0, 0
+		vpshufd xmm3, xmm0, 0
+		vpshufd xmm4, xmm0, 0
+		lea rax, [r15 * 2+ r15]
+		vmovaps [r8], xmm1
+		vmovaps [r8 + r15], xmm2
+		vmovaps [r8 + r15 * 2], xmm3
+		vmovaps [r8 + rax], xmm4
+		ret
+asm_decompress_colors endp
 
+end

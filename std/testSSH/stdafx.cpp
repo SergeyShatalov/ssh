@@ -182,6 +182,12 @@ struct BC1
 	ssh_d bitmap;
 };
 
+struct BC2
+{
+	ssh_d bitmap[2];
+	BC1 bc1;
+};
+
 struct BC3
 {
 	ssh_b alpha[2];
@@ -189,69 +195,144 @@ struct BC3
 	BC1 bc1;
 };
 
-void D3DXEncodeBC3(BC3* pBC3)
+static int Unpack565(ssh_b const* packed, ssh_b* colour)
 {
-	float fMinAlpha = FLT_MAX;
-	float fMaxAlpha = 0.0f;
-	for(size_t i = 0; i < 16; ++i)
+	// build the packed value
+	int value = (int)packed[0] | ((int)packed[1] << 8);
+	// get the components in the stored range
+	ssh_b red = (ssh_b)((value >> 11) & 0x1f);
+	ssh_b green = (ssh_b)((value >> 5) & 0x3f);
+	ssh_b blue = (ssh_b)(value & 0x1f);
+
+	// scale up to 8 bits
+	colour[0] = (red << 3) | (red >> 2);
+	colour[1] = (green << 2) | (green >> 4);
+	colour[2] = (blue << 3) | (blue >> 2);
+	colour[3] = 255;
+
+	// return the value
+	return value;
+}
+
+void DecompressColour(ssh_b* rgba, void const* block, bool isDxt1)
+{
+	// get the block bytes
+	ssh_b const* bytes = reinterpret_cast< ssh_b const* >(block);
+
+	// unpack the endpoints
+	ssh_b codes[16];
+	int a = Unpack565(bytes, codes);
+	int b = Unpack565(bytes + 2, codes + 4);
+
+	// generate the 2 midpoints
+	for(int i = 0; i < 3; ++i)
 	{
-		float fAlph = m_weights[i];
-		if(fAlph < fMinAlpha) fMinAlpha = fAlph;
-		else if(fAlph > fMaxAlpha) fMaxAlpha = fAlph;
+		int c = codes[i]; // r1 g1 b1
+		int d = codes[4 + i]; // r2 g2 b2
+
+		if(isDxt1 && a <= b)
+		{
+			codes[8 + i] = (ssh_b)((c + d) / 2);
+			codes[12 + i] = 0;
+		}
+		else
+		{
+			codes[8 + i] = (ssh_b)((2 * c + d) / 3);
+			codes[12 + i] = (ssh_b)((c + 2 * d) / 3);
+		}
 	}
-	size_t uSteps = ((0.0f == fMinAlpha) || (1.0f == fMaxAlpha)) ? 6 : 8;
-	float fAlphaA(fMinAlpha), fAlphaB(fMaxAlpha);
-	//OptimizeAlpha(&fAlphaA, &fAlphaB, uSteps);
-	uint8_t bAlphaA = (uint8_t) static_cast<int32_t>(fAlphaA * 255.0f + 0.0f);
-	uint8_t bAlphaB = (uint8_t) static_cast<int32_t>(fAlphaB * 255.0f + 0.0f);
-	//fAlphaA = (float)bAlphaA / 255.0f;
-	//fAlphaB = (float)bAlphaB / 255.0f;
-	static const size_t pSteps6[] = { 0, 2, 3, 4, 5, 1 };
-	static const size_t pSteps8[] = { 0, 2, 3, 4, 5, 6, 7, 1 };
-	const size_t *pSteps;
-	float fStep[8];
-	if(uSteps == 8)
+
+	// fill in alpha for the intermediate values
+	codes[11] = 255;
+	codes[15] = (isDxt1 && a <= b) ? 0 : 255;
+
+	// unpack the indices
+	ssh_b indices[16];
+	for(int i = 0; i < 4; ++i)
 	{
-		std::swap(bAlphaA, bAlphaB);
-		std::swap(fAlphaA, fAlphaB);
+		ssh_b* ind = indices + 4 * i;
+		ssh_b packed = bytes[4 + i];
+
+		ind[0] = packed & 0x3;
+		ind[1] = (packed >> 2) & 0x3;
+		ind[2] = (packed >> 4) & 0x3;
+		ind[3] = (packed >> 6) & 0x3;
 	}
-	pBC3->alpha[0] = bAlphaA;
-	pBC3->alpha[1] = bAlphaB;
-	fStep[0] = fAlphaA;
-	fStep[1] = fAlphaB;
-	fStep[6] = 0.0f;
-	fStep[7] = 1.0f;
-	if(6 == uSteps)
+
+	// store out the colours
+	for(int i = 0; i < 16; ++i)
 	{
-		for(size_t i = 1; i < 5; ++i) fStep[i + 1] = (fStep[0] * (5 - i) + fStep[1] * i) / 5.0f;
-		pSteps = pSteps6;
+		ssh_b offset = 4 * indices[i];
+		for(int j = 0; j < 4; ++j)
+			rgba[4 * i + j] = codes[offset + j];
+	}
+}
+
+static void DecodeBC1(ssh_b *pColor, _In_ const BC1 *pBC, _In_ bool isbc1)
+{
+	static float s_Scale[] = { 1.f / 31.f, 1.f / 63.f, 1.f / 31.f, 1.f };
+	// XMVECTOR clr0 = XMLoadU565(reinterpret_cast<const XMU565*>(&pBC->rgb[0]));
+	//XMVECTOR clr1 = XMLoadU565(reinterpret_cast<const XMU565*>(&pBC->rgb[1]));
+	//clr0 = XMVectorMultiply(clr0, s_Scale);
+	//clr1 = XMVectorMultiply(clr1, s_Scale);
+	//clr0 = XMVectorSwizzle<2, 1, 0, 3>(clr0);
+	//clr1 = XMVectorSwizzle<2, 1, 0, 3>(clr1);
+	//clr0 = XMVectorSelect(g_XMIdentityR3, clr0, g_XMSelect1110);
+	//clr1 = XMVectorSelect(g_XMIdentityR3, clr1, g_XMSelect1110);
+	//XMVECTOR clr2, clr3;
+	if(isbc1 && (pBC->rgb[0] <= pBC->rgb[1]))
+	{
+		//clr2 = XMVectorLerp(clr0, clr1, 0.5f);
+		//clr3 = XMVectorZero();  // Alpha of 0
 	}
 	else
 	{
-		for(size_t i = 1; i < 7; ++i) fStep[i + 1] = (fStep[0] * (7 - i) + fStep[1] * i) / 7.0f;
-		pSteps = pSteps8;
+		//clr2 = XMVectorLerp(clr0, clr1, 1.f / 3.f);
+		//clr3 = XMVectorLerp(clr0, clr1, 2.f / 3.f);
 	}
-	float fSteps = (float)(uSteps - 1);
-	float fScale = (fStep[0] != fStep[1]) ? (fSteps / (fStep[1] - fStep[0])) : 0.0f;
-	for(size_t iSet = 0; iSet < 2; iSet++)
+	ssh_d dw = pBC->bitmap;
+	for(size_t i = 0; i < 16; ++i, dw >>= 2)
 	{
-		uint32_t dw = 0;
-		size_t iMin = iSet * 8;
-		size_t iLim = iMin + 8;
-		for(size_t i = iMin; i < iLim; ++i)
+		switch(dw & 3)
 		{
-			float fAlph = m_weights[i];
-			float fDot = (fAlph - fStep[0]) * fScale;
-			uint32_t iStep;
-			if(fDot <= 0.0f) iStep = ((uSteps == 6) && (fAlph <= fStep[0] * 0.5f)) ? 6 : 0;
-			else if(fDot >= fSteps) iStep = ((uSteps == 6) && (fAlph >= (fStep[1] + 1.0f) * 0.5f)) ? 7 : 1;
-			else iStep = static_cast<uint32_t>(pSteps[static_cast<size_t>(fDot + 0.5f)]);
-			dw = (iStep << 21) | (dw >> 3);
+			//case 0: pColor[i] = clr0; break;
+			//case 1: pColor[i] = clr1; break;
+			//case 2: pColor[i] = clr2; break;
+
+			case 3: dw = 0; break;
+			//default: pColor[i] = clr3; break;
 		}
-		pBC3->bitmap[0 + iSet * 3] = ((uint8_t *)&dw)[0];
-		pBC3->bitmap[1 + iSet * 3] = ((uint8_t *)&dw)[1];
-		pBC3->bitmap[2 + iSet * 3] = ((uint8_t *)&dw)[2];
 	}
+}
+
+void D3DXDecodeBC2(ssh_b *pColor, const BC2 *pBC2)
+{
+	DecodeBC1(pColor, &pBC2->bc1, false);
+	DWORD dw = pBC2->bitmap[0];
+	//for(size_t i = 0; i < 8; ++i, dw >>= 4) pColor[i] = XMVectorSetW(pColor[i], (float)(dw & 0xf) * (1.0f / 15.0f));
+	dw = pBC2->bitmap[1];
+	//for(size_t i = 8; i < 16; ++i, dw >>= 4) pColor[i] = XMVectorSetW(pColor[i], (float)(dw & 0xf) * (1.0f / 15.0f));
+}
+
+void D3DXDecodeBC3(ssh_b *pColor, const BC3 *pBC3)
+{
+	DecodeBC1(pColor, &pBC3->bc1, false);
+	float fAlpha[8];
+	fAlpha[0] = ((float)pBC3->alpha[0]) * (1.0f / 255.0f);
+	fAlpha[1] = ((float)pBC3->alpha[1]) * (1.0f / 255.0f);
+	if(pBC3->alpha[0] > pBC3->alpha[1])
+	{
+		for(size_t i = 1; i < 7; ++i) fAlpha[i + 1] = (fAlpha[0] * (7 - i) + fAlpha[1] * i) * (1.0f / 7.0f);
+	}
+	else
+	{
+		for(size_t i = 1; i < 5; ++i) fAlpha[i + 1] = (fAlpha[0] * (5 - i) + fAlpha[1] * i) * (1.0f / 5.0f);
+		fAlpha[6] = 0.0f; fAlpha[7] = 1.0f;
+	}
+	DWORD dw = pBC3->bitmap[0] | (pBC3->bitmap[1] << 8) | (pBC3->bitmap[2] << 16);
+//	for(size_t i = 0; i < 8; ++i, dw >>= 3) pColor[i] = XMVectorSetW(pColor[i], fAlpha[dw & 0x7]);
+	dw = pBC3->bitmap[3] | (pBC3->bitmap[4] << 8) | (pBC3->bitmap[5] << 16);
+//	for(size_t i = 8; i < 16; ++i, dw >>= 3) pColor[i] = XMVectorSetW(pColor[i], fAlpha[dw & 0x7]);
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -263,7 +344,6 @@ int _tmain(int argc, _TCHAR* argv[])
 					190, 195, 200, 208, 205, 210, 215, 224, 220, 225, 230, 240, 235, 240, 245, 255 };
 	float f_1 = 1.0f;
 	ColourSet(rgba);
-	D3DXEncodeBC3(&_bc3_2);
 	Singlton<Log> _lg;
 	try
 	{
