@@ -193,10 +193,16 @@
     <MASM Include="asm_ssh_img_txt.asm">
       <Filter>Файлы исходного кода\изображение</Filter>
     </MASM>
+    <MASM Include="asm_ssh_img_cpy.asm">
+      <Filter>Файлы исходного кода\изображение</Filter>
+    </MASM>
   </ItemGroup>
   <ItemGroup>
     <None Include="ssh_def.def">
       <Filter>Файлы исходного кода</Filter>
+    </None>
+    <None Include="asm_ssh.inc">
+      <Filter>Файлы исходного кода\изображение</Filter>
     </None>
   </ItemGroup>
 </Project>

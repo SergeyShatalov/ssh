@@ -1,30 +1,13 @@
 
+include asm_ssh.inc
+
 grey	= 8
 rgb		= 4
 idx		= 2
 rle		= 1
 
-extern asm_ssh_bc_x:near
-
-OPTION NOKEYWORD:<width type>
-;OPTION PROLOGUE:NONE
-;OPTION EPILOGUE:NONE
-;OPTION PROLOGUE:PrologueDef
-;OPTION EPILOGUE:EpilogueDef
-
-gif_fmt struct
-	nMask	dd 0
-	rowDict	dd 0
-	nShift	dd 0
-	CC		dd 0
-	EOI		dd 0
-gif_fmt ends
-
-.data?
-
 .const
-ALIGN 16
-_gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
+
 cnvFuncs	dq bgra8_,	_bgra8
 			dq a8_,		_a8
 			dq l8_,		_l8
@@ -35,8 +18,6 @@ cnvFuncs	dq bgra8_,	_bgra8
 			dq rgb5a1_,	_rgb5a1
 			dq rgba4_,	_rgba4
 			dq font_,	0
-
-.data
 
 .code
 
@@ -265,9 +246,9 @@ asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:Q
 		movsxd rax, ecx
 		movsxd rcx, dword ptr [rdx]			; width
 		movsxd rdx, dword ptr [rdx + 4]		; height
-		cmp rax, 5							; проверить на запакованные форматы
+		cmp rax, 3							; проверить на запакованные форматы
 		jl asm_ssh_bc_x
-		mov r10, offset cnvFuncs - 5 * 16
+		mov r10, offset cnvFuncs - 3 * 16
 		shl rax, 4
 		add r10, rax
 		lea r10, [r10 + r11 * 8]			; адрес функции преобразования
@@ -518,5 +499,27 @@ _unpack:push rax
 		ret
 OPTION EPILOGUE:EpilogueDef
 asm_ssh_unpack_gif endp
+
+;rcx(width), rdx(height), r8(fmt) r9(flag)
+asm_ssh_compute_fmt_size proc public
+		mov r10, offset _fmt_sz
+		cmp r8, 3
+		jae @f
+		shr rcx, 2								; если запакованные
+		shr rdx, 2
+@@:		imul rcx, rdx							; размер изображения
+		movsxd rdx, dword ptr [r10 + r8 * 4]	; bpp
+		mov rax, rdx
+		imul rax, rcx							; sz *= bpp
+		cmp rax, rdx							; sz <= bpp
+		cmovbe rax, rdx
+		setbe cl
+		test r9, r9
+		jz @f
+		movzx rcx, cl
+		mov [r9], ecx
+@@:		ret
+_fmt_sz dd 8, 16, 16, 4, 1, 1, 4, 3, 3, 2, 2, 2, 3, 0
+asm_ssh_compute_fmt_size endp
 
 end

@@ -120,6 +120,21 @@ namespace ssh
 	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, ssh_wcs str, bool is_null);
 	Buffer<ssh_cs> SSH ssh_base64(const String& str, bool is_null);
 
+	// обменять значения
+	template <class T> void ssh_swap(T& val1, T& val2)
+	{
+		T tmp(val1); val1 = val2; val2 = tmp;
+	}
+	// минимум
+	template <class T> T ssh_min(const T& val1, const T& val2)
+	{
+		return (val1 < val2 ? val1 : val2);
+	}
+	// максимум
+	template <class T> T ssh_max(const T& val1, const T& val2)
+	{
+		return (val1 > val2 ? val1 : val2);
+	}
 	// преобразовать значение в ближайшую степень двойки
 	template <class T> T ssh_pow2(ssh_u val, bool nearest)
 	{

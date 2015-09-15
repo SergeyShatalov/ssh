@@ -1,32 +1,9 @@
 
-bc1 struct
-	dw rgb0
-	dw rgb1
-	dd idx
-bc1 ends
-
-bc2 struct
-	dd idx1
-	dd idx2
-	bc bc1<>
-bc2 ends
-
-bc3 struct
-	db alpha0
-	db alpha1
-	db alpha_idx0
-	db alpha_idx1
-	db alpha_idx2
-	db alpha_idx3
-	db alpha_idx4
-	db alpha_idx5
-	bc bc1<>
-bc3 ends
+include asm_ssh.inc
 
 .const
 
 align 16
-f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 msk			db -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 f_0_33x3_1	dd 0.33, 0.33, 0.33, 1.0
 f_0_66x3_1	dd 0.66, 0.66, 0.66, 1.0

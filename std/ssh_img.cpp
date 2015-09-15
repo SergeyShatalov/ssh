@@ -1,9 +1,12 @@
 
 #include "stdafx.h"
 #include "ssh_img.h"
+#include "ssh_array.h"
 
 namespace ssh
 {
+	Image::Image(TypesMap _tp, FormatsMap _fmt, int width, int height, bool _mips) : tp(_tp), fmt(_fmt), wh(ssh_pow2<int>(width, false), ssh_pow2<int>(height, false)), mips(_mips) {}
+
 	const ImgMap* Image::set_map(ssh_wcs path, int layer, int mip)
 	{
 		SSH_TRACE;
@@ -14,7 +17,7 @@ namespace ssh
 		{
 			_new_map = new ImgMap(img->wh, img->pix);
 			ImgMap* map(maps[layer]);
-			if(map && mip != -1) map->set_mip(mip, _new_map); else maps[layer] = _new_map;
+			if(map && mip != -1 && mips) map->set_mip(mip, _new_map); else maps[layer] = _new_map;
 			layer++;
 		}
 		return _new_map;
@@ -35,22 +38,248 @@ namespace ssh
 		return Buffer<ssh_cs>();
 	}
 
-	Buffer<ssh_cs> Image::make(const ImgMap* map) const
+	Buffer<ssh_cs> Image::make(const ImgMap* map)
 	{
-		return Buffer<ssh_cs>();
+		int i, c;
+		Bar<int> null;
+		TypesMap type;
+		Range<int> _wh;
+		const ImgMap* tmp_map(nullptr);
+
+		if(map) { c = 1; type = TypesMap::TextureMap; } else { c = layers_from_type(); type = tp; }
+		// определить количество мипуровней и габариты текстуры
+		ssh_u nMip(get_mips(map, &_wh));
+		// расчитать размер буфера исходного формата
+		Buffer<ssh_cs> src(_wh.w * _wh.h * 4);
+		// расчитать размер буфера целевого формата
+		ssh_u sz(0);
+		for(i = 0; i < nMip; i++) sz += asm_ssh_compute_fmt_size(_wh.w >> i, _wh.h >> i, fmt);
+		sz *= c;
+		Buffer<ssh_cs> dst(sz);
+		ssh_cs* pdst(dst);
+		if(type == TypesMap::VolumeMap)
+		{
+			for(i = 0; i < nMip; i++)
+			{
+				const ImgMap* map_mip(nullptr);
+				Range<int> mip_wh(_wh.w >> i, _wh.h >> i);
+				sz = asm_ssh_compute_fmt_size(mip_wh.w, mip_wh.h, fmt);
+				auto n(maps.root());
+				while(n)
+				{
+					tmp_map = n->value;
+					if(i) map_mip = const_cast<ImgMap*>(tmp_map)->get_mip(i - 1);
+					if(!map_mip) map_mip = tmp_map;
+					asm_ssh_copy(mip_wh, _wh, src, map_mip->pixels(), null, map_mip->bar().range);
+					asm_ssh_cnv(fmt, mip_wh, pdst, src, 1);
+					pdst += sz;
+					n = n->next;
+				}
+			}
+		}
+		else if(type == TypesMap::AtlasMap)
+		{
+			// собрать атлас
+			auto n(maps.root());
+			while(n)
+			{
+				tmp_map = n->value;
+				asm_ssh_copy(tmp_map->bar(), _wh, src, tmp_map->pixels(), tmp_map->bar().range, tmp_map->bar().range);
+				n = n->next;
+			}
+			asm_ssh_cnv(fmt, _wh, dst, src, 1);
+		}
+		else
+		{
+			auto n(maps.root());
+			while(n && c)
+			{
+				tmp_map = (map ? map : n->value);	// если одна конкрентая карта(или карта мипа)
+				for(i = 0; i < nMip; i++)
+				{
+					const ImgMap* map_mip(nullptr);
+					if(i) map_mip = const_cast<ImgMap*>(tmp_map)->get_mip(i - 1);
+					if(!map_mip) map_mip = tmp_map;
+					Range<int> mip_wh(_wh.w >> i, _wh.h >> i);
+					asm_ssh_copy(mip_wh, _wh, src, map_mip->pixels(), null, map_mip->bar().range);
+					asm_ssh_cnv(fmt, mip_wh, pdst, src, 1);
+					pdst += asm_ssh_compute_fmt_size(mip_wh.w, mip_wh.h, fmt);
+				}
+				n = n->next;
+				c--;
+			}
+		}
+		return dst;
 	}
 
-	ssh_u Image::get_mips() const
+	int Image::layers_from_type() const
 	{
-		return ssh_u();
+		ssh_u c(layers());
+		switch(tp)
+		{
+			case TypesMap::TextureMap:
+			case TypesMap::AtlasMap: c = (c < 1 ? 0 : 1); break;
+			case TypesMap::CubeMap: c = (c < 6 ? c : 6); break;
+			case TypesMap::ArrayMap:
+			case TypesMap::VolumeMap: break;
+		}
+		return (int)c;
+	}
+
+	ssh_u Image::get_mips(const ImgMap* map, Range<int>* wh)
+	{
+		ssh_u nMips(1);
+		int limit;
+		// определить реальные габариты изображения
+		Range<int> _wh(range(map));
+		if(wh) *wh = _wh;
+		if(mips && tp != TypesMap::AtlasMap) while(asm_ssh_compute_fmt_size(_wh.w >> nMips, _wh.h >> nMips, fmt, &limit) && !limit) nMips++;
+		return nMips;
 	}
 	
+	Range<int> Image::range(const ImgMap* map)
+	{
+		Range<int> _wh, tmp;
+		if(map) _wh = map->bar();
+		else
+		{
+			if(tp == TypesMap::AtlasMap)
+			{
+				tmp.set(wh.is_null() ? 512 : wh.w, wh.is_null() ? 512 : wh.h);
+				// определить минимальный объем всех атласов (pow2)
+				while(_wh = tmp, !packed_atlas(_wh)) tmp.w <<= 1, tmp.h <<= 1;
+			}
+			else
+			{
+				if(wh.is_null())
+				{
+					_wh.set(INT_MAX, INT_MAX);
+					// определить минимальную ширину и высоту
+					auto n(maps.root());
+					while(n)
+					{
+						auto m(n->value);
+						tmp = m->bar();
+						_wh.w = ssh_min<int>(_wh.w, tmp.w);
+						_wh.h = ssh_min<int>(_wh.h, tmp.h);
+						n = n->next;
+					}
+				}
+			}
+		}
+		_wh.set(ssh_pow2<int>(_wh.w, false), ssh_pow2<int>(_wh.h, false));
+		return _wh;
+	}
+
 	void Image::save(ssh_wcs path, bool is_xml)
 	{
 	}
 
 	void Image::make(const Buffer<ssh_cs>& buf)
 	{
+	}
+
+	bool Image::packed_atlas(Range<int>& rn)
+	{
+		struct MapNode
+		{
+			MapNode() : type(1) {}
+			MapNode(const Bar<int>& bar, int type) : bar(bar), type(type) {}
+			Bar<int> bar;
+			int type;
+		};
+		static Bar<int> bar1;
+		static Bar<int> bar2;
+		
+		ImgMap* tex(nullptr);
+		// массив отсортированных карт
+		Array<ImgMap*, SSH_TYPE> sortw;
+		// массив узлов, свободных в глобальной области 
+		Array<MapNode*> nodes;
+		
+		int wmax(0), hmax(0), i, j, tp1, tp2;
+		// 1. отсортировать все текстуры по убыванию площади
+		nodes += new MapNode(rn, 1);
+		// 1.1. скопировать во временный массив
+		auto n(maps.root());
+		while(n) { sortw += n->value; n = n->next; }
+		// 1.2. отсортировать по ширине
+		for(i = 0; i < sortw.size(); i++)
+		{
+			int w1(sortw[i]->ixywh.w), _i(i);
+			for(j = i + 1; j < sortw.size(); j++)
+			{
+				int w2(sortw[j]->ixywh.w);
+				if(w2 > w1) { w1 = w2; _i = j; }
+			}
+			if(_i != i) ssh_swap<ImgMap*>(sortw[_i], sortw[i]);
+		}
+		// 1.3. сортируем по высоте
+		while(sortw.size() > 0)
+		{
+			tex = nullptr;
+			int h1(sortw[0]->ixywh.h), _i(0);
+			for(i = 1; i < sortw.size(); i++)
+			{
+				int h2(sortw[i]->ixywh.h);
+				if(h2 > h1) { h1 = h2; _i = i; }
+			}
+			// 2. упаковать
+			Bar<int>* barA(&sortw[_i]->ixywh);
+			int aw(barA->w), ah(barA->h);
+			for(i = 0; i < nodes.size(); i++)
+			{
+				MapNode* tn(nodes[i]);
+				Bar<int>* barN(&tn->bar);
+				if(aw <= barN->w && ah <= barN->h)
+				{
+					barA->x = barN->x; barA->y = barN->y;
+					if(tn->type == 1)
+					{
+						tp1 = 1; tp2 = 2;
+						bar1.set(barN->x, barN->y + ah, barN->w, barN->h - ah);
+						bar2.set(barN->x + aw, barN->y, barN->w - aw, ah);
+					}
+					else
+					{
+						tp1 = 2; tp2 = 1;
+						bar1.set(barN->x + aw, barN->y, barN->w - aw, barN->h);
+						bar2.set(barN->x, barN->y + ah, aw, barN->h - ah);
+					}
+					if(bar2.w && bar2.h)
+					{
+						*barN = bar2;
+						tn->type = tp2;
+						if(bar1.w && bar1.h) nodes.insert(i + 1, new MapNode(bar1, tp1));
+					}
+					else if(bar1.w && bar1.h)
+					{
+						*barN = bar1;
+						tn->type = tp1;
+					}
+					else
+					{
+						nodes.remove(i, 1);
+					}
+					tex = sortw[_i];
+					break;
+				}
+			}
+			if(tex)
+			{
+				wmax = ssh_max<int>(wmax, tex->bar().right());
+				hmax = ssh_max<int>(hmax, tex->bar().bottom());
+				sortw.remove(_i, 1);
+			}
+			else return false;
+		}
+		rn.set(wmax, hmax);
+		//rn.set(ssh_pow2<int>(wmax, false), ssh_pow2<int>(hmax, false));
+		// установить новые позиции области
+		//n = maps.root();
+		//while(n) { tex = n->value; tex->set_bar(tex->bar(), rn); n = n->next; }
+		// вернуть результат
+		return true;
 	}
 }
 

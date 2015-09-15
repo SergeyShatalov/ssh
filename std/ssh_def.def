@@ -6,6 +6,3 @@ asm_ssh_capability		@3
 asm_ssh_to_base64		@4
 asm_ssh_from_base64		@5
 asm_ssh_parse_xml		@6
-asm_compress_colors		@7
-asm_decompress_colors	@8
-asm_set_colors			@9

@@ -1,8 +1,4 @@
 
-extern asm_compress_colors:near
-extern asm_decompress_colors:near
-extern asm_set_colors:near
-
 .data
 align 16
 ;_tmp	dd 0, 0, 0, 0
@@ -20,6 +16,7 @@ result1	dd 128 dup(0)
 .code
 
 asm_ssh_shufb proc public USES rbx r15 r10 r11
+		ret
 		mov rax, offset _1
 		mov byte ptr [rax + 4], 1
 _1:		vpshufd xmm0, xmm0, 0
@@ -33,10 +30,10 @@ _1:		vpshufd xmm0, xmm0, 0
 		mov r9, offset rgba
 		mov r10, offset colors
 		mov r11, offset alpha
-		call asm_set_colors
+		;call asm_set_colors
 		mov r9, offset result
 		mov r8, offset result1
-		call asm_compress_colors
+		;call asm_compress_colors
 		ret
 asm_ssh_shufb endp
 

@@ -171,10 +171,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </MASM>
-    <MASM Include="asm_ssh_img_mod.asm" />
+    <MASM Include="asm_ssh_img_cpy.asm">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0</WarningLevel>
+    </MASM>
+    <MASM Include="asm_ssh_img_mod.asm">
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0</WarningLevel>
+    </MASM>
     <MASM Include="asm_ssh_img_txt.asm" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="asm_ssh.inc" />
     <None Include="ssh_def.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

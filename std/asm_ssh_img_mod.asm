@@ -1,25 +1,12 @@
 
-stk_clip struct
-	x dd 0
-	y dd 0
-	w dd 0
-	h dd 0
-stk_clip ends
-
-.const
-
-.data?
-
-.data
-
-_clip stk_clip<0, 0, 0, 0>
+include asm_ssh.inc
 
 .code
 
-;rcx(bar), rdx(clip) r8(dst) -> out rcx(width) rdx(height) r10(pitch) r8(dst)
+;rcx(bar), rdx(clip) r8(dst) r11(offset stk_clip)-> out rcx(width) rdx(height) r10(pitch) r8(dst)
 asm_clip_bar proc USES rax rdi rsi rbx
-		mov qword ptr _clip + 0, 0			; стираем область выхода за пределы клипа
-		mov qword ptr _clip + 8, 0
+		mov qword ptr [_clip + 0], 0		; стираем область выхода за пределы клипа
+		mov qword ptr [_clip + 8], 0
 		movsxd rsi, dword ptr [rdx + 00]	; wc
 		movsxd rdi, dword ptr [rdx + 04]	; hc
 		movsxd rax, dword ptr [rcx + 00]	; xb
@@ -34,26 +21,26 @@ asm_clip_bar proc USES rax rdi rsi rbx
 		jge @f
 		add rcx, rax						; wb += xb <= 0 -> error
 		jle _err
-		mov _clip.x, eax					; -xb -> clip.x
+		mov _clip.x, rax					; -xb -> clip.x
 		xor rax, rax						; xb = 0
 @@:		lea r10, [rax + rcx]				; ww = xb + xw
 		sub r10, rsi						; ww -= wc <= 0 -> skip
 		jle @f
 		sub rcx, r10						; wb -= ww <= 0 -> error
 		jle _err
-		mov _clip.w, r10d					; ww -> clip.w
+		mov _clip.w, r10					; ww -> clip.w
 @@:		test rbx, rbx						; yb >= 0 -> skip
 		jge @f
 		add rdx, rbx						; hb += yb <= 0 -> error
 		jle _err
-		mov _clip.y, ebx					; -yb -> clip.y
+		mov _clip.y, rbx					; -yb -> clip.y
 		xor rbx, rbx						; yb = 0
 @@:		lea r10, [rbx + rdx]				; hh = yb + hb
 		sub r10, rdi						; hh -= wh <= 0 -> skip
 		jle @f
 		sub rdx, r10						; wh -= hh <= 0 -> error
 		jle _err
-		mov _clip.h, r10d					; hh -> clip.h
+		mov _clip.h, r10					; hh -> clip.h
 @@:		shl rsi, 2							; wc *= 4
 		push rsi
 		imul rsi, rbx						; wc *= yb
@@ -122,5 +109,27 @@ _loop:	mov r9, r8
 _fin:	ret
 swap_h_flip db 4, 5, 6, 7, 0, 1, 2, 3
 asm_ssh_h_flip endp
+
+; rcx(range), rdx(dst), r8(src)
+asmFlip90 proc
+		mov r9, rdx
+		mov rdx, [rcx + 08]		; w->h
+		mov rcx, [rcx + 00]		; h->w
+		jrcxz _fin
+		lea rbx, [rdx * 4]		; pitch
+		lea r9, [r9 + rdx * 4 - 4]
+_loop:	mov r10, r9
+		push rcx
+@@:		mov eax, [r8]
+		mov [r10], eax
+_11:	add r10, rbx
+		add r8, 4
+		loop @b
+		pop rcx
+		sub r9, 4
+		dec rdx
+		jg _loop
+_fin:	ret
+asmFlip90 endp
 
 end

@@ -16,7 +16,7 @@ namespace ssh
 {
 	enum class FormatsMap : int
 	{
-		bc1, bc2, bc3, bc4, bc5, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, font, undef
+		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, font, undef
 	};
 
 	struct QUAD
@@ -183,22 +183,33 @@ namespace ssh
 
 	class ImgMap
 	{
+		friend Image;
 	public:
 		// конструктор
-		ImgMap(const Range<int>& _wh, const Buffer<ssh_cs>& _pix) : wh(_wh), pix(_pix) {}
+		ImgMap(const Range<int>& _wh, const Buffer<ssh_cs>& _pix) : ixywh(_wh), pix(_pix) {}
 		// добавить/заменить мип
 		void set_mip(int level, ImgMap* mip) { mips[level] = mip; }
 		// удалить мип
 		void del_mip(int level) { mips[level] = nullptr; }
+		// установить область карты в изображении(для атласа)
+		void set_bar(const Bar<int>& bar, const Range<int>& r)
+		{
+			ixywh = bar;
+			fxywh.x = (float)bar.x / (float)r.w;
+			fxywh.y = (float)bar.y / (float)r.h;
+			fxywh.w = (float)bar.w / (float)r.w;
+			fxywh.h = (float)bar.h / (float)r.h;
+		}
 		// вернуть мип
 		const ImgMap* get_mip(int level) { return mips[level]; }
 		// вернуть габариты
-		const Range<int>& range() const { return wh; }
+		const Bar<int>& bar() const { return ixywh; }
 		// вернуть буфер пикселей
 		const Buffer<ssh_cs>& pixels() const { return pix; }
 	protected:
-		// габариты
-		Range<int> wh;
+		// областм
+		Bar<int> ixywh;
+		Bar<float> fxywh;
 		// буфер
 		Buffer<ssh_cs> pix;
 		// мип уровни
@@ -265,7 +276,7 @@ namespace ssh
 		};
 		enum class Types : int
 		{
-			tga, bmp, fse, bfs, gif, dds, jpg, undef
+			tga, bmp, fse, bfs, dds, gif, jpg, undef
 		};
 		struct IMAGE
 		{
@@ -327,7 +338,7 @@ namespace ssh
 		// конструкторы
 		Image() {}
 		Image(ssh_wcs path) { open(path); }
-		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0, int _mips = 0) : tp(_tp), fmt(_fmt), wh(width, height), mips(_mips) {}
+		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0, bool _mips = false);
 		// добавить/установить карту
 		const ImgMap* set_map(ssh_wcs path, int layer, int mip = -1);
 		// добавить/установить шрифт
@@ -343,19 +354,19 @@ namespace ssh
 		// создать гистограмму
 		Buffer<ssh_cs> histogramm(int layer, int mip, const Range<int>& wh, ImgMod::Histogramms type, const color& bkg, const color& frg);
 		// сформировать
-		Buffer<ssh_cs> make(const ImgMap* map) const;
+		Buffer<ssh_cs> make(const ImgMap* map = nullptr);
 		// вернуть корень карт
 		void* get_root() const { return maps.root(); }
 		// вернуть количество слоев
 		ssh_u layers() const { return maps.count(); }
 		// вернуть реальное количество мип уровней
-		ssh_u get_mips() const;
+		ssh_u get_mips(const ImgMap* map = nullptr, Range<int>* wh = nullptr);
 		// вернуть формат
 		FormatsMap format() const { return fmt; }
 		// вернуть тип
 		TypesMap type() const { return tp; }
-		// вернуть габариты
-		const Range<int>& range() const { return wh; }
+		// вернуть реальные габариты
+		Range<int> range(const ImgMap* map = nullptr);
 		// сохранить
 		virtual void save(ssh_wcs path, bool is_xml) override;
 		// записать карту в файл в определенном формате
@@ -365,6 +376,10 @@ namespace ssh
 	protected:
 		// деструктор
 		virtual ~Image() {}
+		// упаковка атласов
+		bool packed_atlas(Range<int>& rn);
+		// вернуть количество слоев, в зависимости от типа изображения
+		int layers_from_type() const;
 		// сформировать
 		virtual void make(const Buffer<ssh_cs>& buf) override;
 		// записать файл формата BMP
@@ -378,7 +393,7 @@ namespace ssh
 		// записать файл формата DDS
 		void saveDDS(File* f, const ImgMap* map, FormatsMap fmt);
 		// максимум мип уровней
-		int mips = -1;
+		bool mips = true;
 		// карты
 		Map<ImgMap*, int> maps;
 		// габариты
@@ -397,6 +412,8 @@ namespace ssh
 		void asm_ssh_unpack_bmp(ssh_u w, ssh_u h, void* dst, void* src, void* pal);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
+		int asm_ssh_compute_fmt_size(int width, int height, FormatsMap fmt, int* is_limit = nullptr);
+		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify = nullptr);
 	}
 }
 
