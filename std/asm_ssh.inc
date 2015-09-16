@@ -79,16 +79,15 @@ stk_modify struct
 		dst_msk			dd 0
 		src_msk_val		dd 0				; значения маски
 		dst_msk_val		dd 0
-		side_border		dd 0				; маска границы
+		sides			dd 0				; маска границы
 		w_border		dd 0				; ширина границы
 		radius			dd 0				; радиус
-		shadow			dd 0				; величина тени
-		img_rel			dd 0				; пропорции изображений в мозаике
+		shadow			dd 0				; маска тени
+		aspect			dd 0				; пропорции изображений в мозаике
 		w_mtx			dd 0				; габариты матрицы
 		scale			dd 0.0				; масштаб
 		alpha			dd 0.0				; значение альфы
 		rgba			dq 0				; массив значений
-		array_names		dq 0				; буфер имен
 		flt_vec			stk_vec<>			; вектор для фильтра
 		bar				stk_bar<>			; область действия модификатора
 		range			stk_range<>			; диапазон

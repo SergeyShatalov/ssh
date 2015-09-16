@@ -82,11 +82,14 @@ enum ee
 {
 	ХУЙ, ПИЗДА, МАНДА, ЕБЛО
 };
+
+#define ssh_enum_tp
+
 ENUM_DATA _stk[]=
 {
-	_E(ХУЙ,ee),
-	_E(ПИЗДА,ee),
-	_E(ЕБЛО,ee),
+	_E(ХУЙ),
+	_E(ПИЗДА),
+	_E(ЕБЛО),
 	{nullptr, 0}
 };
 

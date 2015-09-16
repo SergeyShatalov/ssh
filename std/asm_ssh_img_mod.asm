@@ -123,7 +123,7 @@ swap_h_flip db 4, 5, 6, 7, 0, 1, 2, 3
 asm_ssh_h_flip endp
 
 ; rcx(range), rdx(dst), r8(src)
-asmFlip90 proc
+asm_ssh_flip_90 proc
 		mov r9, rdx
 		mov rdx, [rcx + 08]		; w->h
 		mov rcx, [rcx + 00]		; h->w
@@ -142,6 +142,61 @@ _11:	add r10, rbx
 		dec rdx
 		jg _loop
 _fin:	ret
-asmFlip90 endp
+asm_ssh_flip_90 endp
+
+;(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_figure proc
+		ret
+asm_ssh_figure endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_gradient proc
+		ret
+asm_ssh_gradient endp
+
+ ;(const Range<int>& vals, const Range<int>& msks, void* pix, const Range<int>& clip);
+asm_ssh_replace proc
+		ret
+asm_ssh_replace endp
+
+; (const Range<int>& tmp, ImgMod* modify, void* buf);
+asm_ssh_histogramm proc
+		ret
+asm_ssh_histogramm endp
+
+; (const Range<int>& clip, const Range<int>& rn, void* pix, ImgMod::Histogramms type);
+asm_ssh_correct proc
+		ret
+asm_ssh_correct endp
+
+; (const Range<int>& clip, int vals, void* pix, float scale);
+asm_ssh_noise_perlin proc
+		ret
+asm_ssh_noise_perlin endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_noise_terrain proc
+		ret
+asm_ssh_noise_terrain endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_border_3d proc
+		ret
+asm_ssh_border_3d endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_group proc
+		ret
+asm_ssh_group endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_table proc
+		ret
+asm_ssh_table endp
+
+; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+asm_ssh_border2d proc
+		ret
+asm_ssh_border2d endp
 
 end

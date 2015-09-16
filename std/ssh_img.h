@@ -180,7 +180,7 @@ namespace ssh
 		};
 		ImgMod() {}
 		// инициализирующий конструктор из xml
-		ImgMod(Image* img, int layer_map, Xml* xml, HXML hroot);
+		ImgMod(Xml* xml, HXML hroot, Image* img = nullptr, int layer_map = -1);
 		// применить модификатор для карты
 		void apply(ImgMap* map);
 		// преобразование из процентного задания координат в абсолютные
@@ -218,10 +218,10 @@ namespace ssh
 		int w_border = 1;
 		// радиус
 		int radius = 1;
-		// величина тени
+		// маска тени
 		int shadow = 0xff000000;
 		// пропорции изображений в мозаике
-		int img_rel = 1;
+		int aspect = 1;
 		// габариты матрицы
 		int w_mtx = 3;
 		// масштаб
@@ -230,8 +230,6 @@ namespace ssh
 		float alpha = 1.0f;
 		// массив значений
 		Buffer<ssh_cs> rgba;
-		// буфер имен
-		Buffer<String> names;
 		// вектор для фильтра
 		vec4 flt_vec = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		// область действия модификатора
@@ -488,6 +486,18 @@ namespace ssh
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
 		int asm_ssh_compute_fmt_size(int width, int height, FormatsMap fmt, int* is_limit = nullptr);
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
+		void asm_ssh_figure(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_replace(const Range<int>& vals, const Range<int>& msks, void* pix, const Range<int>& clip);
+		void asm_ssh_histogramm(const Range<int>& tmp, ImgMod* modify, void* buf);
+		void asm_ssh_correct(const Range<int>& clip, const Range<int>& rn, void* pix, ImgMod::Histogramms type);
+		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
+		void asm_ssh_noise_terrain(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_flip_90(const Range<int>& clip, void* dst, void* pix);
+		void asm_ssh_border_3d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_group(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_table(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_border2d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 	}
 }
 
