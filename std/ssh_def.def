@@ -5,4 +5,3 @@ asm_ssh_wton			@2
 asm_ssh_capability		@3
 asm_ssh_to_base64		@4
 asm_ssh_from_base64		@5
-asm_ssh_parse_xml		@6

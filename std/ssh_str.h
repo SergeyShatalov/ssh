@@ -1,11 +1,11 @@
 
 #pragma once
 
-extern "C"
-{
-	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
-	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
-};
+//extern "C"
+//{
+//	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
+//	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
+//};
 
 typedef void* (CALLBACK* __regx_compile)(ssh_wcs pattern, ssh_l options);
 typedef ssh_l(CALLBACK* __regx_exec)(const void* re, ssh_wcs subj, ssh_l len_subj, ssh_l idx, ssh_l options, ssh_l* vec, ssh_l count_vec);

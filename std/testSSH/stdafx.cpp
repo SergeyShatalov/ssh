@@ -78,12 +78,15 @@ public:
 	Temp3 tmp;
 };
 
+enum ee
+{
+	ХУЙ, ПИЗДА, МАНДА, ЕБЛО
+};
 ENUM_DATA _stk[]=
 {
-	{L"ХУЙ", 1},
-	{L"ПИЗДА", 2},
-	{L"МАНДА", 4},
-	{L"ЕБЛО", 8},
+	_E(ХУЙ,ee),
+	_E(ПИЗДА,ee),
+	_E(ЕБЛО,ee),
 	{nullptr, 0}
 };
 
@@ -158,6 +161,7 @@ extern "C"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	ENUM_DATA* _s = _stk;
 	Singlton<Log> _lg;
 	try
 	{

@@ -1,22 +1,15 @@
 
 include asm_ssh.inc
 
-stk_modify struct
-		wrapW			dd 0.0
-		wrapH			dd 0.0
-		type_address	dd 0
-stk_modify ends
-
 .data?
-
-src_clip	stk_clip<>
-dst_clip	stk_clip<>
 
 
 .code
 
 asm_ssh_copy proc USES rbx rsi rdi r12 r13 r14 r15 src_bar:QWORD, src_wh:QWORD, src:QWORD, dst:QWORD, dst_bar:QWORD, dst_wh:QWORD, modify:QWORD
-local w_clamp:QWORD, h_clamp:QWORD, addr_coord:QWORD, filter:QWORD, operation:QWORD
+local w_clamp:QWORD, h_clamp:QWORD, coord:QWORD, filter:QWORD, operation:QWORD, alpha0:DWORD, alpha1:DWORD, _dst_bar:stk_bar
+		call init_base_modify								; инициализация основных параметров модификатора
+		; обрезка координат
 		call asm_clip_bar
 		jc _fin
 		mov r14, rcx
@@ -26,9 +19,9 @@ local w_clamp:QWORD, h_clamp:QWORD, addr_coord:QWORD, filter:QWORD, operation:QW
 		dec rdx
 		mov w_clamp, rcx
 		mov h_clamp, rdx
-		mov rax, r8
-		mov rcx, dst_bar
+		lea rcx, _dst_bar
 		mov rdx, dst_wh
+		mov rax, r8
 		mov r8, r9
 		vcvtsi2ss xmm14, xmm14, dword ptr [rcx].stk_bar.w
 		vcvtsi2ss xmm15, xmm15, dword ptr [rcx].stk_bar.h
@@ -37,8 +30,7 @@ local w_clamp:QWORD, h_clamp:QWORD, addr_coord:QWORD, filter:QWORD, operation:QW
 		vcvtsi2ss xmm0, xmm0, rcx
 		vcvtsi2ss xmm1, xmm0, rdx
 		mov r9, rax											; r8 - dst, r9 - src, r10 - pitch_dst, rbx - pitch_src
-		call init_base_modify								; инициализация основных параметров модификатора
-		call init_addressing								; инициализация адресации координат(mirror, repeat, clamp, linear)
+		call init_addressing								; инициализация адресации координат(mirror, repeat, clamp)
 		vdivss xmm0, xmm0, xmm14							; dx
 		vdivss xmm1, xmm1, xmm15							; dy
 		; сдвинуть на clip.x, clip.y
@@ -56,6 +48,7 @@ _loop_:	push rcx
 		push r8
 		vmovss xmm15, xmm15, xmm14							; dy|dx|y|x
 @@:		call filter
+		call operation
 		vmovhlps xmm0, xmm0, xmm15							; 0|0|dy|dx
 		vaddss xmm15, xmm15, xmm0							; dy|dx|y|x+dx
 		add r8, 4
@@ -69,21 +62,63 @@ _loop_:	push rcx
 		add r8, r10
 		dec rdx
 		jnz _loop_
+		emms
 _fin:	ret
 OPTION PROLOGUE:NONE
 init_base_modify:
 		mov rsi, modify
+;		mov rax, fltVec
+;		xorps xmm15, xmm15
+;		movaps xmm14, _fp255x4
+;		movaps xmm13, _gamma
+;		movups xmm12, [rax]
+;		; корректировка данных
+;		mov rax, whMtx
+;		or rax, 1
+;		cmp rax, 11
+;		jb @f
+;		mov whMtx, 11
+;@@:		movss xmm0, alpha
+;		mulps xmm0, _fp256x4
+;		movq mm1, qword ptr _alpha2
+;		cvtps2pi mm0, xmm0
+;		pshufw mm0, mm0, 0
+;		movq qword ptr _alpha0, mm0
+;		psubusw mm1, mm0
+;		movq qword ptr _alpha1, mm1
 		ret
 init_filters:
+		mov r11, offset func_flt
+		movsxd rax, [rsi].stk_modify.type_filter
+		lea r11, [r11 + rax * 8]
+		mov rax, [r11 + 128]
+		mov filter, rax
+		call qword ptr [r11]
 		ret
+func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_normal, i_hi, i_low, i_median, i_roberts,	i_max, i_min, i_contrast, i_binary, i_gamma, i_scale_bias
+			dq f_none,	f_sobel, f_laplac, f_prewit, f_emboss, f_normal, f_hi, f_low, f_median, f_roberts,	f_max, f_min, f_contrast, f_binary,	f_famma, f_Scale_bias
 init_operation:
+;		movq mm4, mm0
+;		movd mm1, dword ptr [r8]
+;		movq mm6, _mm1000
+;		call r13											; func_ops
+;		movd mm2, msk
+;		pand mm1, mm2
+;		pandn mm2, mm0
+;		por mm1, mm2
+;		movd dword ptr [r8], mm1
+		mov r11, offset func_flt
+		movsxd rax, [rsi].stk_modify.src_ops
+		lea rax, [r11 + rax * 8]
+		mov operation, rax
 		ret
+func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_alph, _mul, _lum_add, _lum_sub, _norm
 init_addressing:
 		mov r11, offset func_addr
 		movsxd rax, [rsi].stk_modify.type_address
 		lea r11, [r11 + rax * 8]
 		mov rax, [r11 + 48]
-		mov addr_coord, rax
+		mov coord, rax
 		call qword ptr [r11]
 		ret
 func_addr	dq init_lc, init_lm, init_lp, init_nr, init_nr, init_nr
@@ -92,8 +127,8 @@ init_nr:
 init_nn:
 		ret
 init_lm:
-init_lp:vdivss xmm0, xmm0, [rsi].stk_modify.wrapW
-		vdivss xmm1, xmm1, [rsi].stk_modify.wrapH
+init_lp:vdivss xmm0, xmm0, [rsi].stk_modify.wh_repeat.stk_range.w
+		vdivss xmm1, xmm1, [rsi].stk_modify.wh_repeat.stk_range.h
 		ret
 init_lc:vcvtsi2ss xmm0, xmm0, r14
 		vcvtsi2ss xmm1, xmm1, r15
@@ -105,6 +140,58 @@ n_clamp:
 n_mirror:
 n_repeat:
 		ret
+		; фильтры
+null:
+i_sobel:
+i_laplac:
+i_prewit:
+i_emboss:
+i_normal:
+i_hi:
+i_low:
+i_median:
+i_roberts:
+i_max:
+i_min:
+i_contrast:
+i_binary:
+i_gamma:
+i_scale_bias:
+		ret
+f_none:
+f_sobel:
+f_laplac:
+f_prewit:
+f_emboss:
+f_normal:
+f_hi:
+f_low:
+f_median:
+f_roberts:
+f_max:
+f_min:
+f_contrast:
+f_binary:
+f_famma:
+f_Scale_bias:
+		ret
+		; операции
+_add:
+_sub:
+_set:
+_xor:
+_and:
+_or:
+_lum:
+_not:
+_alph:
+_fix_alph:
+_mul:
+_lum_add:
+_lum_sub:
+_norm:
+		ret
+
 asm_ssh_copy endp
 
 end
@@ -254,10 +341,7 @@ _fin:	mov rcx, @@tmpBuf
 OPTION EPILOGUE:NONE
 
 
-f_i_flt	dq iNn,		iSobelN, iLP,		iLP,	 iEmboss, iSobelN, iLowHI,	iLowHI,	iNn,	 iRoberts,	iNn,	iNn,	iContr,	iNn,	iGamma,	iScaleB
-f_p_flt	dq fNone,	fSobel,	 fLaplac,	fPrewit, fEmboss, fNormal, fHI,		fLow,	fMedian, fRoberts,	fMax,	fMin,	fContr,	fBin,	fGamma,	fScaleB
 
-f_ops	dq pixAdd, pixSub, pixSet, pixXor, pixAnd, pixOr, pixLum, pixNot, pixAlpha, pixFixed, pixMull, pixLumAdd, pixLumSub, pixNorm, iNn, iNn, iNn
 
 iNr:	movss xmm2, xmm0
 		movss xmm3, xmm1

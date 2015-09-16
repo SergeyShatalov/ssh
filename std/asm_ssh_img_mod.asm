@@ -3,6 +3,18 @@ include asm_ssh.inc
 
 .code
 
+; преобразование из процентного задания координат в абсолютные
+;static Bar<int> absolute_bar(const Bar<int>& bar, const Range<int>& clip, Coord coord)
+;{
+;	if(coord != Coord::percent) return bar;
+;	float x(bar.x / 100.0f), y(bar.y / 100.0f), w(bar.w / 100.0f), h(bar.h / 100.0f);
+;	return Bar<int>((int)(x * clip.w), (int)(y * clip.h), (int)(w * clip.w), (int)(h * clip.h));
+;}
+
+asm_ssh_absolute_bar proc
+		ret
+asm_ssh_absolute_bar endp
+
 ;rcx(bar), rdx(clip) r8(dst) r11(offset stk_clip)-> out rcx(width) rdx(height) r10(pitch) r8(dst)
 asm_clip_bar proc USES rax rdi rsi rbx
 		mov qword ptr [_clip + 0], 0		; стираем область выхода за пределы клипа

@@ -52,20 +52,62 @@ stk_bar struct
 	h dd 0
 stk_bar ends
 
+stk_vec struct
+	x dd 0
+	y dd 0
+	z dd 0
+	w dd 0
+stk_vec ends
+
 stk_range struct
 	w dd 0
 	h dd 0
 stk_range ends
 
+stk_modify struct
+		type			dd 0				; тип модификатора
+		type_ops		dd 0				; тип операций
+		type_address	dd 0				; адресаци€
+		type_figure		dd 0				; фигура
+		type_filter		dd 0				; фильтр
+		type_terrain	dd 0				; тип ландшафта
+		type_histogramm	dd 0				; тип гистограммы
+		coord			dd 0				; тип координат
+		src_ops			dd 0				; операции с пиксел€ми
+		dst_ops			dd 0
+		src_msk			dd 0				; маски
+		dst_msk			dd 0
+		src_msk_val		dd 0				; значени€ маски
+		dst_msk_val		dd 0
+		side_border		dd 0				; маска границы
+		w_border		dd 0				; ширина границы
+		radius			dd 0				; радиус
+		shadow			dd 0				; величина тени
+		img_rel			dd 0				; пропорции изображений в мозаике
+		w_mtx			dd 0				; габариты матрицы
+		scale			dd 0.0				; масштаб
+		alpha			dd 0.0				; значение альфы
+		rgba			dq 0				; массив значений
+		array_names		dq 0				; буфер имен
+		flt_vec			stk_vec<>			; вектор дл€ фильтра
+		bar				stk_bar<>			; область действи€ модификатора
+		range			stk_range<>			; диапазон
+		wh				stk_range<>			; габариты
+		wh_cells		stk_range<>			; габариты €чейки
+		wh_repeat		stk_range<>			; количество повторений
+		array_count		stk_range<>			; диапазон элементов в массивах
+		cols_histogramm stk_range<>			; цвета дл€ формировани€ гистограммы
+stk_modify ends
+
 ;rcx(bar), rdx(clip) r8(dst) -> out rcx(width) rdx(height) r10(pitch) r8(dst)
 externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
-;asm_clip_bar proto bar:QWORD, clip:QWORD, dst:QWORD, stk:QWORD
+externdef asm_ssh_absolute_bar:near
 
 .const
 align 16
 _gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 
-.data?
+.data
 _clip		stk_clip<>

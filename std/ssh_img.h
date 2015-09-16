@@ -27,6 +27,7 @@ namespace ssh
 	};
 
 	class Image;
+	class ImgMap;
 
 	class ImgMod
 	{
@@ -34,6 +35,7 @@ namespace ssh
 		// типы модификаторов
 		enum class Types : int
 		{
+			undef,
 			flip,			// развернуть
 			copy,			// скопировать
 			border,			// создать рамку
@@ -63,7 +65,7 @@ namespace ssh
 			nrepeat
 		};
 		// типы ландшафта
-		enum class TerrainTypes : int
+		enum class Terrain : int
 		{
 			mountain,		// гористый
 			hill,			// холмистый
@@ -80,15 +82,15 @@ namespace ssh
 			none,					// нет операции
 			perlin,					// шум перлина
 			terrain,				// шум формирования ландшафта
-			brdOut3d,				// внешняя 3д рамка
-			rrdIn3d,				// внутрення 3д рамка
-			groupBox,				// рамка для группы элементов
-			flipH,					// горизонтальное зеркало
-			flipV,					// вертикальное зеркало
-			flip90,					// поворот на 90 градусов
-			table,					// табличная рамка
-			table3d,				// рамка 3д таблицы
-			tableGrp				// рамка таблицы для группы элементов
+			brd_o3d,				// внешняя 3д рамка
+			brd_i3d,				// внутрення 3д рамка
+			grp,					// рамка для группы элементов
+			h_flip,					// горизонтальное зеркало
+			v_flip,					// вертикальное зеркало
+			flip_90,				// поворот на 90 градусов
+			tbl_2d,					// табличная рамка
+			tbl_3d,					// рамка 3д таблицы
+			tbl_grp					// рамка таблицы для группы элементов
 		};
 		// основные операции над пикселями
 		enum class Pix : int
@@ -101,11 +103,11 @@ namespace ssh
 			or,						// логическое ИЛИ
 			lum,					// оттенки серого
 			not,					// отрицание
-			alpha,					// только альфа
-			fixed,					// фиксированный альфа(задается)
-			mull,					// умножение
-			lumAdd,					// добавление оттенков серого
-			lumSub,					// вычитание оттенков серого
+			var_alpha,				// только альфа
+			fix_alpha,				// фиксированный альфа(задается)
+			mul,					// умножение
+			lum_add,				// добавление оттенков серого
+			lum_sub,				// вычитание оттенков серого
 			norm,					// нормализация
 			pow2					// стретч размеров на величину кратную степени 2
 		};
@@ -127,7 +129,7 @@ namespace ssh
 			contrast,		// контраст
 			binary,			// бинаризация
 			gamma,			// гамма коррекция
-			scaleBias		// 
+			scale_bias		// 
 		};
 		// типы фигур
 		enum class Figures : int
@@ -135,24 +137,24 @@ namespace ssh
 			ellipse,		// эллипс
 			region,			// массив линий
 			rectangle,		// прямоугольник
-			triangleUp,		// треугольник вверх
-			triangleDown,	// треугольник вниз
-			triangleRight,	// треугольник вправо
-			triangleLeft,	// треугольник влево
+			tri_u,			// треугольник вверх
+			tri_d,			// треугольник вниз
+			tri_r,			// треугольник вправо
+			tri_l,			// треугольник влево
 			pyramid,		// пирамида
 			sixangle,		// шестиугольник
 			eightangle,		// восьмиугольник
 			romb,			// ромб
 			star1,			// звезда
 			star2,			// звезда Давида
-			arrowRight,		// стрелка вправо
-			arrowLeft,		// стрелка влево
-			arrowDown,		// стрелка вниз
-			arrowUp,		// стрелка вверх
-			cross45,		// крест по диагонали
+			arrow_r,		// стрелка вправо
+			arrow_l,		// стрелка влево
+			arrow_d,		// стрелка вниз
+			arrow_u,		// стрелка вверх
+			cross_diag,		// крест по диагонали
 			checked,		// флажок
-			vPlzSlider,		// вертикальный слайдер
-			hPlzSlider,		// горизонтальный слайдер
+			vplz,			// вертикальный слайдер
+			hplz,			// горизонтальный слайдер
 			plus			// плюс
 		};
 		// типы границ
@@ -171,19 +173,87 @@ namespace ssh
 			red,
 			green,
 			blue,
-			valRgb,
-			valRed,
-			valGreen,
-			valBlue
+			rgb_v,
+			red_v,
+			green_v,
+			blue_v
 		};
 		ImgMod() {}
-		~ImgMod() {}
-	protected:
+		// инициализирующий конструктор из xml
+		ImgMod(Image* img, int layer_map, Xml* xml, HXML hroot);
+		// применить модификатор для карты
+		void apply(ImgMap* map);
+		// преобразование из процентного задания координат в абсолютные
+		static Bar<int> absolute_bar(const Bar<int>& bar, const Range<int>& clip, Coord coord)
+		{
+			if(coord != Coord::percent) return bar;
+			float x(bar.x / 100.0f), y(bar.y / 100.0f), w(bar.w / 100.0f), h(bar.h / 100.0f);
+			return Bar<int>((int)(x * clip.w), (int)(y * clip.h), (int)(w * clip.w), (int)(h * clip.h));
+		}
+		// тип
+		Types type = Types::undef;
+		// типы операций
+		Ops type_ops = Ops::none;
+		// адресация
+		Addr type_address = Addr::lclamp;
+		// фигура
+		Figures type_figure = Figures::star1;
+		// фильтр
+		Flt type_filter = Flt::none;
+		// тип ландшафта
+		Terrain type_terrain = Terrain::island;
+		// тип гистограммы
+		Histogramms type_histogramm = Histogramms::rgb;
+		// тип координат
+		Coord type_coord = Coord::absolute;
+		// операции с пикселями
+		Range<Pix> ops = Range<Pix>(Pix::set, Pix::set);
+		// маски
+		Range<int> msks = Range<int>(0xff000000, 0xff000000);
+		// значения маски
+		Range<int> vals;
+		// маска границы
+		Borders sides = Borders::all;
+		// ширина границы
+		int w_border = 1;
+		// радиус
+		int radius = 1;
+		// величина тени
+		int shadow = 0xff000000;
+		// пропорции изображений в мозаике
+		int img_rel = 1;
+		// габариты матрицы
+		int w_mtx = 3;
+		// масштаб
+		float scale = 1.0f;
+		// значение альфы
+		float alpha = 1.0f;
+		// массив значений
+		Buffer<ssh_cs> rgba;
+		// буфер имен
+		Buffer<String> names;
+		// вектор для фильтра
+		vec4 flt_vec = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		// область действия модификатора
+		Bar<int> bar;
+		// диапазон
+		Range<int> rn;
+		// габариты
+		Range<int> wh = Range<int>(10, 10);
+		// габариты ячейки
+		Range<int> wh_cell = Range<int>(1, 1);
+		// количество повторений
+		Range<float> wh_rep = Range<float>(1.0f, 1.0f);
+		// диапазон элементов в массивах
+		Range<int> array_count = Range<int>(1, 1);
+		// цвета для формирования гистограммы
+		Range<int> cols_histogramm;
 	};
 
 	class ImgMap
 	{
 		friend Image;
+		friend ImgMod;
 	public:
 		// конструктор
 		ImgMap(const Range<int>& _wh, const Buffer<ssh_cs>& _pix) : ixywh(_wh), pix(_pix) {}
@@ -227,11 +297,11 @@ namespace ssh
 		{
 			left	= 0x00000000,// выравнивать по левому краю (по умолчанию)
 			right	= 0x00000001,// выравнивать по правому краю
-			hcenter = 0x00000002,// выравнивать по горизонтальному центру
+			h_center= 0x00000002,// выравнивать по горизонтальному центру
 			top		= 0x00000000,// выравнивать по верхнему краю (по умолчанию)
 			bottom	= 0x00000004,// выравнивать по нижнему краю
-			vcenter = 0x00000008,// выравнивать по вертикальному центру
-			wbreak	= 0x00000010 // осуществлять разбивку на слова в заданном клипе
+			v_center= 0x00000008,// выравнивать по вертикальному центру
+			brk		= 0x00000010 // осуществлять разбивку на слова в заданном клипе
 		};
 		// конструктор
 		ImgTxt(const Range<int>& _wh, const Buffer<ssh_cs>& _pix, int _height, const Buffer<Bar<int>>& _pos);
@@ -320,11 +390,15 @@ namespace ssh
 	{
 		SSH_DYNCREATE(Image);
 	public:
+		// комманды при создании
+		enum class Cmds : int
+		{
+			none, modify, open, save, duplicate, font, empty, remove, draw, make, packed
+		};
 
 		enum class TypesMap : int
 		{
-			CubeMap, VolumeMap, TextureMap,
-			ArrayMap, AtlasMap
+			CubeMap, VolumeMap, TextureMap, ArrayMap, AtlasMap
 		};
 		enum class LayersCube : int
 		{
@@ -413,7 +487,7 @@ namespace ssh
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
 		int asm_ssh_compute_fmt_size(int width, int height, FormatsMap fmt, int* is_limit = nullptr);
-		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify = nullptr);
+		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
 	}
 }
 

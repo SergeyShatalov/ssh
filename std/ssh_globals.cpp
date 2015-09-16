@@ -346,16 +346,11 @@ namespace ssh
 
 		switch(type)
 		{
-			case SystemInfo::siPlatform:
-				return (ssh_u)platform;
-			case SystemInfo::siTotalMemory:
-				return memStatus.dwAvailPhys + memStatus.dwAvailPageFile;
-			case SystemInfo::siPhysicalMemory:
-				return memStatus.dwTotalPhys;
-			case SystemInfo::siCpuSpeed:
-				return cpuSpeed;
-			case SystemInfo::siCpuCaps:
-				return cpuCaps.test_bit((ssh_u)value);;
+			case SystemInfo::siPlatform: return (ssh_u)platform;
+			case SystemInfo::siTotalMemory: return memStatus.dwAvailPhys + memStatus.dwAvailPageFile;
+			case SystemInfo::siPhysicalMemory: return memStatus.dwTotalPhys;
+			case SystemInfo::siCpuSpeed: return cpuSpeed;
+			case SystemInfo::siCpuCaps: return cpuCaps.test_bit((ssh_u)value);;
 		}
 		return 0;
 	}
@@ -489,14 +484,9 @@ namespace ssh
 		_guid.Data3 = (ssh_w)_wcstoi64(dst, &dst, 16); dst++;
 		ssh_w _w((ssh_w)_wcstoi64(dst, &dst, 16)); dst++; ssh_b* _wp((ssh_b*)&_w);
 		ssh_u _u(_wcstoi64(dst, nullptr, 16)); ssh_b* _up((ssh_b*)&_u);
-		_guid.Data4[0] = _wp[1];
-		_guid.Data4[1] = _wp[0];
-		_guid.Data4[2] = _up[5];
-		_guid.Data4[3] = _up[4];
-		_guid.Data4[4] = _up[3];
-		_guid.Data4[5] = _up[2];
-		_guid.Data4[6] = _up[1];
-		_guid.Data4[7] = _up[0];
+		_guid.Data4[0] = _wp[1]; _guid.Data4[1] = _wp[0];
+		_guid.Data4[2] = _up[5]; _guid.Data4[3] = _up[4]; _guid.Data4[4] = _up[3];
+		_guid.Data4[5] = _up[2]; _guid.Data4[6] = _up[1]; _guid.Data4[7] = _up[0];
 		return _guid;
 	}
 	

@@ -3,10 +3,12 @@
 
 extern "C"
 {
-	long asm_ssh_capability();
+	long	asm_ssh_capability();
 	ssh_ws* asm_ssh_to_base64(ssh_cs* ptr, ssh_u count);
 	ssh_cs* asm_ssh_from_base64(ssh_ws* str, ssh_u count, ssh_u* len_buf, ssh_u null);
-	ssh_l asm_ssh_parse_xml(ssh_ws* src, ssh_w* vec);
+	ssh_l	asm_ssh_parse_xml(ssh_ws* src, ssh_w* vec);
+	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
+	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
 };
 
 namespace ssh
@@ -49,32 +51,10 @@ namespace ssh
 	// возможности процессора
 	enum class CpuCaps : ssh_w
 	{
-		SUPPORTS_NONE = 0,
-		SUPPORTS_MMX,
-		SUPPORTS_SSE,
-		SUPPORTS_SSE2,
-		SUPPORTS_SSE3,
-		SUPPORTS_SSSE3,
-		SUPPORTS_SSE4_1,
-		SUPPORTS_SSE4_2,
-		SUPPORTS_PCLMULQDQ,
-		SUPPORTS_FMA,
-		SUPPORTS_CMPXCHG16B,
-		SUPPORTS_MOVBE,
-		SUPPORTS_POPCNT,
-		SUPPORTS_AES,
-		SUPPORTS_AVX,
-		SUPPORTS_RDRAND,
-		SUPPORTS_CMOV,
-		SUPPORTS_BMI1,
-		SUPPORTS_AVX2,
-		SUPPORTS_BMI2,
-		SUPPORTS_AVX512F,
-		SUPPORTS_RDSEED,
-		SUPPORTS_AVX512PF,
-		SUPPORTS_AVX512ER,
-		SUPPORTS_AVX512CD,
-		SUPPORTS_HALF
+		SUPPORTS_NONE, SUPPORTS_MMX, SUPPORTS_SSE, SUPPORTS_SSE2, SUPPORTS_SSE3, SUPPORTS_SSSE3, SUPPORTS_SSE4_1, SUPPORTS_SSE4_2,
+		SUPPORTS_PCLMULQDQ, SUPPORTS_FMA, SUPPORTS_CMPXCHG16B, SUPPORTS_MOVBE, SUPPORTS_POPCNT, SUPPORTS_AES, SUPPORTS_AVX,
+		SUPPORTS_RDRAND, SUPPORTS_CMOV, SUPPORTS_BMI1, SUPPORTS_AVX2, SUPPORTS_BMI2, SUPPORTS_AVX512F, SUPPORTS_RDSEED,
+		SUPPORTS_AVX512PF, SUPPORTS_AVX512ER, SUPPORTS_AVX512CD, SUPPORTS_HALF
 	};
 
 	enum class SystemInfo : ssh_w
@@ -149,7 +129,7 @@ namespace ssh
 		return (value == ssh_pow2<T>(value, true));
 	}
 	// разбить строку на элементы
-	template <typename T> T* ssh_explode(ssh_wcs split, const String& src, T* dst, ssh_u count_dst, const T& def, ENUM_DATA* stk = nullptr, bool is_bool = false, bool is_hex = false)
+	template <typename T> T* ssh_explode(ssh_wcs split, const String& src, T* dst, ssh_u count_dst, const T& def, ENUM_DATA* stk = nullptr, bool is_hex = false)
 	{
 		ssh_ws* _wcs(src.buffer());
 		ssh_ws* t;
@@ -159,7 +139,6 @@ namespace ssh
 		{
 			if((t = wcsstr(_wcs, split))) *t = 0;
 			if(stk) tmp = (T)ssh_cnv_value(_wcs, stk, (ssh_u)def);
-			else if(is_bool) tmp = (wcscmp(_wcs, L"true") == 0);
 			else tmp = (T)_wcstoi64(_wcs, nullptr, is_hex ? 16 : 10);
 			dst[i++] = tmp;
 			if(t) { *t = *split; _wcs = t + j; }
@@ -170,7 +149,7 @@ namespace ssh
 		return dst;
 	}
 	// соеденить элементы в строку
-	template <typename T> String ssh_implode(ssh_wcs split, T* src, ssh_u count_src, ENUM_DATA* stk, ssh_wcs def, bool is_bool, bool is_hex, bool is_enum)
+	template <typename T> String ssh_implode(ssh_wcs split, T* src, ssh_u count_src, ENUM_DATA* stk, ssh_wcs def, bool is_hex, bool is_enum)
 	{
 		String ret, _tmp;
 
@@ -178,7 +157,6 @@ namespace ssh
 		{
 			T tmp(src[i]);
 			if(stk) _tmp = ssh_cnv_string((ssh_u)tmp, stk, def, is_enum);
-			else if(is_bool) _tmp = (tmp == 1 ? L"true" : L"false");
 			else _tmp = (tmp, is_hex ? String::_hex : String::_dec);
 			if(i) ret += split;
 			ret += _tmp;

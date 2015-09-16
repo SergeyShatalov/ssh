@@ -45,12 +45,13 @@ namespace ssh
 		TypesMap type;
 		Range<int> _wh;
 		const ImgMap* tmp_map(nullptr);
-
+		// модификатор по умолчанию
+		ImgMod mod_def;
 		if(map) { c = 1; type = TypesMap::TextureMap; } else { c = layers_from_type(); type = tp; }
 		// определить количество мипуровней и габариты текстуры
 		ssh_u nMip(get_mips(map, &_wh));
 		// расчитать размер буфера исходного формата
-		Buffer<ssh_cs> src(_wh.w * _wh.h * 4);
+		Buffer<ssh_cs> rgba(_wh.w * _wh.h * 4);
 		// расчитать размер буфера целевого формата
 		ssh_u sz(0);
 		for(i = 0; i < nMip; i++) sz += asm_ssh_compute_fmt_size(_wh.w >> i, _wh.h >> i, fmt);
@@ -70,8 +71,8 @@ namespace ssh
 					tmp_map = n->value;
 					if(i) map_mip = const_cast<ImgMap*>(tmp_map)->get_mip(i - 1);
 					if(!map_mip) map_mip = tmp_map;
-					asm_ssh_copy(mip_wh, _wh, src, map_mip->pixels(), null, map_mip->bar().range);
-					asm_ssh_cnv(fmt, mip_wh, pdst, src, 1);
+					asm_ssh_copy(null, map_mip->bar().range, map_mip->pixels(), rgba, mip_wh, _wh, &mod_def);
+					asm_ssh_cnv(fmt, mip_wh, pdst, rgba, 1);
 					pdst += sz;
 					n = n->next;
 				}
@@ -84,10 +85,10 @@ namespace ssh
 			while(n)
 			{
 				tmp_map = n->value;
-				asm_ssh_copy(tmp_map->bar(), _wh, src, tmp_map->pixels(), tmp_map->bar().range, tmp_map->bar().range);
+				asm_ssh_copy(tmp_map->bar().range, tmp_map->bar().range, tmp_map->pixels(), rgba, tmp_map->bar(), _wh, &mod_def);
 				n = n->next;
 			}
-			asm_ssh_cnv(fmt, _wh, dst, src, 1);
+			asm_ssh_cnv(fmt, _wh, dst, rgba, 1);
 		}
 		else
 		{
@@ -101,8 +102,8 @@ namespace ssh
 					if(i) map_mip = const_cast<ImgMap*>(tmp_map)->get_mip(i - 1);
 					if(!map_mip) map_mip = tmp_map;
 					Range<int> mip_wh(_wh.w >> i, _wh.h >> i);
-					asm_ssh_copy(mip_wh, _wh, src, map_mip->pixels(), null, map_mip->bar().range);
-					asm_ssh_cnv(fmt, mip_wh, pdst, src, 1);
+					asm_ssh_copy(null, map_mip->bar().range, map_mip->pixels(), rgba, mip_wh, _wh, &mod_def);
+					asm_ssh_cnv(fmt, mip_wh, pdst, rgba, 1);
 					pdst += asm_ssh_compute_fmt_size(mip_wh.w, mip_wh.h, fmt);
 				}
 				n = n->next;
