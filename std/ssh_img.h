@@ -182,7 +182,7 @@ namespace ssh
 		// инициализирующий конструктор из xml
 		ImgMod(Xml* xml, HXML hroot, Image* img = nullptr, int layer_map = -1);
 		// применить модификатор для карты
-		void apply(ImgMap* map);
+		void apply(Image* img, const ImgMap* map);
 		// преобразование из процентного задания координат в абсолютные
 		static Bar<int> absolute_bar(const Bar<int>& bar, const Range<int>& clip, Coord coord)
 		{
@@ -269,7 +269,7 @@ namespace ssh
 			fxywh.h = (float)bar.h / (float)r.h;
 		}
 		// вернуть мип
-		const ImgMap* get_mip(int level) { return mips[level]; }
+		ImgMap* get_mip(int level) { return mips[level]; }
 		// вернуть габариты
 		const Bar<int>& bar() const { return ixywh; }
 		// вернуть буфер пикселей
@@ -413,12 +413,14 @@ namespace ssh
 		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0, bool _mips = false);
 		// добавить/установить карту
 		const ImgMap* set_map(ssh_wcs path, int layer, int mip = -1);
+		// добавить/установить пустую карту
+		const ImgMap* set_empty(const Range<int>& wh, int layer, int mip = -1);
 		// добавить/установить шрифт
 		//void set_font(ssh_wcs face, OptsFont opts, int height, int layer);
 		// удалить карту
-		void del_map(int layer) { maps[layer] = nullptr; }
+		void del_map(int layer, int mip = -1);
 		// вернуть карту
-		const ImgMap* get_map(int layer) { return maps[layer]; }
+		ImgMap* get_map(int layer, int mip = -1);
 		// сформировать квад карты
 		QUAD quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen, const color& col) const;
 		// создать дубликат карты
@@ -428,7 +430,7 @@ namespace ssh
 		// сформировать
 		Buffer<ssh_cs> make(const ImgMap* map = nullptr);
 		// вернуть корень карт
-		void* get_root() const { return maps.root(); }
+		auto root() const { return maps.root(); }
 		// вернуть количество слоев
 		ssh_u layers() const { return maps.count(); }
 		// вернуть реальное количество мип уровней
@@ -448,6 +450,8 @@ namespace ssh
 	protected:
 		// деструктор
 		virtual ~Image() {}
+		// установка карты
+		bool set_map(ImgMap* map, int layer, int mip);
 		// упаковка атласов
 		bool packed_atlas(Range<int>& rn);
 		// вернуть количество слоев, в зависимости от типа изображения
@@ -498,6 +502,8 @@ namespace ssh
 		void asm_ssh_group(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_table(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_border2d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_mosaik(const Range<int>& _wh, ImgMod* modify, void* cells, void* ptr);
+		Bar<int>* asm_ssh_get_clipbar(const Bar<int>& bar, Bar<int>* out, const Bar<int>& clip);
 	}
 }
 
@@ -505,31 +511,15 @@ namespace ssh
 /*
 extern "C"
 {
-uint_t	__stdcall	asmTargetSize(uint_t width, uint_t height, ImgIO::ImageFormats fmt, uint_t* flag = nullptr);
-uint_t	__stdcall	asmPitch(uint_t width, ImgIO::ImageFormats fmt);
-uint_t	__stdcall	asmDecode(uint_t width, uint_t height, void* dst, void* src, uint_t fmt, uint_t is_compress);
 QUAD*	__stdcall	asmMakeQuad(const Bar<float>& tex, const Bar<uint_t>& pos, const Bar<uint_t>& clip, QUAD* quad, const Range<uint_t>& screen, uint_t bgra);
 void	__stdcall	asmMakeQuadsText(const Bar<uint_t>& pos, const Bar<uint_t>& clip, QUAD* quads, BYTE* buffer, const Range<uint_t>& screen, ImgTexture* fnt);
 uint_t	__stdcall	asmInstallText(PCC font, const Range<uint_t>& clip, BYTE* buffer, PCC msg, ImgText::Aligned flags, void* cells);
 void	__stdcall	asmDrawText(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* pixels, BYTE* text, const Pts<uint_t>& pt);
-void	__stdcall	asmCopy(const Bar<uint_t>& dstBar, const Range<uint_t>& dstClip, BYTE* dst, BYTE* src, const Bar<uint_t>& srcBar, const Range<uint_t>& srcClip, ImgModify::PixelOperations ops, ImgModify::Addresses address, ImgModify::Filters filers, uint_t msk, uint_t nWrap, const vec4& fltVec, float alpha = 1.0f, uint_t whMtx = 3);
-BYTE*	__stdcall	asmHistogramm(const Range<uint_t>& wh, const Range<uint_t>& clip, BYTE* rgba, BYTE* pixels, uint_t background, uint_t foreground, ImgModify::Histogramms type);
 void	__stdcall	asmMakeMipmapLevel(uint_t width, uint_t height, BYTE* dst);
 uint_t	__stdcall	asmGetWidthPictureSymvol(BYTE* src);
 uint_t	__stdcall	asmGetHeightPictureSymvol(BYTE* src, uint_t w, uint_t h);
-void	__stdcall	asmFlip90(const Range<uint_t>& bar, BYTE* dst, BYTE* src);
-void	__stdcall	asmBorder3d(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, uint_t widthBorder, uint_t val, uint_t msk, ImgModify::Borders side, ImgModify::TypeOperations typeOps);
-void	__stdcall	asmGroupBox(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, uint_t widthBorder, uint_t val, uint_t msk, ImgModify::Borders side, ImgModify::TypeOperations typeOps);
-void	__stdcall	asmTable(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* dst, BYTE* data, uint_t array_count, uint_t width, uint_t val, uint_t msk, ImgModify::PixelOperations pixOps, ImgModify::PixelOperations pixOpsEx, ImgModify::TypeOperations typeOps);
-void	__stdcall	asmBorder(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, uint_t widthBorder, uint_t val, uint_t msk, ImgModify::Borders side, ImgModify::PixelOperations pixOps);
-void	__stdcall	asmNoisePerlin(const Range<uint_t>& clip, uint_t val, BYTE* src, float scale);
 void	__stdcall	asmNoiseTerrain(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, const Range<uint_t>& vals, const Range<uint_t>& wh, ImgModify::PixelOperations pixOps, uint_t nRepeat);
-void	__stdcall	asmCorrect(const Range<uint_t>& clip, const Range<uint_t>& range, BYTE* src, ImgModify::Histogramms type);
 void	__stdcall	asmMosaik(const Range<uint_t>& wh, void* cells, BYTE* bgra, String* src, const Range<uint_t>& count, const Range<uint_t>& wh_cells, uint_t rel);
-void	__stdcall	asmFigure(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, BYTE* bgra, const Range<uint_t>& srcBar, const Range<uint_t>& vals, const Range<uint_t>& msks, ImgModify::PixelOperations pixOps, ImgModify::PixelOperations pixOpsEx, ImgModify::Figures figure, uint_t radius, uint_t shadow);
-void	__stdcall	asmGradient(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* src, const Range<uint_t>& vals, uint_t msk, ImgModify::PixelOperations pixOps, ImgModify::Addresses address, uint_t nRepeat);
-void	__stdcall	asmReplace(const Range<uint_t>& vals, const Range<uint_t>& msks, BYTE* src, const Range<uint_t>& clip);
 Range<uint_t>*	__stdcall	asmGetRangeText();
-Bar<uint_t>* __stdcall asmGetClipBar(const Bar<uint_t>& bar, Bar<uint_t>* out, const Bar<uint_t>& clip);
 };
 */

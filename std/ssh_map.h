@@ -30,7 +30,7 @@ namespace ssh
 			// возврат
 			Cursor(Node* n) : node(n){}
 			Cursor& operator = (const TYPE& value) { BaseNode<TYPE, ops_val>::release(node->value); node->value = value; return *this; }
-			operator const TYPE() const { return node->value; }
+			operator TYPE() const { return node->value; }
 			TYPE operator->() const { return node->value; }
 		protected:
 			// узел

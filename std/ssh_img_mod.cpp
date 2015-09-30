@@ -99,7 +99,7 @@ namespace ssh
 		}
 	}
 
-	void ImgMod::apply(ImgMap* map)
+	void ImgMod::apply(Image* img, const ImgMap* map)
 	{
 		try
 		{
@@ -117,8 +117,8 @@ namespace ssh
 						case Ops::flip_90:
 							Buffer<ssh_cs> dst(map->pix.size());
 							asm_ssh_flip_90(clip, dst, map->pixels());
-							map->pix = dst;
-							map->ixywh = Bar<int>(0, 0, clip.h, clip.w);
+							const_cast<ImgMap*>(map)->pix = dst;
+							const_cast<ImgMap*>(map)->ixywh = Bar<int>(0, 0, clip.h, clip.w);
 							break;
 					}
 					break;
@@ -150,10 +150,10 @@ namespace ssh
 					if(type_coord == Coord::percent) { _wh.w *= (int)(clip.w / 100.0f); _wh.h *= (int)(clip.h / 100.0f); }
 					if(ops.h == Pix::pow2) { _wh.w = ssh_pow2<int>(_wh.w, true); _wh.h = ssh_pow2<int>(_wh.h, true); }
 					Buffer<ssh_cs> ptr(asm_ssh_compute_fmt_size(_wh.w, _wh.h, FormatsMap::rgba8));
-					if(type == Types::mosaik) {}//asm_ssh_mosaik(_wh, this, img->cells(), ptr);
+					if(type == Types::mosaik) asm_ssh_mosaik(_wh, this, img->root(), ptr);
 					else if(type == Types::resize) asm_ssh_copy(map->bar(), map->bar().range, ptr, map->pixels(), _wh, _wh, this);
-					map->pix = ptr;
-					map->ixywh = _wh;
+					const_cast<ImgMap*>(map)->pix = ptr;
+					const_cast<ImgMap*>(map)->ixywh = _wh;
 					break;
 				}
 				case Types::figure: asm_ssh_figure(bar, clip, map->pixels(), this); break;
@@ -163,8 +163,8 @@ namespace ssh
 					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(256, 1) : wh);
 					Buffer<ssh_cs> buf(tmp.w * tmp.h * 4);
 					asm_ssh_histogramm(tmp, this, buf);
-					map->ixywh = tmp;
-					map->pix = buf;
+					const_cast<ImgMap*>(map)->ixywh = tmp;
+					const_cast<ImgMap*>(map)->pix = buf;
 				break;
 			}
 		}

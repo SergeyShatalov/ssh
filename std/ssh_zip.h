@@ -48,6 +48,34 @@
 #define MAX_MATCH			258
 #define WIN_INIT			MAX_MATCH
 
+#define put_byte(c)						{pending_buf[pending++] = (c);}
+#define put_short(w)					{put_byte((BYTE)((w) & 0xff)); put_byte((BYTE)((WORD)(w) >> 8));}
+#define UPDATE_HASH(h, c)				(h = (((h) << hash_shift) ^ (c)) & hash_mask)
+#define INSERT_STRING(str, match_head)	(UPDATE_HASH(ins_h, window[(str) + (MIN_MATCH - 1)]), match_head = prev[(str) & w_mask] = head[ins_h], head[ins_h] = (WORD)(str))
+#define FLUSH_BLOCK_ONLY(last)			{_zip_tr_flush_block((block_start >= 0L ? (char*)&window[(UINT)block_start] : (char*)nullptr), (DWORD)((long)strstart - block_start), (last)); block_start = strstart; strm->zip_flush_pending();}
+#define FLUSH_BLOCK(last)				{FLUSH_BLOCK_ONLY(last); if (strm->avail_out == 0) return (last) ? finish_started : need_more;}
+#define _zip_tr_tally_lit(c, flush)		{BYTE cc = (c); d_buf[last_lit] = 0; l_buf[last_lit++] = cc; dyn_ltree[cc].fc.freq++; flush = (last_lit == lit_bufsize - 1);}
+#define _zip_tr_tally_dist(distance, length, flush) {BYTE len = (length); WORD dist = (distance); d_buf[last_lit] = dist; l_buf[last_lit++] = len; dist--; dyn_ltree[_length_code[len] + LITERALS + 1].fc.freq++; dyn_dtree[d_code(dist)].fc.freq++; flush = (last_lit == lit_bufsize - 1);}
+#define send_bits(value, length)		{int len = length; if(bi_valid > (int)16 - len) {int val = value; bi_buf |= (WORD)val << bi_valid; put_short(bi_buf); bi_buf = (WORD)val >> (16 - bi_valid); bi_valid += len - 16;} else {bi_buf |= (WORD)(value) << bi_valid; bi_valid += len;}}
+#define send_code(c, tree)				send_bits(tree[c].fc.code, tree[c].dl.len)
+#define smaller(tree, n, m, depth)		(tree[n].fc.freq < tree[m].fc.freq || (tree[n].fc.freq == tree[m].fc.freq && depth[n] <= depth[m]))
+#define d_code(dist)					((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist) >> 7)])
+
+#define UPDATE(check, buf, len)			(flags ? Zip::crc32(check, buf, len) : Zip::ostrov32(check, buf, len))
+#define LOAD()							{_put = strm->next_out; _left = strm->avail_out; _next = strm->next_in; _have = strm->avail_in; _hold = hold; _bits = bits;}
+#define RESTORE()						{strm->next_out = _put; strm->avail_out = _left; strm->next_in = _next; strm->avail_in = _have; hold = _hold; bits = _bits;}
+#define INITBITS()						{_hold = 0; _bits = 0;}
+#define PULLBYTE()						{if(_have == 0) goto inf_leave; _have--; _hold += (DWORD)(*_next++) << _bits; _bits += 8;}
+#define NEEDBITS(n)						{while(_bits < (UINT)(n)) PULLBYTE();}
+#define BITS(n)							((UINT)_hold & ((1U << (n)) - 1))
+#define DROPBITS(n)						{_hold >>= (n); _bits -= (UINT)(n);}
+#define BYTEBITS()						{_hold >>= _bits & 7; _bits -= _bits & 7;}
+
+#define MAXBITS				15
+
+#define OFF					1
+#define PUP(a)				*++(a)
+
 #define DO1(buf,i)			{adler += (buf)[i]; sum2 += adler;}
 #define DO2(buf,i)			DO1(buf,i); DO1(buf, i + 1);
 #define DO4(buf,i)			DO2(buf,i); DO2(buf, i + 2);
@@ -246,24 +274,16 @@ namespace ssh
 		DWORD make(Zip* zip, int flush);
 	protected:
 		void pqdownheap(zip_ct_data* tree, int k);
-		void gen_bitlen(zip_tree_desc* desc);
 		void compress_block(zip_ct_data* ltree, zip_ct_data* dtree);
 		void build_tree(zip_tree_desc* desc);
-		void bi_windup();
-		void copy_block(char* buf, UINT len, int header);
 		void init_block();
 		void zip_putShortMSB(UINT b);
 		void zip_bi_flush();
-		void zip_fill_window();
 		void _zip_tr_stored_block(char* buf, DWORD stored_len, int last);
 		void send_tree(zip_ct_data* tree, int max_code);
 		void scan_tree(zip_ct_data* tree, int max_code);
 		zip_block_state zip_deflate_slow(int flush);
-		UINT longest_match(DWORD cur_match);
 		void _zip_tr_flush_block(char* buf, DWORD stored_len, int last);
-		void send_all_trees(int lcodes, int dcodes, int blcodes);
-		int build_bl_tree();
-		void gen_codes(zip_ct_data* tree, int max_code, WORD* bl_count);
 		Zip* strm;
 		int status;
 		BYTE* pending_buf;

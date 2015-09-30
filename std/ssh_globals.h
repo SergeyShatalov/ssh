@@ -83,10 +83,10 @@ namespace ssh
 	String SSH ssh_file_path(const String& path);
 	String SSH ssh_file_path_title(const String& path);
 	String SSH ssh_system_paths(SystemInfo type, int csidl = CSIDL_LOCAL_APPDATA);
-	String SSH ssh_cnv(ssh_wcs from, const Buffer<ssh_cs>& in, ssh_u offs);
+	String SSH ssh_cnv(ssh_wcs from, const buf_cs& in, ssh_u offs);
 	String SSH ssh_md5(const String& str);
 	String SSH ssh_base64(ssh_wcs charset, const String& str);
-	String SSH ssh_base64(const Buffer<ssh_cs>& buf);
+	String SSH ssh_base64(const buf_cs& buf);
 	ssh_u SSH ssh_system_info(SystemInfo type, CpuCaps value);
 	ssh_u SSH ssh_rand(ssh_u begin, ssh_u end);
 	ssh_u SSH ssh_hash(ssh_wcs wcs);
@@ -97,8 +97,8 @@ namespace ssh
 	ssh_u SSH ssh_dlg_save_or_open(bool bOpen, ssh_wcs title, ssh_wcs filter, ssh_wcs ext, String& folder, HWND hWnd, String* arr, ssh_u count);
 	ssh_u SSH ssh_cnv_value(ssh_wcs str, ENUM_DATA* stk, ssh_u def);
 	GUID SSH ssh_make_guid(ssh_wcs src);
-	Buffer<ssh_cs> SSH ssh_cnv(ssh_wcs to, ssh_wcs str, bool is_null);
-	Buffer<ssh_cs> SSH ssh_base64(const String& str, bool is_null);
+	buf_cs SSH ssh_cnv(ssh_wcs to, ssh_wcs str, bool is_null);
+	buf_cs SSH ssh_base64(const String& str, bool is_null);
 
 	// обменять значения
 	template <class T> void ssh_swap(T& val1, T& val2)

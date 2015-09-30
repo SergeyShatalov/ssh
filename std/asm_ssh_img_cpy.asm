@@ -1,25 +1,29 @@
 
 include asm_ssh.inc
 
-.data?
+.const
 
+align 16
+fp_256x4 dd 256.0, 256.0, 256.0, 256.0
+
+.data?
 
 .code
 
 asm_ssh_copy proc USES rbx rsi rdi r12 r13 r14 r15 src_bar:QWORD, src_wh:QWORD, src:QWORD, dst:QWORD, dst_bar:QWORD, dst_wh:QWORD, modify:QWORD
-local w_clamp:QWORD, h_clamp:QWORD, coord:QWORD, filter:QWORD, operation:QWORD, alpha0:DWORD, alpha1:DWORD, _dst_bar:stk_bar
+local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QWORD, alpha0:QWORD, alpha1:QWORD
 		call init_base_modify								; инициализация основных параметров модификатора
 		; обрезка координат
 		call asm_clip_bar
 		jc _fin
-		mov r14, rcx
-		mov r15, rdx
-		mov rbx, r10
+		mov r14, rcx										; w_src
+		mov r15, rdx										; h_src
+		mov rbx, r10										; pitch_src
 		dec rcx
 		dec rdx
 		mov w_clamp, rcx
 		mov h_clamp, rdx
-		lea rcx, _dst_bar
+		lea rcx, dst_bar
 		mov rdx, dst_wh
 		mov rax, r8
 		mov r8, r9
@@ -65,27 +69,20 @@ _loop_:	push rcx
 		emms
 _fin:	ret
 OPTION PROLOGUE:NONE
+sub_alpha dw 256, 256, 256, 256
 init_base_modify:
 		mov rsi, modify
-;		mov rax, fltVec
-;		xorps xmm15, xmm15
-;		movaps xmm14, _fp255x4
-;		movaps xmm13, _gamma
-;		movups xmm12, [rax]
-;		; корректировка данных
-;		mov rax, whMtx
-;		or rax, 1
-;		cmp rax, 11
-;		jb @f
-;		mov whMtx, 11
-;@@:		movss xmm0, alpha
-;		mulps xmm0, _fp256x4
-;		movq mm1, qword ptr _alpha2
-;		cvtps2pi mm0, xmm0
-;		pshufw mm0, mm0, 0
-;		movq qword ptr _alpha0, mm0
-;		psubusw mm1, mm0
-;		movq qword ptr _alpha1, mm1
+		vmovaps xmm13, _gamma
+		vmovaps xmm12, f_255x8
+		vmovaps xmm11, [rsi].stk_modify.flt_vec
+		vxorps xmm10, xmm10, xmm10
+		vpshufd xmm0, [rsi].stk_modify.alpha, 00000000b
+		vmulps xmm0, xmm0, f_256x8
+		movq mm1, qword ptr sub_alpha
+		cvtps2pi mm0, xmm0
+		psubusw mm1, mm0
+		movq alpha0, mm0
+		movq alpha1, mm1
 		ret
 init_filters:
 		mov r11, offset func_flt
@@ -107,7 +104,7 @@ init_operation:
 ;		pandn mm2, mm0
 ;		por mm1, mm2
 ;		movd dword ptr [r8], mm1
-		mov r11, offset func_flt
+		mov r11, offset func_ops
 		movsxd rax, [rsi].stk_modify.src_ops
 		lea rax, [r11 + rax * 8]
 		mov operation, rax
@@ -118,7 +115,7 @@ init_addressing:
 		movsxd rax, [rsi].stk_modify.type_address
 		lea r11, [r11 + rax * 8]
 		mov rax, [r11 + 48]
-		mov coord, rax
+		mov addressing, rax
 		call qword ptr [r11]
 		ret
 func_addr	dq init_lc, init_lm, init_lp, init_nr, init_nr, init_nr

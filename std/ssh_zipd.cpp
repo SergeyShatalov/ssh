@@ -4,21 +4,6 @@
 
 namespace ssh
 {
-	#define UPDATE(check, buf, len) (flags ? Zip::crc32(check, buf, len) : Zip::ostrov32(check, buf, len))
-	#define LOAD() {_put = strm->next_out; _left = strm->avail_out; _next = strm->next_in; _have = strm->avail_in; _hold = hold; _bits = bits;}
-	#define RESTORE() {strm->next_out = _put; strm->avail_out = _left; strm->next_in = _next; strm->avail_in = _have; hold = _hold; bits = _bits;}
-	#define INITBITS() {_hold = 0; _bits = 0;}
-	#define PULLBYTE() {if(_have == 0) goto inf_leave; _have--; _hold += (DWORD)(*_next++) << _bits; _bits += 8;}
-	#define NEEDBITS(n) {while(_bits < (UINT)(n)) PULLBYTE();}
-	#define BITS(n) ((UINT)_hold & ((1U << (n)) - 1))
-	#define DROPBITS(n) {_hold >>= (n); _bits -= (UINT)(n);}
-	#define BYTEBITS() {_hold >>= _bits & 7; _bits -= _bits & 7;}
-
-	#define MAXBITS 15
-
-	#define OFF 1
-	#define PUP(a) *++(a)
-
 	void ZipInflate::inflateFast(UINT start)
 	{
 		BYTE* in, *last, *out, *beg, *end, *window, *from;

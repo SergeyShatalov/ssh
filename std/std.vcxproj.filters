@@ -204,5 +204,6 @@
     <None Include="asm_ssh.inc">
       <Filter>Файлы исходного кода\изображение</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

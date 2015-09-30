@@ -3,17 +3,20 @@ include asm_ssh.inc
 
 .code
 
-; преобразование из процентного задания координат в абсолютные
-;static Bar<int> absolute_bar(const Bar<int>& bar, const Range<int>& clip, Coord coord)
-;{
-;	if(coord != Coord::percent) return bar;
-;	float x(bar.x / 100.0f), y(bar.y / 100.0f), w(bar.w / 100.0f), h(bar.h / 100.0f);
-;	return Bar<int>((int)(x * clip.w), (int)(y * clip.h), (int)(w * clip.w), (int)(h * clip.h));
-;}
-
-asm_ssh_absolute_bar proc
+; rcx(bar), rdx(clip)
+asm_absolute_bar proc
+local tmp:stk_bar
+		lea rax, tmp
+		vcvtdq2ps xmm0, xmmword ptr [rcx]
+		vmovlps xmm1, xmm1, qword ptr [rdx]
+		vmovlhps xmm1, xmm1, xmm1
+		vcvtdq2ps xmm1, xmm1
+		vdivps xmm0, xmm0, f_100x4
+		vmulps xmm0, xmm0, xmm1
+		vcvtps2dq xmm0, xmm0
+		vmovups [rax], xmm0
 		ret
-asm_ssh_absolute_bar endp
+asm_absolute_bar endp
 
 ;rcx(bar), rdx(clip) r8(dst) r11(offset stk_clip)-> out rcx(width) rdx(height) r10(pitch) r8(dst)
 asm_clip_bar proc USES rax rdi rsi rbx
@@ -198,5 +201,70 @@ asm_ssh_table endp
 asm_ssh_border2d proc
 		ret
 asm_ssh_border2d endp
+
+; (const Range<int>& _wh, ImgMod* modify, void* cells, void* ptr)
+asm_ssh_mosaik proc
+		ret
+asm_ssh_mosaik endp
+
+;rdx(pos) r8(clip)
+asm_clip_quad proc private USES r10
+		xorps xmm7, xmm7
+		mov r10, [r8 + 00]		; xc
+		mov r11, [r8 + 08]		; yc
+		mov r12, [r8 + 16]		; wc
+		mov r13, [r8 + 24]		; hc
+		mov rax, [rcx + 00]		; xp
+		mov rdx, [rcx + 08]		; yp
+		mov rbx, [rcx + 16]		; wp
+		mov rcx, [rcx + 24]		; hp
+		mov r14, rax
+		sub r14, r10
+		jge @f
+		add rbx, r14
+		jle _err
+		mov rax, r10
+		pinsrd xmm7, r14d, 0
+@@:		mov r14, rdx
+		sub r14, r11
+		jge @f
+		add rcx, r14
+		jle _err
+		mov rdx, r11
+		pinsrd xmm7, r14d, 1
+@@:		lea r14, [rax + rbx]
+		sub r14, r12
+		jle @f
+		sub rbx, r14
+		jle _err
+		pinsrd xmm7, r14d, 2
+@@:		lea r14, [rdx + rcx]
+		sub r14, r13
+		jle @f
+		sub rcx, r14
+		jle _err
+		pinsrd xmm7, r14d, 3
+@@:		cvtdq2ps xmm7, xmm7
+		stc
+		ret
+_err:	clc
+		ret
+asm_clip_quad endp
+
+;rcx(bar) rdx(out_bar2) r8(clip)
+asm_ssh_get_clipbar proc USES rbx
+local tmp:stk_bar
+		mov r9, rdx
+		call asm_clip_quad
+		lea r8, tmp
+		test r9, r9
+		cmovz r9, r8
+		mov [r9].stk_bar.x, eax
+		mov [r9].stk_bar.y, edx
+		mov [r9].stk_bar.w, ebx
+		mov [r9].stk_bar.h, ecx
+		mov rax, r9
+		ret
+asm_ssh_get_clipbar endp
 
 end

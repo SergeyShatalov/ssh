@@ -101,12 +101,13 @@ stk_modify ends
 ;rcx(bar), rdx(clip) r8(dst) -> out rcx(width) rdx(height) r10(pitch) r8(dst)
 externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
-externdef asm_ssh_absolute_bar:near
+externdef asm_absolute_bar:near
 
 .const
 align 16
 _gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
-
+f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
+f_100x4		dd 100.0, 100.0, 100.0, 100.0
 .data
 _clip		stk_clip<>

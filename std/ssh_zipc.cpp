@@ -4,41 +4,6 @@
 
 namespace ssh
 {
-	#define UPDATE_HASH(h, c)				(h = (((h) << hash_shift) ^ (c)) & hash_mask)
-	#define INSERT_STRING(str, match_head)	(UPDATE_HASH(ins_h, window[(str) + (MIN_MATCH - 1)]), match_head = prev[(str) & w_mask] = head[ins_h], head[ins_h] = (WORD)(str))
-	#define put_byte(c)						{pending_buf[pending++] = (c);}
-	#define put_short(w)					{put_byte((BYTE)((w) & 0xff)); put_byte((BYTE)((WORD)(w) >> 8));}
-	#define FLUSH_BLOCK_ONLY(last)			{_zip_tr_flush_block((block_start >= 0L ? (char*)&window[(UINT)block_start] : (char*)nullptr), (DWORD)((long)strstart - block_start), (last)); block_start = strstart; strm->zip_flush_pending();}
-	#define FLUSH_BLOCK(last)				{FLUSH_BLOCK_ONLY(last); if (strm->avail_out == 0) return (last) ? finish_started : need_more;}
-	#define _zip_tr_tally_lit(c, flush)		{BYTE cc = (c); d_buf[last_lit] = 0; l_buf[last_lit++] = cc; dyn_ltree[cc].fc.freq++; flush = (last_lit == lit_bufsize - 1);}
-	#define _zip_tr_tally_dist(distance, length, flush) {BYTE len = (length); WORD dist = (distance); d_buf[last_lit] = dist; l_buf[last_lit++] = len; dist--; dyn_ltree[_length_code[len] + LITERALS + 1].fc.freq++; dyn_dtree[d_code(dist)].fc.freq++; flush = (last_lit == lit_bufsize - 1);}
-	#define send_bits(value, length)		{int len = length; if(bi_valid > (int)16 - len) {int val = value; bi_buf |= (WORD)val << bi_valid; put_short(bi_buf); bi_buf = (WORD)val >> (16 - bi_valid); bi_valid += len - 16;} else {bi_buf |= (WORD)(value) << bi_valid; bi_valid += len;}}
-	#define send_code(c, tree)				send_bits(tree[c].fc.code, tree[c].dl.len)
-	#define smaller(tree, n, m, depth)		(tree[n].fc.freq < tree[m].fc.freq || (tree[n].fc.freq == tree[m].fc.freq && depth[n] <= depth[m]))
-	#define d_code(dist)					((dist) < 256 ? _dist_code[dist] : _dist_code[256+((dist) >> 7)])
-
-	static UINT bi_reverse(UINT code, int len)
-	{
-		UINT res = 0;
-		do {res |= code & 1; code >>= 1, res <<= 1;}
-		while (--len > 0);
-		return res >> 1;
-	}
-
-	void ZipDeflate::gen_codes(zip_ct_data* tree, int max_code, WORD* bl_count)
-	{
-		WORD next_code[MAX_BITS + 1];
-		WORD code = 0;
-		int bits, n;
-		for(bits = 1; bits <= MAX_BITS; bits++) {next_code[bits] = code = (code + bl_count[bits - 1]) << 1;}
-		for(n = 0;  n <= max_code; n++)
-		{
-			int len = tree[n].dl.len;
-			if(len == 0) continue;
-			tree[n].fc.code = bi_reverse(next_code[len]++, len);
-		}
-	}
-
 	void ZipDeflate::pqdownheap(zip_ct_data* tree, int k)
 	{
 		int v(heap[k]), j(k << 1);
@@ -52,14 +17,73 @@ namespace ssh
 		heap[k] = v;
 	}
 
-	void ZipDeflate::gen_bitlen(zip_tree_desc* desc)
+	void ZipDeflate::compress_block(zip_ct_data* ltree, zip_ct_data* dtree)
 	{
-		const zip_ct_data *stree = desc->stat_desc->static_tree;
-		const int* extra = desc->stat_desc->extra_bits;
-		zip_ct_data* tree(desc->dyn_tree);
-		WORD f;
+		UINT dist, lx(0), code;
+		int lc, extra;
+		if(last_lit) do
+		{
+			dist = d_buf[lx];
+			lc = l_buf[lx++];
+			if(dist == 0)
+			{
+				send_code(lc, ltree);
+			}
+			else
+			{
+				code = _length_code[lc];
+				send_code(code + LITERALS + 1, ltree);
+				extra = extra_lbits[code];
+				if(extra) {lc -= base_length[code]; send_bits(lc, extra);}
+				dist--;
+				code = d_code(dist);
+				send_code(code, dtree);
+				extra = extra_dbits[code];
+				if(extra) {dist -= base_dist[code]; send_bits(dist, extra);}
+			}
+		} while(lx < last_lit);
+		send_code(END_BLOCK, ltree);
+	}
 
-		int max_code(desc->max_code), base(desc->stat_desc->extra_base), max_length(desc->stat_desc->max_length), h, n, m, bits, xbits, overflow(0);
+	void ZipDeflate::build_tree(zip_tree_desc* desc)
+	{
+		zip_ct_data* tree(desc->dyn_tree);
+		const zip_ct_data* stree(desc->stat_desc->static_tree);
+		const int* extra(desc->stat_desc->extra_bits);
+		int elems(desc->stat_desc->elems), base(desc->stat_desc->extra_base), max_length(desc->stat_desc->max_length), n, m, max_code = -1, node, h, bits, xbits, overflow(0);
+		WORD next_code[MAX_BITS + 1], code(0), f;
+
+		heap_len = 0, heap_max = HEAP_SIZE;
+		for(n = 0; n < elems; n++) {if(tree[n].fc.freq != 0) {heap[++(heap_len)] = max_code = n; depth[n] = 0;} else tree[n].dl.len = 0;}
+		while(heap_len < 2)
+		{
+			node = heap[++(heap_len)] = (max_code < 2 ? ++max_code : 0);
+			tree[node].fc.freq = 1;
+			depth[node] = 0;
+			opt_len--;
+			if(stree) static_len -= stree[node].dl.len;
+		}
+		desc->max_code = max_code;
+		for(n = heap_len / 2; n >= 1; n--) pqdownheap(tree, n);
+		node = elems;
+		do
+		{
+			n = heap[1];
+			heap[1] = heap[heap_len--];
+			pqdownheap(tree, 1);
+			m = heap[1];
+			heap[--(heap_max)] = n;
+			heap[--(heap_max)] = m;
+			tree[node].fc.freq = tree[n].fc.freq + tree[m].fc.freq;
+			depth[node] = (BYTE)((depth[n] >= depth[m] ? depth[n] : depth[m]) + 1);
+			tree[n].dl.dad = tree[m].dl.dad = (WORD)node;
+			heap[1] = node++;
+			pqdownheap(tree, 1);
+
+		} while (heap_len >= 2);
+		heap[--(heap_max)] = heap[1];
+		
+		max_code = desc->max_code;
 
 		for(bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
 		tree[heap[heap_max]].dl.len = 0;
@@ -101,88 +125,16 @@ namespace ssh
 				}
 				n--;
 			}
+		}		
+		for(bits = 1; bits <= MAX_BITS; bits++) { next_code[bits] = code = (code + bl_count[bits - 1]) << 1; }
+		for(n = 0; n <= max_code; n++)
+		{
+			int len = tree[n].dl.len;
+			if(len == 0) continue;
+			UINT code(next_code[len]++), res = 0;
+			do { res |= code & 1; code >>= 1, res <<= 1; } while(--len > 0);
+			tree[n].fc.code = (res >> 1);
 		}
-	}
-
-	void ZipDeflate::compress_block(zip_ct_data* ltree, zip_ct_data* dtree)
-	{
-		UINT dist, lx(0), code;
-		int lc, extra;
-		if(last_lit) do
-		{
-			dist = d_buf[lx];
-			lc = l_buf[lx++];
-			if(dist == 0)
-			{
-				send_code(lc, ltree);
-			}
-			else
-			{
-				code = _length_code[lc];
-				send_code(code + LITERALS + 1, ltree);
-				extra = extra_lbits[code];
-				if(extra) {lc -= base_length[code]; send_bits(lc, extra);}
-				dist--;
-				code = d_code(dist);
-				send_code(code, dtree);
-				extra = extra_dbits[code];
-				if(extra) {dist -= base_dist[code]; send_bits(dist, extra);}
-			}
-		} while(lx < last_lit);
-		send_code(END_BLOCK, ltree);
-	}
-
-	void ZipDeflate::build_tree(zip_tree_desc* desc)
-	{
-		zip_ct_data* tree(desc->dyn_tree);
-		const zip_ct_data* stree(desc->stat_desc->static_tree);
-		int elems(desc->stat_desc->elems), n, m, max_code = -1, node;
-
-		heap_len = 0, heap_max = HEAP_SIZE;
-		for(n = 0; n < elems; n++) {if(tree[n].fc.freq != 0) {heap[++(heap_len)] = max_code = n; depth[n] = 0;} else tree[n].dl.len = 0;}
-		while(heap_len < 2)
-		{
-			node = heap[++(heap_len)] = (max_code < 2 ? ++max_code : 0);
-			tree[node].fc.freq = 1;
-			depth[node] = 0;
-			opt_len--;
-			if(stree) static_len -= stree[node].dl.len;
-		}
-		desc->max_code = max_code;
-		for(n = heap_len / 2; n >= 1; n--) pqdownheap(tree, n);
-		node = elems;
-		do
-		{
-			n = heap[1];
-			heap[1] = heap[heap_len--];
-			pqdownheap(tree, 1);
-			m = heap[1];
-			heap[--(heap_max)] = n;
-			heap[--(heap_max)] = m;
-			tree[node].fc.freq = tree[n].fc.freq + tree[m].fc.freq;
-			depth[node] = (BYTE)((depth[n] >= depth[m] ? depth[n] : depth[m]) + 1);
-			tree[n].dl.dad = tree[m].dl.dad = (WORD)node;
-			heap[1] = node++;
-			pqdownheap(tree, 1);
-
-		} while (heap_len >= 2);
-		heap[--(heap_max)] = heap[1];
-		gen_bitlen(desc);
-		gen_codes(tree, max_code, bl_count);
-	}
-
-	void ZipDeflate::bi_windup()
-	{
-		if(bi_valid > 8) {put_short(bi_buf);}
-		else if(bi_valid > 0) {put_byte((BYTE)bi_buf);}
-		bi_buf = 0; bi_valid = 0;
-	}
-
-	void ZipDeflate::copy_block(char* buf, UINT len, int header)
-	{
-		bi_windup();
-		if(header) {put_short((WORD)len); put_short((WORD)~len);}
-		while(len--) {put_byte(*buf++);}
 	}
 
 	void ZipDeflate::init_block()
@@ -208,78 +160,17 @@ namespace ssh
 		else if(bi_valid >= 8) {put_byte((BYTE)bi_buf); bi_buf >>= 8; bi_valid -= 8;}
 	}
 
-	void ZipDeflate::zip_fill_window()
-	{
-		UINT n, m, more;
-		WORD *p;
-		UINT wsize(w_size);
-
-		do
-		{
-			more = (UINT)(window_size -(DWORD)lookahead -(DWORD)strstart);
-			if(sizeof(int) <= 2)
-			{
-				if(more == 0 && strstart == 0 && lookahead == 0) more = wsize;
-				else if(more == (UINT)(-1)) more--;
-			}
-			if(strstart >= wsize + MAX_DIST())
-			{
-				memcpy(window, window+wsize, (UINT)wsize);
-				match_start -= wsize;
-				strstart -= wsize;
-				block_start -= (long)wsize;
-				n = hash_size;
-				p = &head[n];
-				do {m = *--p; *p = (WORD)(m >= wsize ? m-wsize : 0);} while(--n);
-				n = wsize;
-				p = &prev[n];
-				do {m = *--p; *p = (WORD)(m >= wsize ? m-wsize : 0);} while(--n);
-				more += wsize;
-			}
-			if(strm->avail_in == 0) break;
-			n = strm->zip_read_buf(window + strstart + lookahead, more);
-			lookahead += n;
-			if(lookahead + insert >= MIN_MATCH)
-			{
-				UINT str = strstart - insert;
-				ins_h = window[str];
-				UPDATE_HASH(ins_h, window[str + 1]);
-				while(insert)
-				{
-					UPDATE_HASH(ins_h, window[str + MIN_MATCH - 1]);
-					prev[str & w_mask] = head[ins_h];
-					head[ins_h] = (WORD)str;
-					str++;
-					insert--;
-					if(lookahead + insert < MIN_MATCH) break;
-				}
-			}
-		} while(lookahead < MIN_LOOKAHEAD && strm->avail_in != 0);
-		if(high_water < window_size)
-		{
-			DWORD curr = strstart + (DWORD)(lookahead);
-			DWORD init;
-			if(high_water < curr)
-			{
-				init = window_size - curr;
-				if(init > WIN_INIT) init = WIN_INIT;
-				SSH_MEMZERO(window + curr, (UINT)init);
-				high_water = curr + init;
-			}
-			else if(high_water < (DWORD)curr + WIN_INIT)
-			{
-				init = (DWORD)curr + WIN_INIT - high_water;
-				if(init > window_size - high_water) init = window_size - high_water;
-				SSH_MEMZERO(window + high_water, (UINT)init);
-				high_water += init;
-			}
-		}
-	}
-
 	void ZipDeflate::_zip_tr_stored_block(char* buf, DWORD stored_len, int last)
 	{
 		send_bits(last, 3);
-		copy_block(buf, (UINT)stored_len, 1);
+
+		if(bi_valid > 8) { put_short(bi_buf); }
+		else if(bi_valid > 0) { put_byte((BYTE)bi_buf); }
+		bi_buf = 0; bi_valid = 0;
+
+		put_short((WORD)stored_len);
+		put_short((WORD)~stored_len);
+		while(stored_len--) { put_byte(*buf++); }
 	}
 
 	void ZipDeflate::send_tree(zip_ct_data* tree, int max_code)
@@ -323,28 +214,6 @@ namespace ssh
 		}
 	}
 
-	int ZipDeflate::build_bl_tree()
-	{
-		int max_blindex;
-		scan_tree(dyn_ltree, l_desc.max_code);
-		scan_tree(dyn_dtree, d_desc.max_code);
-		build_tree(&bl_desc);
-		for(max_blindex = BL_CODES - 1; max_blindex >= 3; max_blindex--) {if(bl_tree[bl_order[max_blindex]].dl.len != 0) break;}
-		opt_len += 3 * (max_blindex + 1) + 5 + 5 + 4;
-		return max_blindex;
-	}
-
-	void ZipDeflate::send_all_trees(int lcodes, int dcodes, int blcodes)
-	{
-		int rank;
-		send_bits(lcodes - 257, 5);
-		send_bits(dcodes - 1,   5);
-		send_bits(blcodes - 4,  4);
-		for(rank = 0; rank < blcodes; rank++) {send_bits(bl_tree[bl_order[rank]].dl.len, 3);}
-		send_tree(dyn_ltree, lcodes - 1);
-		send_tree(dyn_dtree, dcodes - 1);
-	}
-
 	void ZipDeflate::_zip_tr_flush_block(char* buf, DWORD stored_len, int last)
 	{
 		DWORD opt_lenb, static_lenb;
@@ -353,56 +222,40 @@ namespace ssh
 		{
 			build_tree(&l_desc);
 			build_tree(&d_desc);
-			max_blindex = build_bl_tree();
+			scan_tree(dyn_ltree, l_desc.max_code);
+			scan_tree(dyn_dtree, d_desc.max_code);
+			build_tree(&bl_desc);
+			for(max_blindex = BL_CODES - 1; max_blindex >= 3; max_blindex--) { if(bl_tree[bl_order[max_blindex]].dl.len != 0) break; }
+			opt_len += 3 * (max_blindex + 1) + 5 + 5 + 4;
 			opt_lenb = (opt_len + 10) >> 3;
 			static_lenb = (static_len + 10) >> 3;
 			if(static_lenb <= opt_lenb) opt_lenb = static_lenb;
 		}
 		else opt_lenb = static_lenb = stored_len + 5;
 		if(stored_len+4 <= opt_lenb && buf != (char*)0) _zip_tr_stored_block(buf, stored_len, last);
-		else if(static_lenb == opt_lenb) {send_bits(2 + last, 3); compress_block((zip_ct_data*)static_ltree, (zip_ct_data*)static_dtree);}
+		else if(static_lenb == opt_lenb)
+		{
+			send_bits(last + 2, 3);
+			compress_block((zip_ct_data*)static_ltree, (zip_ct_data*)static_dtree);
+		}
 		else
 		{
-			send_bits(4 + last, 3);
-			send_all_trees(l_desc.max_code + 1, d_desc.max_code + 1, max_blindex + 1);
+			send_bits(last + 4, 3);
+			send_bits(l_desc.max_code - 256, 5);
+			send_bits(d_desc.max_code, 5);
+			send_bits(max_blindex - 3, 4);
+			for(int rank = 0; rank <= max_blindex; rank++) { send_bits(bl_tree[bl_order[rank]].dl.len, 3); }
+			send_tree(dyn_ltree, l_desc.max_code);
+			send_tree(dyn_dtree, d_desc.max_code);
 			compress_block(dyn_ltree, dyn_dtree);
 		}
 		init_block();
-		if(last) bi_windup();
-	}
-
-	UINT ZipDeflate::longest_match(DWORD cur_match)
-	{
-		UINT chain_length(max_chain_length);
-		BYTE* scan(window + strstart), *match;
-		int len, best_len(prev_length), nice_match(nice_match);
-		DWORD limit(strstart > (DWORD)MAX_DIST() ? strstart - (DWORD)MAX_DIST() : 0);
-		WORD* prev(this->prev);
-		UINT wmask(this->w_mask);
-		BYTE* strend(window + strstart + MAX_MATCH);
-		BYTE scan_end1(scan[best_len-1]), scan_end(scan[best_len]);
-
-		if(prev_length >= good_match) chain_length >>= 2;
-		if((UINT)nice_match > lookahead) nice_match = lookahead;
-		do
+		if(last)
 		{
-			match = window + cur_match;
-			if(match[best_len] != scan_end || match[best_len - 1] != scan_end1 || *match != *scan || *++match != scan[1]) continue;
-			scan += 2, match++;
-			do {} while(*++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && scan < strend);
-			len = MAX_MATCH - (int)(strend - scan);
-			scan = strend - MAX_MATCH;
-			if(len > best_len)
-			{
-				match_start = cur_match;
-				best_len = len;
-				if(len >= nice_match) break;
-				scan_end1 = scan[best_len-1];
-				scan_end = scan[best_len];
-			}
-		} while((cur_match = prev[cur_match & wmask]) > limit && --chain_length != 0);
-		if((UINT)best_len <= lookahead) return (UINT)best_len;
-		return lookahead;
+			if(bi_valid > 8) { put_short(bi_buf); }
+			else if(bi_valid > 0) { put_byte((BYTE)bi_buf); }
+			bi_buf = 0; bi_valid = 0;
+		}
 	}
 
 	ZipDeflate::zip_block_state ZipDeflate::zip_deflate_slow(int flush)
@@ -411,14 +264,109 @@ namespace ssh
 		int bflush;
 		while(true)
 		{
-			if(lookahead < MIN_LOOKAHEAD) {zip_fill_window(); if(lookahead == 0) break;}
+			if(lookahead < MIN_LOOKAHEAD)
+			{
+				UINT n, m, more;
+				WORD *p;
+				UINT wsize(w_size);
+
+				do
+				{
+					more = (UINT)(window_size - (DWORD)lookahead - (DWORD)strstart);
+					if(sizeof(int) <= 2)
+					{
+						if(more == 0 && strstart == 0 && lookahead == 0) more = wsize;
+						else if(more == (UINT)(-1)) more--;
+					}
+					if(strstart >= wsize + MAX_DIST())
+					{
+						memcpy(window, window + wsize, (UINT)wsize);
+						match_start -= wsize;
+						strstart -= wsize;
+						block_start -= (long)wsize;
+						n = hash_size;
+						p = &head[n];
+						do { m = *--p; *p = (WORD)(m >= wsize ? m - wsize : 0); } while(--n);
+						n = wsize;
+						p = &prev[n];
+						do { m = *--p; *p = (WORD)(m >= wsize ? m - wsize : 0); } while(--n);
+						more += wsize;
+					}
+					if(strm->avail_in == 0) break;
+					n = strm->zip_read_buf(window + strstart + lookahead, more);
+					lookahead += n;
+					if(lookahead + insert >= MIN_MATCH)
+					{
+						UINT str = strstart - insert;
+						ins_h = window[str];
+						UPDATE_HASH(ins_h, window[str + 1]);
+						while(insert)
+						{
+							UPDATE_HASH(ins_h, window[str + MIN_MATCH - 1]);
+							prev[str & w_mask] = head[ins_h];
+							head[ins_h] = (WORD)str;
+							str++;
+							insert--;
+							if(lookahead + insert < MIN_MATCH) break;
+						}
+					}
+				} while(lookahead < MIN_LOOKAHEAD && strm->avail_in != 0);
+				if(high_water < window_size)
+				{
+					DWORD curr = strstart + (DWORD)(lookahead);
+					DWORD init;
+					if(high_water < curr)
+					{
+						init = window_size - curr;
+						if(init > WIN_INIT) init = WIN_INIT;
+						SSH_MEMZERO(window + curr, (UINT)init);
+						high_water = curr + init;
+					}
+					else if(high_water < (DWORD)curr + WIN_INIT)
+					{
+						init = (DWORD)curr + WIN_INIT - high_water;
+						if(init > window_size - high_water) init = window_size - high_water;
+						SSH_MEMZERO(window + high_water, (UINT)init);
+						high_water += init;
+					}
+				}
+				if(lookahead == 0) break;
+			}
 			hash_head = 0;
 			if(lookahead >= MIN_MATCH) {INSERT_STRING(strstart, hash_head);}
 			prev_length = match_length, prev_match = match_start;
 			match_length = MIN_MATCH - 1;
 			if(hash_head && prev_length < max_lazy_match && strstart - hash_head <= (UINT)MAX_DIST())
 			{
-				match_length = longest_match(hash_head);
+				UINT chain_length(max_chain_length);
+				BYTE* scan(window + strstart), *match;
+				int len, best_len(prev_length), nice_match(nice_match);
+				DWORD cur_match(hash_head), limit(strstart >(DWORD)MAX_DIST() ? strstart - (DWORD)MAX_DIST() : 0);
+				WORD* prev(this->prev);
+				UINT wmask(this->w_mask);
+				BYTE* strend(window + strstart + MAX_MATCH);
+				BYTE scan_end1(scan[best_len - 1]), scan_end(scan[best_len]);
+
+				if(prev_length >= good_match) chain_length >>= 2;
+				if((UINT)nice_match > lookahead) nice_match = lookahead;
+				do
+				{
+					match = window + cur_match;
+					if(match[best_len] != scan_end || match[best_len - 1] != scan_end1 || *match != *scan || *++match != scan[1]) continue;
+					scan += 2, match++;
+					do {} while(*++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && *++scan == *++match && scan < strend);
+					len = MAX_MATCH - (int)(strend - scan);
+					scan = strend - MAX_MATCH;
+					if(len > best_len)
+					{
+						match_start = cur_match;
+						best_len = len;
+						if(len >= nice_match) break;
+						scan_end1 = scan[best_len - 1];
+						scan_end = scan[best_len];
+					}
+				} while((cur_match = prev[cur_match & wmask]) > limit && --chain_length != 0);
+				match_length = ((UINT)best_len <= lookahead ? (UINT)best_len : lookahead);
 				if(match_length <= 5 && (match_length == MIN_MATCH && strstart - match_start > 4096)) match_length = MIN_MATCH - 1;
 			}
 			if(prev_length >= MIN_MATCH && match_length <= prev_length)
