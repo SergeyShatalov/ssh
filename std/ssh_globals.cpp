@@ -346,11 +346,11 @@ namespace ssh
 
 		switch(type)
 		{
+			case SystemInfo::siCpuCaps: return cpuCaps.test_bit((ssh_u)value);;
 			case SystemInfo::siPlatform: return (ssh_u)platform;
 			case SystemInfo::siTotalMemory: return memStatus.dwAvailPhys + memStatus.dwAvailPageFile;
 			case SystemInfo::siPhysicalMemory: return memStatus.dwTotalPhys;
 			case SystemInfo::siCpuSpeed: return cpuSpeed;
-			case SystemInfo::siCpuCaps: return cpuCaps.test_bit((ssh_u)value);;
 		}
 		return 0;
 	}

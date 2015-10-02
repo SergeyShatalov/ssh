@@ -214,10 +214,10 @@ asm_clip_quad proc private USES r10
 		mov r11, [r8 + 08]		; yc
 		mov r12, [r8 + 16]		; wc
 		mov r13, [r8 + 24]		; hc
-		mov rax, [rcx + 00]		; xp
-		mov rdx, [rcx + 08]		; yp
-		mov rbx, [rcx + 16]		; wp
-		mov rcx, [rcx + 24]		; hp
+		mov rax, [rdx + 00]		; xp
+		mov rbx, [rdx + 16]		; wp
+		mov rcx, [rdx + 24]		; hp
+		mov rdx, [rdx + 08]		; yp
 		mov r14, rax
 		sub r14, r10
 		jge @f
@@ -266,5 +266,11 @@ local tmp:stk_bar
 		mov rax, r9
 		ret
 asm_ssh_get_clipbar endp
+		
+;QUAD* asm_ssh_make_quad(const Bar<float>& tex, const Bar<int>& pos, const Bar<int>& clip, const Range<int>& screen, int bgra);
+asm_ssh_make_quad proc
+		
+		ret
+asm_ssh_make_quad endp
 
 end

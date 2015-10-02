@@ -14,7 +14,6 @@ psteps3		dq 0, 2, 1, 0
 psteps4		dq 0, 2, 3, 1
 psteps6		dq 0, 2, 3, 4, 5, 1
 psteps8		dq 0, 2, 3, 4, 5, 6, 7, 1
-flt_max		dd 3.402823466e+38F
 f_1_0		dd 1.0
 f_0_0		dd 0.0
 

@@ -16,7 +16,7 @@ namespace ssh
 {
 	enum class FormatsMap : int
 	{
-		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, font, undef
+		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, undef
 	};
 
 	struct QUAD
@@ -42,10 +42,10 @@ namespace ssh
 			resize,			// изменить размер
 			noise,			// генерировать шум
 			correct,		// коррекци€ по данным гистограммы
-			mosaik,			// формирование мазаики
+			//mosaik,			// формирование мазаики
 			figure,			// отрисовка фигуры
 			gradient,		// градиентна€ заливка
-			replace,		// замена цвета
+			//replace,		// замена цвета
 			histogramm		// гистограмма
 		};
 		// системы координат
@@ -182,7 +182,7 @@ namespace ssh
 		// инициализирующий конструктор из xml
 		ImgMod(Xml* xml, HXML hroot, Image* img = nullptr, int layer_map = -1);
 		// применить модификатор дл€ карты
-		void apply(Image* img, const ImgMap* map);
+		void apply(ImgMap* map);
 		// преобразование из процентного задани€ координат в абсолютные
 		static Bar<int> absolute_bar(const Bar<int>& bar, const Range<int>& clip, Coord coord)
 		{
@@ -302,7 +302,7 @@ namespace ssh
 			brk		= 0x00000010 // осуществл€ть разбивку на слова в заданном клипе
 		};
 		// конструктор
-		ImgTxt(const Range<int>& _wh, const Buffer<ssh_cs>& _pix, int _height, const Buffer<Bar<int>>& _pos);
+		ImgTxt(ssh_wcs name, int height, const Range<int>& wh, const Buffer<Bar<int>>& pos, const Buffer<ssh_w>& remap, const Buffer<ssh_cs>& pix);
 		// нарисовать текст из инсталлированного буфера
 		void draw(ssh_cs* dst, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen) const;
 		// инсталл€ци€ - формирование буфера(разбиение, выравнивание)
@@ -324,8 +324,12 @@ namespace ssh
 		Buffer<QUAD> quads;
 		// массив позиций символов текста
 		Buffer<Bar<float>> pos;
+		// массив ремапа кодов символов(65536)
+		Buffer<ssh_w> remap;
 		// буфер инстал€ции текста
 		Buffer<ssh_cs> install_buf;
+		// внутреннее им€ щшрифта
+		String name;
 		// инсталлированный текст
 		String text;
 		// клип разбивки текста
@@ -403,32 +407,28 @@ namespace ssh
 			PositiveX, PositiveY, PositiveZ,
 			NegativeX, NegativeY, NegativeZ
 		};
-		enum class OptsFont : int
-		{
-			ss
-		};
 		// конструкторы
 		Image() {}
 		Image(ssh_wcs path) { open(path); }
 		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0, bool _mips = false);
 		// добавить/установить карту
-		const ImgMap* set_map(ssh_wcs path, int layer, int mip = -1);
+		int set_map(ssh_wcs path, int layer, int mip = -1);
 		// добавить/установить пустую карту
-		const ImgMap* set_empty(const Range<int>& wh, int layer, int mip = -1);
+		ImgMap* set_empty(const Range<int>& wh, int layer, int mip = -1);
 		// добавить/установить шрифт
-		//void set_font(ssh_wcs face, OptsFont opts, int height, int layer);
+		ImgTxt* set_font(ssh_wcs name, ssh_wcs face, ssh_w* groups, int height, int layer, int mip = -1);
 		// удалить карту
 		void del_map(int layer, int mip = -1);
+		// сброс внутренних буферов
+		void flush();
 		// вернуть карту
 		ImgMap* get_map(int layer, int mip = -1);
-		// сформировать квад карты
-		QUAD quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen, const color& col) const;
 		// создать дубликат карты
-		const ImgMap* duplicate(int nlayer, int nmip, int olayer, int omip);
+		ImgMap* duplicate(int nlayer, int nmip, int olayer, int omip);
 		// создать гистограмму
 		Buffer<ssh_cs> histogramm(int layer, int mip, const Range<int>& wh, ImgMod::Histogramms type, const color& bkg, const color& frg);
 		// сформировать
-		Buffer<ssh_cs> make(const ImgMap* map = nullptr);
+		Buffer<ssh_cs> make(ImgMap* map = nullptr);
 		// вернуть корень карт
 		auto root() const { return maps.root(); }
 		// вернуть количество слоев
@@ -451,11 +451,13 @@ namespace ssh
 		// деструктор
 		virtual ~Image() {}
 		// установка карты
-		bool set_map(ImgMap* map, int layer, int mip);
+		void set_map(ImgMap* map, int layer, int mip);
 		// упаковка атласов
-		bool packed_atlas(Range<int>& rn);
+		bool packed_atlas(Range<int>& rn, int offsXY = 1);
+		// упаковка символов шрифта
+		bool packed_font(const Buffer<Bar<int>>& pos, Buffer<Bar<int>>& npos, int height, int count, Range<int>& rn);
 		// вернуть количество слоев, в зависимости от типа изображени€
-		int layers_from_type() const;
+		int count_layers_from_type() const;
 		// сформировать
 		virtual void make(const Buffer<ssh_cs>& buf) override;
 		// записать файл формата BMP
@@ -467,7 +469,7 @@ namespace ssh
 		// записать файл формата BFS
 		void saveBFS(File* f, const Range<int>& wh, ssh_cs* pix, FormatsMap fmt);
 		// записать файл формата DDS
-		void saveDDS(File* f, const ImgMap* map, FormatsMap fmt);
+		void saveDDS(File* f, ImgMap* map, FormatsMap fmt);
 		// максимум мип уровней
 		bool mips = true;
 		// карты
@@ -478,10 +480,15 @@ namespace ssh
 		FormatsMap fmt = FormatsMap::bgra8;
 		// тип
 		TypesMap tp = TypesMap::TextureMap;
+		// сформировать квад карты
+		//QUAD quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Range<int>& screen, const color& col);
 	};
 
 	extern "C"
 	{
+		void asm_ssh_copy_wchar(const Bar<int>& pos, const Pts<int>& pt, void* pix, void* ptex, ssh_u pitch_pix, ssh_u pitch_tex, ssh_u height);
+		int asm_ssh_compute_width_wchar(ssh_u x, ssh_u y, void* ptex, ssh_u pitch);
+//		int asm_ssh_compute_width_wchar(int x, int y, void* ptex, int height, int width, int pitch);
 		void asm_ssh_cnv(FormatsMap fmt, const Range<int>& wh, void* dst, void* src, int is);
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
@@ -492,7 +499,6 @@ namespace ssh
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
 		void asm_ssh_figure(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-		void asm_ssh_replace(const Range<int>& vals, const Range<int>& msks, void* pix, const Range<int>& clip);
 		void asm_ssh_histogramm(const Range<int>& tmp, ImgMod* modify, void* buf);
 		void asm_ssh_correct(const Range<int>& clip, const Range<int>& rn, void* pix, ImgMod::Histogramms type);
 		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
@@ -502,8 +508,8 @@ namespace ssh
 		void asm_ssh_group(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_table(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_border2d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-		void asm_ssh_mosaik(const Range<int>& _wh, ImgMod* modify, void* cells, void* ptr);
 		Bar<int>* asm_ssh_get_clipbar(const Bar<int>& bar, Bar<int>* out, const Bar<int>& clip);
+		QUAD* asm_ssh_make_quad(const Bar<float>& tex, const Bar<int>& pos, const Bar<int>& clip, const Range<int>& screen, int bgra);
 	}
 }
 
@@ -511,7 +517,6 @@ namespace ssh
 /*
 extern "C"
 {
-QUAD*	__stdcall	asmMakeQuad(const Bar<float>& tex, const Bar<uint_t>& pos, const Bar<uint_t>& clip, QUAD* quad, const Range<uint_t>& screen, uint_t bgra);
 void	__stdcall	asmMakeQuadsText(const Bar<uint_t>& pos, const Bar<uint_t>& clip, QUAD* quads, BYTE* buffer, const Range<uint_t>& screen, ImgTexture* fnt);
 uint_t	__stdcall	asmInstallText(PCC font, const Range<uint_t>& clip, BYTE* buffer, PCC msg, ImgText::Aligned flags, void* cells);
 void	__stdcall	asmDrawText(const Bar<uint_t>& bar, const Range<uint_t>& clip, BYTE* pixels, BYTE* text, const Pts<uint_t>& pt);

@@ -16,6 +16,25 @@ result1	dd 128 dup(0)
 .code
 
 asm_ssh_shufb proc public USES rbx r15 r10 r11
+		movsxd r10, dword ptr [rcx]			;pitch
+		shl r10, 2
+		movsxd rax, dword ptr [rdx]
+		movsxd rcx, dword ptr [rdx + 4]
+		imul rcx, r10
+		lea rcx, [rcx + rax * 4]
+		add r8, rcx
+		movsxd rcx, dword ptr [rdx + 8]
+		movsxd rdx, dword ptr [rdx + 12]
+_loop:	push r8
+		push rcx
+@@:		or [r8], r9d
+		add r8, 4
+		loop @b
+		pop rcx
+		pop r8
+		add r8, r10
+		dec rdx
+		jnz _loop
 		ret
 		mov rax, offset _1
 		mov byte ptr [rax + 4], 1

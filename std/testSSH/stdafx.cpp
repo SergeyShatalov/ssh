@@ -1,6 +1,40 @@
 ﻿
 #include "stdafx.h"
 
+#pragma pack(push, 1)
+
+struct HEADER_TGA
+{
+	enum TypesTGA : ssh_b
+	{
+		INDEXED = 1,
+		RGB = 2,
+		GREY = 3,
+		RLE = 8
+	};
+	enum FlagsTGA : ssh_b
+	{
+		MASK = 0x30,
+		RIGHT = 0x10,
+		UPPER = 0x20,
+		ALPHA = 0x08
+	};
+	ssh_b	bIdLength;		//
+	ssh_b	bColorMapType;	// тип цветовой карты ()
+	ssh_b	bType;			// тип файла ()
+	ssh_w	wCmIndex;		// тип индексов в палитре
+	ssh_w	wCmLength;		// длина палитры
+	ssh_b	bCmEntrySize;	// число бит на элемент палитры
+	ssh_w	wXorg;			// 
+	ssh_w	wYorg;			// 
+	ssh_w	wWidth;			// ширина
+	ssh_w	wHeight;		// высота
+	ssh_b	bBitesPerPixel;	// бит на пиксель
+	ssh_b	bFlags;			// 
+};
+
+#pragma pack(pop)
+
 struct vector
 {
 	vector()
@@ -159,11 +193,128 @@ protected:
 
 extern "C"
 {
-	ssh_u asm_ssh_shufb(ssh_u v);
+	ssh_u asm_ssh_shufb(const Range<int>& rn_dst, const Bar<int>& rn_src, void* buf, ssh_d color);
+}
+
+struct Atl
+{
+	Atl() { is = true; }
+	Atl(int w, int h) { is = true; ixywh.set(0, 0, w, h); }
+	Bar<int> ixywh;
+	bool is;
+};
+
+static Array<Atl*, SSH_PTR> atls;
+
+static bool packed_atlas(Range<int>& rn)
+{
+	int wmax(0), hmax(0), i, j;
+	static Bar<int> bars[4];
+	// массив свободных узлов
+	Array<Bar<int>, SSH_TYPE> nodes;
+	// базовый свободный узел
+	nodes += Bar<int>(rn);
+	// 1. сортируем по высоте
+	for(i = 0; i < atls.size(); i++)
+	{
+		int h1(atls[0]->ixywh.h), _i(i);
+		for(j = i + 1; j < atls.size(); j++)
+		{
+			int h2(atls[j]->ixywh.h);
+			if(h2 > h1) { h1 = h2; _i = j; }
+		}
+		if(_i != i) ssh_swap<Atl*>(atls[_i], atls[i]);
+	}
+	// 2. отсортировать по ширине
+	for(i = 0; i < atls.size(); i++)
+	{
+		int w1(atls[i]->ixywh.w), _i(i);
+		for(j = i + 1; j < atls.size(); j++)
+		{
+			int w2(atls[j]->ixywh.w);
+			if(w2 > w1) { w1 = w2; _i = j; }
+		}
+		if(_i != i) ssh_swap<Atl*>(atls[_i], atls[i]);
+	}
+	// 3. упаковать
+	for(j = 0; j < atls.size(); j++)
+	{
+		Atl* atl(atls[j]);
+		Bar<int>* barA(&atl->ixywh);
+		int aw(barA->w + 1), ah(barA->h + 1);
+		for(i = 0; i < nodes.size(); i++)
+		{
+			Bar<int>* barN(&nodes[i]);
+			if(aw <= barN->w && ah <= barN->h)
+			{
+				barA->x = barN->x; barA->y = barN->y;
+				// формируем 4 дочерних узла
+				bars[0].set(barN->x, barN->y + ah, barN->w, barN->h - ah);
+				bars[1].set(barN->x + aw, barN->y, barN->w - aw, ah);
+				bars[2].set(barN->x + aw, barN->y, barN->w - aw, barN->h);
+				bars[3].set(barN->x, barN->y + ah, aw, barN->h - ah);
+				// ищем минимальный по диагонали
+				int idx = 0;
+				int diag(bars[idx].w * bars[idx].w + bars[idx].h * bars[idx].h);
+				for(int ii = 1; ii < 4; ii++)
+				{
+					int tmp(bars[ii].w * bars[ii].w + bars[ii].h * bars[ii].h);
+					if(tmp < diag) { idx = ii; diag = tmp; }
+				}
+				// добавляем найденный вариант
+				idx = (idx > 1 ? 2 : 0);
+				nodes.remove(i, 1);
+				nodes += bars[idx];
+				nodes += bars[idx + 1];
+				wmax = ssh_max<int>(wmax, atl->ixywh.right());
+				hmax = ssh_max<int>(hmax, atl->ixywh.bottom());
+				atl = nullptr;
+				break;
+			}
+		}
+		if(atl) return false;
+	}
+//	rn.set(ssh_pow2<int>(wmax, false), ssh_pow2<int>(hmax, false));
+	rn.set(wmax, hmax);
+	return true;
+}
+
+
+void save_atlas(ssh_wcs path, const Range<int>& rn)
+{
+	ssh_d colors[] = {0xf4ff4fff, 0xff00ff00, 0x004fff00, 0x6fff0000, 0x00f700ff, 0x00f4ff5f, 0xf400f5ff, 0x00ff0000};
+	buf_cs buf(rn.w * rn.h * 4);
+	memset(buf, 0, rn.w * rn.h * 4);
+	for(int i = 0; i < atls.size(); i++)
+	{
+		Atl* atl(atls[i]);
+		asm_ssh_shufb(rn, atl->ixywh, buf, colors[i & 7]);
+	}
+	File f(path, File::create_write);
+	// заголовок
+	HEADER_TGA head{ 0, 0, HEADER_TGA::RGB, 0, 0, 0, 0, 0, rn.w, rn.h, 32, HEADER_TGA::UPPER | HEADER_TGA::ALPHA };
+	// записываем заголовок
+	f.write(&head, sizeof(HEADER_TGA));
+	// записываем пиксели
+	f.write(buf, buf.size());
+	f.close();
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	/*
+	for(int i = 0; i < 108; i++)
+	{
+		atls += new Atl(ssh_rand(5, 205), ssh_rand(5, 205));
+	}
+	Range<int> rn(2048, 2048);
+	packed_atlas(rn);
+	save_atlas(L"e:\\atlas1.tga", rn);
+//	Range<int> rn1(2048, 2048);
+//	packed_atlas_old(rn1);
+//	save_atlas(L"e:\\atlas2.tga", rn1);
+	return 0;
+	*/
 	ENUM_DATA* _s = _stk;
 	Singlton<Log> _lg;
 	try
@@ -174,7 +325,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		_lg->init(&_log);
 		Image* img;
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_map(L"e:\\2.jpg", 0, 0);
+		img->set_font(L"font", L"Arial", nullptr, -20, 0);
 		img->save(L"e:\\bc1", ImgCnv::Types::dds, FormatsMap::bc1, 0);
 		img->release();
 		return 0;

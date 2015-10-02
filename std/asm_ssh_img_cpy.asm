@@ -3,9 +3,6 @@ include asm_ssh.inc
 
 .const
 
-align 16
-fp_256x4 dd 256.0, 256.0, 256.0, 256.0
-
 .data?
 
 .code
@@ -118,18 +115,19 @@ init_addressing:
 		mov addressing, rax
 		call qword ptr [r11]
 		ret
-func_addr	dq init_lc, init_lm, init_lp, init_nr, init_nr, init_nr
+func_addr	dq init_lc, init_lm, init_lr, init_nr, init_nr, init_nr
 			dq l_clamp, l_mirror, l_repeat, n_clamp, n_mirror, n_repeat
 init_nr:
 init_nn:
 		ret
 init_lm:
-init_lp:vdivss xmm0, xmm0, [rsi].stk_modify.wh_repeat.stk_range.w
+init_lr:vdivss xmm0, xmm0, [rsi].stk_modify.wh_repeat.stk_range.w
 		vdivss xmm1, xmm1, [rsi].stk_modify.wh_repeat.stk_range.h
 		ret
 init_lc:vcvtsi2ss xmm0, xmm0, r14
 		vcvtsi2ss xmm1, xmm1, r15
 		ret
+		; адресация
 l_clamp:
 l_mirror:
 l_repeat:

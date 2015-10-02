@@ -22,7 +22,7 @@ namespace ssh
 	SSH_ENUMS(m_img_fmts, _E(bc1), _E(bc2), _E(bc3), _E(a8), _E(l8), _E(rgba8), _E(bgra8), _E(rgb8), _E(bgr8), _E(r5g6b5), _E(rgba4), _E(rgb5a1));
 	// модификаторы
 #define ssh_enum_tp ImgMod::Types
-	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(mosaik), _E(figure), _E(gradient), _E(replace), _E(histogramm));
+	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(figure), _E(gradient), _E(histogramm));
 	// фильтры
 #define ssh_enum_tp ImgMod::Flt
 	SSH_ENUMS(m_mod_flts, _E(none), _E(sobel), _E(laplacian), _E(prewit), _E(emboss), _E(normal), _E(hi), _E(low), _E(median), _E(roberts), _E(max), _E(min), _E(contrast), _E(binary), _E(gamma), _E(scale_bias));
@@ -99,7 +99,7 @@ namespace ssh
 		}
 	}
 
-	void ImgMod::apply(Image* img, const ImgMap* map)
+	void ImgMod::apply(ImgMap* map)
 	{
 		try
 		{
@@ -117,8 +117,8 @@ namespace ssh
 						case Ops::flip_90:
 							Buffer<ssh_cs> dst(map->pix.size());
 							asm_ssh_flip_90(clip, dst, map->pixels());
-							const_cast<ImgMap*>(map)->pix = dst;
-							const_cast<ImgMap*>(map)->ixywh = Bar<int>(0, 0, clip.h, clip.w);
+							map->pix = dst;
+							map->ixywh = Bar<int>(0, 0, clip.h, clip.w);
 							break;
 					}
 					break;
@@ -144,27 +144,24 @@ namespace ssh
 					break;
 				case Types::correct: asm_ssh_correct(clip, rn, map->pixels(), type_histogramm); break;
 				case Types::resize:
-				case Types::mosaik:
 				{
 					Range<int> _wh(wh);
 					if(type_coord == Coord::percent) { _wh.w *= (int)(clip.w / 100.0f); _wh.h *= (int)(clip.h / 100.0f); }
 					if(ops.h == Pix::pow2) { _wh.w = ssh_pow2<int>(_wh.w, true); _wh.h = ssh_pow2<int>(_wh.h, true); }
 					Buffer<ssh_cs> ptr(asm_ssh_compute_fmt_size(_wh.w, _wh.h, FormatsMap::rgba8));
-					if(type == Types::mosaik) asm_ssh_mosaik(_wh, this, img->root(), ptr);
-					else if(type == Types::resize) asm_ssh_copy(map->bar(), map->bar().range, ptr, map->pixels(), _wh, _wh, this);
-					const_cast<ImgMap*>(map)->pix = ptr;
-					const_cast<ImgMap*>(map)->ixywh = _wh;
+					if(type == Types::resize) asm_ssh_copy(map->bar(), map->bar().range, ptr, map->pixels(), _wh, _wh, this);
+					map->pix = ptr;
+					map->ixywh = _wh;
 					break;
 				}
 				case Types::figure: asm_ssh_figure(bar, clip, map->pixels(), this); break;
 				case Types::gradient: asm_ssh_gradient(bar, clip, map->pixels(), this); break;
-				case Types::replace: asm_ssh_replace(vals, msks, map->pixels(), clip); break;
 				case Types::histogramm:
 					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(256, 1) : wh);
 					Buffer<ssh_cs> buf(tmp.w * tmp.h * 4);
 					asm_ssh_histogramm(tmp, this, buf);
-					const_cast<ImgMap*>(map)->ixywh = tmp;
-					const_cast<ImgMap*>(map)->pix = buf;
+					map->ixywh = tmp;
+					map->pix = buf;
 				break;
 			}
 		}
