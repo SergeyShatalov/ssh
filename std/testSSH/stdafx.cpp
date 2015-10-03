@@ -325,7 +325,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		_lg->init(&_log);
 		Image* img;
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_font(L"font", L"Arial", nullptr, -20, 0);
+		img->set_font(L"font", L"Arial", nullptr, -16, 0);
+		return 0;
 		img->save(L"e:\\bc1", ImgCnv::Types::dds, FormatsMap::bc1, 0);
 		img->release();
 		return 0;

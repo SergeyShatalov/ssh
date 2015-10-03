@@ -17,6 +17,7 @@ cnvFuncs	dq bgra8_,	_bgra8
 			dq r5g6b5_,	_r5g6b5
 			dq rgb5a1_,	_rgb5a1
 			dq rgba4_,	_rgba4
+			dq font_,	0
 
 .code
 
@@ -125,6 +126,19 @@ _l8:	; a2 r2 g2 b2 a1 r1 g1 b1 -> 0 0 0 0 0 0 l2 l1
 		mov [r8 + 1], al
 		add r9, 8
 		add r8, 2
+		ret
+font_:	movq xmm0, qword ptr [r9]
+		vpmovzxbd ymm0, xmm0
+		vcvtdq2ps ymm0, ymm0
+		vdpps ymm0, ymm0, ymm1, 01110111b
+		vcvtps2dq ymm0, ymm0
+		vpackssdw ymm0, ymm0, ymm0
+		vpackuswb ymm0, ymm0, ymm0
+		movd dword ptr [r8], xmm0
+		vextracti128 xmm0, ymm0, 1
+		movd dword ptr [r8 + 4], xmm0
+		add r9, 8
+		add r8, 8
 		ret
 common_cnv:
 		push rcx

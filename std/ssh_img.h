@@ -16,7 +16,7 @@ namespace ssh
 {
 	enum class FormatsMap : int
 	{
-		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, undef
+		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, font, undef
 	};
 
 	struct QUAD
@@ -454,8 +454,6 @@ namespace ssh
 		void set_map(ImgMap* map, int layer, int mip);
 		// упаковка атласов
 		bool packed_atlas(Range<int>& rn, int offsXY = 1);
-		// упаковка символов шрифта
-		bool packed_font(const Buffer<Bar<int>>& pos, Buffer<Bar<int>>& npos, int height, int count, Range<int>& rn);
 		// вернуть количество слоев, в зависимости от типа изображения
 		int count_layers_from_type() const;
 		// сформировать
@@ -486,9 +484,8 @@ namespace ssh
 
 	extern "C"
 	{
-		void asm_ssh_copy_wchar(const Bar<int>& pos, const Pts<int>& pt, void* pix, void* ptex, ssh_u pitch_pix, ssh_u pitch_tex, ssh_u height);
-		int asm_ssh_compute_width_wchar(ssh_u x, ssh_u y, void* ptex, ssh_u pitch);
-//		int asm_ssh_compute_width_wchar(int x, int y, void* ptex, int height, int width, int pitch);
+		void asm_ssh_copy_wchar(const Bar<int>& pos, ssh_u height, void* dst, void* src, ssh_u pitch_dst);
+		int asm_ssh_compute_width_wchar(void* ptex);
 		void asm_ssh_cnv(FormatsMap fmt, const Range<int>& wh, void* dst, void* src, int is);
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);

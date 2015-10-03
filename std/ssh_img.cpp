@@ -571,133 +571,63 @@ namespace ssh
 		return true;
 	}
 
-	bool Image::packed_font(const Buffer<Bar<int>>& pos, Buffer<Bar<int>>& npos, int height, int count, Range<int>& rn)
-	{
-		int wmax(0), hmax(0), i, j;
-		static Bar<int> bars[4];
-		// массив свободных узлов
-		Array<Bar<int>, SSH_TYPE> nodes;
-		// базовый свободный узел
-		nodes += Bar<int>(rn);
-		// 1. отсортировать по ширине
-		memcpy(npos, pos, pos.size());
-		for(i = 0; i < npos.count(); i++)
-		{
-			int w1(npos[i].h), _i(i);
-			for(j = i + 1; j < npos.count(); j++)
-			{
-				int w2(npos[j].h);
-				if(w1 > w2) { w1 = w2; _i = j; }
-			}
-			if(i != _i) ssh_swap<Bar<int>>(npos[i], npos[_i]);
-		}
-		// 3. упаковать
-		for(j = 0; j < npos.count(); j++)
-		{
-			Bar<int>* barA(&npos[j]);
-			int aw(barA->h + 1), ah(height + 1);
-			bool is(false);
-			for(i = 0; i < nodes.size(); i++)
-			{
-				Bar<int>* barN(&nodes[i]);
-				if(aw <= barN->w && ah <= barN->h)
-				{
-					barA->x = barN->x; barA->y = barN->y;
-					// формируем 4 дочерних узла
-					bars[0].set(barN->x, barN->y + ah, barN->w, barN->h - ah);
-					bars[1].set(barN->x + aw, barN->y, barN->w - aw, ah);
-					bars[2].set(barN->x + aw, barN->y, barN->w - aw, barN->h);
-					bars[3].set(barN->x, barN->y + ah, aw, barN->h - ah);
-					// ищем минимальный по диагонали
-					int idx = 0;
-					int diag(bars[idx].w * bars[idx].w + bars[idx].h * bars[idx].h);
-					for(int ii = 1; ii < 4; ii++)
-					{
-						int tmp(bars[ii].w * bars[ii].w + bars[ii].h * bars[ii].h);
-						if(tmp < diag) { idx = ii; diag = tmp; }
-					}
-					// добавляем найденный вариант
-					idx = (idx > 1 ? 2 : 0);
-					nodes.remove(i, 1);
-					nodes += bars[idx];
-					nodes += bars[idx + 1];
-					wmax = ssh_max<int>(wmax, npos[i].x + npos[i].h);
-					hmax = ssh_max<int>(hmax, npos[i].y + height);
-					is = true;
-					break;
-				}
-			}
-			if(!is) return false;
-		}
-		rn.set(wmax, hmax);
-		return true;
-	}
-
 	ImgTxt* Image::set_font(ssh_wcs name, ssh_wcs face, ssh_w* groups, int height, int layer, int mip)
 	{
-		static ssh_w groups_def[] = {0x30, 0x7f, 0xffff, 0xffff};
+		static ssh_w groups_def[] = {0x20, 0x7f, 0x410, 0x4ff, 0x10A0, 0x10FF, 0xffff, 0xffff};
 		HFONT hFont[3];
 		HBITMAP hBmp;
 		HDC hdc;
 		SIZE sz;
-		ssh_b* ptex(nullptr);
+		ssh_b* *ptmp(nullptr);
 		ImgTxt* txt(nullptr);
-		// 1. определить количество групп символов и количество символов в них
-		int count_chars(0), i(0), j, k, nTexHW(4096), volume(0);
-		int x(0), y(0), w;
-
-		if(!(hdc = ::CreateCompatibleDC(nullptr))) throw(-1);
-		::SetMapMode(hdc, MM_TEXT);
-
-		height = -height;// MulDiv(height, ::GetDeviceCaps(hdc, LOGPIXELSY), 72);
-		// 4. создать шрифты
-		if(!(hFont[0] = ::CreateFont(height, 0, 0, 0, FW_MEDIUM, false, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
-		if(!(hFont[1] = ::CreateFont(height, 0, 0, 0, FW_BOLD, false, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
-		if(!(hFont[2] = ::CreateFont(height, 0, 0, 0, FW_NORMAL, true, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
-		// определяем количество символов и их объем
-		if(!groups) groups = groups_def;
-		while(groups[i * 2] != 0xffff || count_chars >= 0xffff)
-		{
-			int f(groups[i * 2 + 0]), l(groups[i * 2 + 1]);
-			if(f >= l) break;
-			count_chars += (l - f);
-			for(; f < l; f++)
-			{
-				for(j = 0; j < 3; j++)
-				{
-					::SelectObject(hdc, hFont[j]);
-					GetTextExtentPoint32(hdc, (ssh_ws*)&f, 1, &sz);
-					// вычисляем суммарную площадь всех символов
-					w = (sz.cx + sz.cx / 2);
-					volume += (w * w + height * height);
-				}
-			}
-			i++;
-		}
-		// 7. приблизительно определяем габариты текстуры шрифта
-		nTexHW = (volume >= 8388608 ? 4096 : volume >= 2097152 ? 2048 : volume >= 524288 ? 1024 : 512);
+		int count_chars(0), i(0), j, k(0), nTexHW, volume(0), x(0), y(0), w, wmax(0);
 		try
 		{
-			// 2. создать все массивы
+			// 1. создаем контекст устройства
+			if(!(hdc = ::CreateCompatibleDC(nullptr))) throw(-1);
+			// 2. создаем шрифты
+			if(!(hFont[0] = ::CreateFont(height, 0, 0, 0, FW_MEDIUM, false, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
+			if(!(hFont[1] = ::CreateFont(height, 0, 0, 0, FW_BOLD, false, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
+			if(!(hFont[2] = ::CreateFont(height, 0, 0, 0, FW_NORMAL, true, false, false, ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE | DEFAULT_PITCH, face))) throw(-1);
+			// 3. опереляем реальную высоту символов
+			::SetMapMode(hdc, MM_TEXT);
+			height = -MulDiv(height, ::GetDeviceCaps(hdc, LOGPIXELSY), 72);
+			// 4. определяем количество символов и их объем
 			Buffer<ssh_w> remap(65536);
 			memset(remap, -1, 65536 * 2);
+			if(!groups) groups = groups_def;
+			while(groups[i * 2] != 0xffff || count_chars >= 0xffff)
+			{
+				int f(groups[i * 2 + 0]), l(groups[i * 2 + 1]);
+				if(f >= l) break;
+				count_chars += (l - f);
+				for(; f < l; f++)
+				{
+					for(j = 0; j < 3; j++)
+					{
+						::SelectObject(hdc, hFont[j]);
+						GetTextExtentPoint32(hdc, (ssh_ws*)&f, 1, &sz);
+						// вычисляем суммарную площадь всех символов
+						w = sz.cx;
+						volume += (w * w + height * height);
+					}
+				}
+				i++;
+			}
+			// 5. приблизительно определяем габариты битмапа и создаем массив позиций символов
+			nTexHW = (volume >= 8388608 ? 4096 : volume >= 2097152 ? 2048 : volume >= 524288 ? 1024 : 512);
 			Buffer<Bar<int>> pos(count_chars * 3);
-			Buffer<Bar<int>> npos(count_chars * 3);
-			memset(npos, -1, count_chars * 3 * 16);
-			// 3. создать битмар для рендеринга и для определения ширины символа
-			// заполняем структуру для отрисовки всех символов
-			BITMAPINFO bmi{ { sizeof(BITMAPINFOHEADER), nTexHW, -nTexHW, 1, (WORD)32, BI_RGB, 0, 0, 0, 1, 0 },{ 0, 0, 0, 0 } };
-			// создать контекст устройства для отрисовки символов
-			if(!(hdc = ::CreateCompatibleDC(nullptr))) throw(-1);
-			if(!(hBmp = ::CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&ptex, nullptr, 0))) throw(-1);
-			// определяем реальную высоту шрифта
-			::SetMapMode(hdc, MM_TEXT);
-			// 5. параметры отрисовки, выравнивание, основной цвет (белый)
+			buf_cs tpix(nTexHW * nTexHW * 4);
+			memset(tpix, 0, nTexHW * nTexHW * 4);
+			// создаем битмар для рендеринга
+			BITMAPINFO bmi{ { sizeof(BITMAPINFOHEADER), 128, -128, 1, (WORD)32, BI_RGB, 0, 0, 0, 0, 0 },{ 0, 0, 0, 0 } };
+			if(!(hBmp = ::CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&ptmp, nullptr, 0))) throw(-1);
+			// 7. параметры отрисовки, выравнивание, основной цвет (белый)
 			::SelectObject(hdc, hBmp);
-			::SetTextAlign(hdc, TA_TOP);
+			::SetTextAlign(hdc, TA_LEFT);
 			::SetTextColor(hdc, RGB(255, 255, 255));
-			// 6. создать символы
-			i = 0; k = 0;
+			// 8. создаем символы
+			i = 0;
 			while(groups[i * 2] != 0xffff)
 			{
 				int f(groups[i * 2 + 0]), l(groups[i * 2 + 1]);
@@ -707,56 +637,42 @@ namespace ssh
 					remap[f] = k;
 					for(j = 0; j < 3; j++)
 					{
-						SIZE sz;
 						// выбираем шрифт
 						::SelectObject(hdc, hFont[j]);
 						GetTextExtentPoint32(hdc, (ssh_ws*)&f, 1, &sz);
 						if((x + (sz.cx + sz.cx / 2)) >= nTexHW) { x = 0; y += height; }
 						// рисуем "засвеченный" символ
 						::SetBkColor(hdc, RGB(255, 255, 255));
-						TextOut(hdc, x, y, (ssh_ws*)&f, 1);
+						TextOut(hdc, 0, 0, (ssh_ws*)&f, 1);
 						// определяем ширину символа
-						int w(asm_ssh_compute_width_wchar(x, y, ptex, nTexHW * 4));
+						w = asm_ssh_compute_width_wchar(ptmp);
 						// рисуем нормальный символ
-						::SetBkColor(hdc, RGB(255, 255, 255));
-						TextOut(hdc, x, y, (ssh_ws*)&f, 1);
+						::SetBkColor(hdc, RGB(0, 0, 0));
+						TextOut(hdc, 0, 0, (ssh_ws*)&f, 1);
+						// копируем символ
 						pos[k + j * count_chars].set(x, y, sz.cx, w);
-						x += w;
+						asm_ssh_copy_wchar(pos[k + j * count_chars], sz.cy, tpix, ptmp, nTexHW * 4);
+						x += w + 1;
+						wmax = ssh_max<int>(wmax, x);
+						memset(ptmp, 0, 128 * 128 * 4);
 					}
 					k++;
 				}
 				i++;
 			}
-			// переворачиваем битмап
-			//asm_ssh_v_flip(Bar<int>(0, 0, nTexHW, nTexHW), Range<int>(nTexHW, nTexHW), ptex);
-			// 7. приблизительно определяем габариты текстуры шрифта
-			int tmp(volume >= 8388608 ? 4096 : volume >= 2097152 ? 2048 : volume >= 524288 ? 1024 : 512);
-			Range<int> rn(tmp, tmp);
-			// 8. упаковываем символы шрифта
-			while(true)
-			{
-				if(packed_font(pos, npos, height, count_chars * 3, rn)) break;
-				rn.set(tmp >> 1, tmp >> 1);
-			}
 			// 9. создаем текстуру
+			Range<int> rn(wmax, y + height);
 			buf_cs pix(rn.w * rn.h * 4);
-			memset(pix, 0, rn.w * rn.h * 4);
-			// 10. копируем изображения символов из битмапа в целевую текстуру с преобразованием
-			for(i = 0; i < count_chars * 3; i++)
+			// 10. скопировать в новый буфер, оптимального размера
+			ssh_cs* dst(pix), *src(tpix);
+			for(i = 0; i < rn.h; i++)
 			{
-				asm_ssh_copy_wchar(npos[i], pos[i].point, pix, ptex, rn.w * 4, nTexHW * 4, height);
+				memcpy(dst, src, rn.w * 4);
+				dst += rn.w * 4;
+				src += nTexHW * 4;
 			}
 			// 11. создаем шрифт
 			set_map((txt = new ImgTxt(name, height, rn, pos, remap, pix)), layer, mip);
-			// записать (для проверки)
-			File f(L"e:\\atlas_font.tga", File::create_write);
-			// заголовок
-			HEADER_TGA head{ 0, 0, HEADER_TGA::RGB, 0, 0, 0, 0, 0, txt->ixywh.w, txt->ixywh.h, 32, HEADER_TGA::UPPER | HEADER_TGA::ALPHA };
-			// записываем заголовок
-			f.write(&head, sizeof(HEADER_TGA));
-			// записываем пиксели
-			f.write(txt->pix, txt->pix.size());
-			f.close();
 		}
 		catch(...) { }
 		// освобождаем ресурсы
