@@ -149,7 +149,7 @@ namespace ssh
 		return dst;
 	}
 	// соеденить элементы в строку
-	template <typename T> String ssh_implode(ssh_wcs split, T* src, ssh_u count_src, ENUM_DATA* stk, ssh_wcs def, bool is_hex, bool is_enum)
+	template <typename T> String ssh_implode(ssh_wcs split, T* src, ssh_u count_src, ssh_wcs def, ENUM_DATA* stk = nullptr, bool is_enum = true, bool is_hex = false)
 	{
 		String ret, _tmp;
 

@@ -10,7 +10,7 @@ namespace ssh
 	{
 		// конструктор
 		XmlNode() : attrs(nullptr), next(nullptr) {}
-		XmlNode(ssh_wcs name, ssh_wcs v) : XmlNode() { nm = name; val = v; }
+		XmlNode(ssh_wcs name, const String& v) : XmlNode() { nm = name; val = v; }
 		~XmlNode() { SSH_DEL(attrs); SSH_DEL(next); }
 		// вернуть атрибут по имени
 		XmlNode* attr(ssh_wcs name) const
@@ -68,13 +68,13 @@ namespace ssh
 		// установить имя узла
 		void set_name(HXML h, ssh_wcs name) { h->value->nm = name; }
 		// вернуть имя узла
-		const String& get_name(HXML h) const { return h->value->nm; }
+		String get_name(HXML h) const { return h->value->nm; }
 		// получить родительский узел
 		HXML parent(HXML h) const { return h->parent; }
 		// получить корневой узел
 		HXML root() const { return tree.get_root(); }
 		// установить значение узла
-		template <typename T> void set_val(HXML h, const T& val) const
+		template <typename T> void set_val(HXML h, const T& val)
 		{
 			h->value->val = val;
 		}
@@ -84,10 +84,10 @@ namespace ssh
 			return h->value->val;
 		}
 		// установить значение атрибута
-		template <typename T> void set_attr(HXML h, ssh_wcs name, const T& val) const
+		template <typename T> void set_attr(HXML h, ssh_wcs name, const T& val)
 		{
 			auto n(h->value->attr(name));
-			if(n) n->val = val; else h->value->add_attr(new XmlNode(name, val));
+			if(n) n->val = String(val); else h->value->add_attr(new XmlNode(name, val));
 		}
 		// получить значение атрибута
 		template <typename T> T attr(HXML h, ssh_wcs name, const T& def) const

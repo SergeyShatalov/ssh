@@ -8,18 +8,6 @@ namespace ssh
 #pragma warning(disable:4005)
 	// типы координат
 	static ENUM_DATA m_mod_coords[] = { { L"@", SSH_CAST(ImgMod::Coord::absolute) },{ L"%", SSH_CAST(ImgMod::Coord::percent) },{ nullptr, 0 } };
-	// форматы файлов
-#define ssh_enum_tp ImgCnv::Types
-	SSH_ENUMS(m_img_cnv_fmts, _E(tga), _E(dds), _E(bmp), _E(gif), _E(jpg), _E(fse), _E(bfs));
-	// комманды
-#define ssh_enum_tp Image::Cmds
-	SSH_ENUMS(m_img_cmds, _E(none), _E(make), _E(open), _E(save), _E(modify), _E(remove), _E(font), _E(empty), _E(duplicate), _E(draw), _E(packed));
-	// тип карт
-#define ssh_enum_tp Image::TypesMap
-	SSH_ENUMS(m_img_maps, _E(AtlasMap), _E(CubeMap), _E(VolumeMap), _E(TextureMap), _E(ArrayMap));
-	// форматы карт
-#define ssh_enum_tp FormatsMap
-	SSH_ENUMS(m_img_fmts, _E(bc1), _E(bc2), _E(bc3), _E(a8), _E(l8), _E(rgba8), _E(bgra8), _E(rgb8), _E(bgr8), _E(r5g6b5), _E(rgba4), _E(rgb5a1));
 	// модификаторы
 #define ssh_enum_tp ImgMod::Types
 	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(figure), _E(gradient), _E(histogramm));
@@ -59,11 +47,11 @@ namespace ssh
 		type = (Types)ssh_cnv_value(xml->attr(hroot, L"type", def), m_img_mods, SSH_CAST(Types::undef));
 		type_address = (Addr)ssh_cnv_value(xml->attr(hroot, L"type_addr", def), m_mod_addrs, SSH_CAST(Addr::lclamp));
 		type_ops = (Ops)ssh_cnv_value(xml->attr(hroot, L"type_ops", def), m_mod_ops, SSH_CAST(Ops::none));
-		type_coord = (Coord)ssh_cnv_value(xml->attr(hroot, L"coord", def), m_mod_coords, SSH_CAST(Coord::absolute));
-		type_filter = (Flt)ssh_cnv_value(xml->attr(hroot, L"filter", def), m_mod_flts, SSH_CAST(Flt::none));
-		type_figure = (Figures)ssh_cnv_value(xml->attr(hroot, L"figure", def), m_mod_figures, SSH_CAST(Figures::ellipse));
-		type_terrain = (Terrain)ssh_cnv_value(xml->attr(hroot, L"terrain", def), m_img_terrain, SSH_CAST(Terrain::island));
-		type_histogramm = (Histogramms)ssh_cnv_value(xml->attr(hroot, L"histogramm", def), m_img_histogramms, SSH_CAST(Histogramms::rgb));
+		type_coord = (Coord)ssh_cnv_value(xml->attr(hroot, L"type_coord", def), m_mod_coords, SSH_CAST(Coord::absolute));
+		type_filter = (Flt)ssh_cnv_value(xml->attr(hroot, L"type_filter", def), m_mod_flts, SSH_CAST(Flt::none));
+		type_figure = (Figures)ssh_cnv_value(xml->attr(hroot, L"type_figure", def), m_mod_figures, SSH_CAST(Figures::ellipse));
+		type_terrain = (Terrain)ssh_cnv_value(xml->attr(hroot, L"type_terrain", def), m_img_terrain, SSH_CAST(Terrain::island));
+		type_histogramm = (Histogramms)ssh_cnv_value(xml->attr(hroot, L"type_histogramm", def), m_img_histogramms, SSH_CAST(Histogramms::rgb));
 		sides = (Borders)ssh_cnv_value(xml->attr(hroot, L"side_border", def), m_img_borders, SSH_CAST(Borders::all));
 		aspect = xml->attr(hroot, L"aspect", 1);
 		w_border = xml->attr(hroot, L"w_border", 1);
@@ -71,10 +59,10 @@ namespace ssh
 		radius = xml->attr<int>(hroot, L"radius", 1);
 		scale = xml->attr<float>(hroot, L"scale", 1.0f);
 		alpha = xml->attr(hroot, L"alpha", 1.0f);
-		//shadow = Hex<uint_t>(xml->attr<String>(hroot, "shadow", "0"));
+		shadow = xml->attr<String>(hroot, L"shadow", L"0").toNum<int>(0, String::_hex);
 		ssh_explode<Pix>(L",", xml->attr(hroot, L"pix", def), ops, 2, Pix::set, m_mod_pix_ops);
 		ssh_explode<int>(L",", xml->attr(hroot, L"bar", def), bar, 4, 0);
-		ssh_explode<int>(L",", xml->attr(hroot, L"msk", def), msks, 2, 0x00FFFFFF, nullptr, true),
+		ssh_explode<int>(L",", xml->attr(hroot, L"msk", def), msks, 2, 0x00FFFFFF, nullptr, true);
 		ssh_explode<int>(L",", xml->attr(hroot, L"val", def), vals, 2, 0, nullptr, true);
 		ssh_explode<int>(L",", xml->attr(hroot, L"col", def), cols_histogramm, 2, 0);
 		ssh_explode<int>(L",", xml->attr(hroot, L"cell", def), wh_cell, 2, 1);
@@ -85,7 +73,7 @@ namespace ssh
 		ssh_explode<float>(L",", xml->attr(hroot, L"vec", def), flt_vec, 4, 1.0f);
 		if(xml->is_attr(hroot, L"array_map"))
 		{
-			const ImgMap* t(img->get_map(xml->attr(hroot, L"array_map", layer_map)));
+			ImgMap* t(img->get_map(xml->attr(hroot, L"array_map", layer_map)));
 			if(t)
 			{
 				rgba = Buffer<ssh_cs>(t->pixels());

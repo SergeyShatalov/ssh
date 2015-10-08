@@ -4,15 +4,22 @@
 
 namespace ssh
 {
-	ImgTxt::ImgTxt(ssh_wcs _name, int _height, const Range<int>& _wh, const Buffer<Bar<int>>& _pos, const Buffer<ssh_w>& _remap, const Buffer<ssh_cs>& _pix) : ImgMap(_wh, _pix), height(_height), remap(_remap), name(_name)
+	ImgTxt::ImgTxt(ssh_wcs _name, ssh_wcs _face, int _height, int _min_ws, const Buffer<Bar<float>>& _pos, const Buffer<ssh_w>& _remap) :
+		height(_height), min_ws(_min_ws), pos(_pos), remap(_remap), name(_name), face(_face)
+	{
+	}
+
+	ImgTxt::ImgTxt(ssh_wcs _name, ssh_wcs _face, int _height, int _min_ws, const Range<int>& _wh, const Buffer<Bar<int>>& _pos, const Buffer<ssh_w>& _remap, const Buffer<ssh_cs>& _pix) :
+		ImgMap(_wh, _pix), height(_height), min_ws(_min_ws), remap(_remap), name(_name), face(_face)
 	{
 		// скорректировать координаты
-		/*
-		fBar.x = (float)bar.x / (float)r.w;
-		fBar.y = (float)bar.y / (float)r.h;
-		fBar.w = (float)bar.w / (float)r.w;
-		fBar.h = (float)bar.h / (float)r.h;
-		*/
+		for(int i = 0; i < _pos.count(); i++)
+		{
+			pos[i].x = (float)_pos[i].x / (float)_wh.w;
+			pos[i].y = (float)_pos[i].y / (float)_wh.h;
+			pos[i].w = (float)_pos[i].w / (float)_wh.w;
+			pos[i].h = (float)_pos[i].h / (float)_wh.h;
+		}
 	}
 	
 	void ImgTxt::draw(ssh_cs * dst, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen) const

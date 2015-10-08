@@ -254,7 +254,10 @@ namespace ssh
 		friend ImgMod;
 	public:
 		// конструктор
-		ImgMap(const Range<int>& _wh, const Buffer<ssh_cs>& _pix) : ixywh(_wh), pix(_pix) {}
+		ImgMap() {}
+		ImgMap(const Range<int>& _wh, const Buffer<ssh_cs>& _pix) : ixywh(_wh), pix(_pix), fxywh(0.0f, 0.0f, 1.0f, 1.0f) {}
+		// признак того, что карта €вл€етс€ шрифтом
+		virtual bool is_font() const { return false; }
 		// добавить/заменить мип
 		void set_mip(int level, ImgMap* mip) { mips[level] = mip; }
 		// удалить мип
@@ -286,6 +289,7 @@ namespace ssh
 
 	class ImgTxt : public ImgMap
 	{
+		friend class Image;
 	public:
 		enum class Styles : int
 		{
@@ -302,7 +306,10 @@ namespace ssh
 			brk		= 0x00000010 // осуществл€ть разбивку на слова в заданном клипе
 		};
 		// конструктор
-		ImgTxt(ssh_wcs name, int height, const Range<int>& wh, const Buffer<Bar<int>>& pos, const Buffer<ssh_w>& remap, const Buffer<ssh_cs>& pix);
+		ImgTxt(ssh_wcs name, ssh_wcs face, int height, int min_ws, const Buffer<Bar<float>>& pos, const Buffer<ssh_w>& remap);
+		ImgTxt(ssh_wcs name, ssh_wcs face, int height, int min_ws, const Range<int>& wh, const Buffer<Bar<int>>& pos, const Buffer<ssh_w>& remap, const Buffer<ssh_cs>& pix);
+		// признак того, что карта €вл€етс€ шрифтом
+		virtual bool is_font() const override { return true; }
 		// нарисовать текст из инсталлированного буфера
 		void draw(ssh_cs* dst, const Pts<int>& pt, const Bar<int>& clip, const Bar<int>& screen) const;
 		// инсталл€ци€ - формирование буфера(разбиение, выравнивание)
@@ -319,17 +326,21 @@ namespace ssh
 		Buffer<QUAD> get_quads() const { return quads; }
 	protected:
 		// высота символов
-		ssh_w height = 0;
+		int height = 0;
+		// минимальный символ
+		int min_ws = 0;
 		// буфер квадов - дл€ √ѕ”
 		Buffer<QUAD> quads;
 		// массив позиций символов текста
 		Buffer<Bar<float>> pos;
-		// массив ремапа кодов символов(65536)
+		// массив ремапа кодов символов
 		Buffer<ssh_w> remap;
 		// буфер инстал€ции текста
 		Buffer<ssh_cs> install_buf;
 		// внутреннее им€ щшрифта
 		String name;
+		// название шрифта
+		String face;
 		// инсталлированный текст
 		String text;
 		// клип разбивки текста
@@ -395,7 +406,7 @@ namespace ssh
 		// комманды при создании
 		enum class Cmds : int
 		{
-			none, modify, open, save, duplicate, font, empty, remove, draw, make, packed
+			none, modify, open, save, duplicate, font, empty, remove, draw, make
 		};
 
 		enum class TypesMap : int
@@ -407,22 +418,38 @@ namespace ssh
 			PositiveX, PositiveY, PositiveZ,
 			NegativeX, NegativeY, NegativeZ
 		};
+		struct HEADER
+		{
+			int sign = 0x01020304;
+			// габариты
+			Range<int> wh;
+			// формат
+			FormatsMap fmt = FormatsMap::bgra8;
+			// тип
+			TypesMap tp = TypesMap::TextureMap;
+			// количество мип уровней
+			int mip;
+			// количество текстур
+			int count;
+			// сформированна€ текстура
+			buf_cs tex;
+		};
 		// конструкторы
 		Image() {}
 		Image(ssh_wcs path) { open(path); }
-		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0, bool _mips = false);
+		Image(TypesMap _tp, FormatsMap _fmt, int width = 0, int height = 0);
 		// добавить/установить карту
-		int set_map(ssh_wcs path, int layer, int mip = -1);
+		int set_map(ssh_wcs path, int layer, int mip = 0);
 		// добавить/установить пустую карту
-		ImgMap* set_empty(const Range<int>& wh, int layer, int mip = -1);
+		ImgMap* set_empty(const Range<int>& wh, int layer, int mip = 0);
 		// добавить/установить шрифт
-		ImgTxt* set_font(ssh_wcs name, ssh_wcs face, ssh_w* groups, int height, int layer, int mip = -1);
+		ImgTxt* set_font(ssh_wcs name, ssh_wcs face, ssh_w* groups, int height, int layer);
 		// удалить карту
-		void del_map(int layer, int mip = -1);
+		void del_map(int layer, int mip = 0);
 		// сброс внутренних буферов
 		void flush();
 		// вернуть карту
-		ImgMap* get_map(int layer, int mip = -1);
+		ImgMap* get_map(int layer, int mip = 0);
 		// создать дубликат карты
 		ImgMap* duplicate(int nlayer, int nmip, int olayer, int omip);
 		// создать гистограмму
@@ -432,19 +459,19 @@ namespace ssh
 		// вернуть корень карт
 		auto root() const { return maps.root(); }
 		// вернуть количество слоев
-		ssh_u layers() const { return maps.count(); }
+		int layers() const { return (int)maps.count(); }
 		// вернуть реальное количество мип уровней
-		ssh_u get_mips(const ImgMap* map = nullptr, Range<int>* wh = nullptr);
+		int get_mips(const ImgMap* map = nullptr, Range<int>* wh = nullptr);
 		// вернуть формат
-		FormatsMap format() const { return fmt; }
+		FormatsMap format() const { return head.fmt; }
 		// вернуть тип
-		TypesMap type() const { return tp; }
+		TypesMap type() const { return head.tp; }
 		// вернуть реальные габариты
 		Range<int> range(const ImgMap* map = nullptr);
 		// сохранить
 		virtual void save(ssh_wcs path, bool is_xml) override;
 		// записать карту в файл в определенном формате
-		void save(ssh_wcs path, ImgCnv::Types type, FormatsMap fmt, int layer, int mip = -1);
+		void save(ssh_wcs path, ImgCnv::Types type, FormatsMap fmt, int layer, int mip = 0);
 		// вернуть схему дл€ сериализатора
 		virtual SCHEME* get_scheme() const override { return nullptr; }
 	protected:
@@ -468,31 +495,25 @@ namespace ssh
 		void saveBFS(File* f, const Range<int>& wh, ssh_cs* pix, FormatsMap fmt);
 		// записать файл формата DDS
 		void saveDDS(File* f, ImgMap* map, FormatsMap fmt);
-		// максимум мип уровней
-		bool mips = true;
 		// карты
 		Map<ImgMap*, int> maps;
-		// габариты
-		Range<int> wh;
-		// формат
-		FormatsMap fmt = FormatsMap::bgra8;
-		// тип
-		TypesMap tp = TypesMap::TextureMap;
+		// заголовок
+		HEADER head;
 		// сформировать квад карты
 		//QUAD quad(int layer, const Pts<int>& pt, const Bar<int>& clip, const Range<int>& screen, const color& col);
 	};
 
 	extern "C"
 	{
-		void asm_ssh_copy_wchar(const Bar<int>& pos, ssh_u height, void* dst, void* src, ssh_u pitch_dst);
 		int asm_ssh_compute_width_wchar(void* ptex);
+		int asm_ssh_compute_fmt_size(int width, int height, FormatsMap fmt, int* is_limit = nullptr);
+		void asm_ssh_copy_wchar(const Bar<int>& pos, ssh_u height, void* dst, void* src, ssh_u pitch_dst);
 		void asm_ssh_cnv(FormatsMap fmt, const Range<int>& wh, void* dst, void* src, int is);
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_unpack_bmp(ssh_u w, ssh_u h, void* dst, void* src, void* pal);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
-		int asm_ssh_compute_fmt_size(int width, int height, FormatsMap fmt, int* is_limit = nullptr);
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
 		void asm_ssh_figure(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);

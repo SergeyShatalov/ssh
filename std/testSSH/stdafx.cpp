@@ -300,8 +300,22 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 	f.close();
 }
 
+inline namespace _1
+{
+	typedef int _tp;
+}
+
+inline namespace _2
+{
+	typedef long _tp;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+	Xml xml;
+	HXML h(xml.add_node(xml.root(), L"fff", L""));
+	int ii(1);
+	xml.set_attr(h, L"11", ii);
 	/*
 	for(int i = 0; i < 108; i++)
 	{
