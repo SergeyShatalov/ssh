@@ -87,7 +87,7 @@ stk_modify struct
 		w_mtx			dd 0				; габариты матрицы
 		scale			dd 0.0				; масштаб
 		alpha			dd 0.0				; значение альфы
-		rgba			dq 0				; массив значений
+		rgba			dq 0, 0, 0			; массив значений(size, is_owner, ptr)
 		flt_vec			stk_vec<>			; вектор для фильтра
 		bar				stk_bar<>			; область действия модификатора
 		range			stk_range<>			; диапазон
@@ -102,13 +102,17 @@ stk_modify ends
 externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
 externdef asm_absolute_bar:near
+externdef _func_ops:QWORD
+externdef _gamma:DWORD
+externdef f_255x8:DWORD
+externdef f_256x8:DWORD
+externdef f_0_5x8:DWORD
+externdef f_100x4:DWORD
+externdef _clip:stk_bar
+externdef flt_max:DWORD
 
-.const
-align 16
-_gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
-f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
-f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
-f_100x4		dd 100.0, 100.0, 100.0, 100.0
-flt_max		dd 3.402823466e+38F
-.data
-_clip		stk_clip<>
+;data segment common
+;.data
+;align 16
+
+;data ends

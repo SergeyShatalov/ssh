@@ -64,7 +64,7 @@ namespace ssh
 		ssh_explode<int>(L",", xml->attr(hroot, L"bar", def), bar, 4, 0);
 		ssh_explode<int>(L",", xml->attr(hroot, L"msk", def), msks, 2, 0x00FFFFFF, nullptr, true);
 		ssh_explode<int>(L",", xml->attr(hroot, L"val", def), vals, 2, 0, nullptr, true);
-		ssh_explode<int>(L",", xml->attr(hroot, L"col", def), cols_histogramm, 2, 0);
+		ssh_explode<int>(L",", xml->attr(hroot, L"col", def), cols_histogramm, 2, 0, nullptr, true);
 		ssh_explode<int>(L",", xml->attr(hroot, L"cell", def), wh_cell, 2, 1);
 		ssh_explode<int>(L",", xml->attr(hroot, L"rn", def), rn, 2, 0);
 		ssh_explode<int>(L",", xml->attr(hroot, L"wh", def), wh, 2, 1);

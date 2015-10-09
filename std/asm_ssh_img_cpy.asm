@@ -1,26 +1,265 @@
 
 include asm_ssh.inc
 
+coor_l_mirror macro
+		xor rdx, rdx
+		lea rsi, [rbx * 2]
+		div rsi
+		lea rax, [rdx + 1]
+		sub rsi, rax
+		cmp rdx, rbx
+		cmovge rdx, rsi
+endm
+
+unpack_pix macro
+		movq2dq xmm0, mm2
+		pmovzxbd xmm0, xmm0
+		cvtdq2ps xmm0, xmm0
+		divps xmm0, xmm12
+endm
+
 .const
 
+sub_alpha	dw 256, 256, 256, 256
+_mm_alpha	dq 00000000ff000000h
+_alpha_not	dw 255,255,255,255
+_mm_not		dq -1
+_func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_al, _mul, _lum_add, _lum_sub, _norm
+
+mtxPrewit	dd -1, 0, 1
+			dd -1, 0, 1
+			dd -1, 0, 1
+			dd -1, -1, -1
+			dd 0, 0, 0
+			dd 1, 1, 1
+mtxPrewit1	dd -1.0, 0.0, 1.0
+			dd -1.0, 0.0, 1.0
+			dd -1.0, 0.0, 1.0
+mtxPrewit2	dd -1.0, -1.0, -1.0
+			dd 0.0,  0.0,  0.0
+			dd 1.0,  1.0,  1.0
+mtxEmboss	dd 0.0,  1.0,  0.0
+			dd -1.0, 0.0, 1.0
+			dd 0.0, -1.0, 0.0
+mtxLaplacian dd -1.0,-2.0,-1.0
+			 dd -2.0,12.0,-2.0
+			 dd -1.0,-2.0,-1.0
+mtxSobel3x3_1 dd 1.0,0.0,-1.0
+			  dd 2.0,0.0,-2.0
+			  dd 1.0,0.0,-1.0
+mtxSobel3x3_2 dd 1.0,2.0,1.0
+			  dd 0.0,0.0,0.0
+			  dd -1.0,-2.0,-1.0
+mtxSobel5x5_1 dd 1.0,2.0,0.0,-2.0,-1.0
+			  dd 2.0,3.0,0.0,-3.0,-2.0
+			  dd 3.0,4.0,0.0,-4.0,-3.0
+			  dd 2.0,3.0,0.0,-3.0,-2.0
+			  dd 1.0,2.0,0.0,-2.0,-1.0
+mtxSobel5x5_2 dd 1.0,2.0,3.0,2.0,1.0
+			  dd 2.0,3.0,4.0,3.0,2.0
+			  dd 0.0,0.0,0.0,0.0,0.0
+			  dd -2.0,-3.0,-4.0,-3.0,-2.0
+			  dd -1.0,-2.0,-3.0,-2.0,-1.0
+mtxSobel7x7_1 dd 1.0,2.0,3.0,0.0,-3.0,-2.0,-1.0
+			  dd 2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0
+			  dd 3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0
+			  dd 4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0
+			  dd 3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0
+			  dd 2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0
+			  dd 1.0,2.0,3.0,0.0,-3.0,-2.0,-1.0
+mtxSobel7x7_2 dd 1.0,2.0,3.0,4.0,3.0,2.0,1.0
+			  dd 2.0,3.0,4.0,5.0,4.0,3.0,2.0
+			  dd 3.0,4.0,5.0,6.0,5.0,4.0,3.0
+			  dd 0.0,0.0,0.0,0.0,0.0,0.0,0.0
+			  dd -3.0,-4.0,-5.0,-6.0,-5.0,-4.0,-3.0
+			  dd -2.0,-3.0,-4.0,-5.0,-4.0,-3.0,-2.0
+			  dd -1.0,-2.0,-3.0,-4.0,-3.0,-2.0,-1.0
+mtxSobel9x9_1 dd 1.0,2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0,-1.0
+			  dd 2.0,3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0,-2.0
+			  dd 3.0,4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0,-3.0
+			  dd 4.0,5.0,6.0,7.0,0.0,-7.0,-6.0,-5.0,-4.0
+			  dd 5.0,6.0,7.0,8.0,0.0,-8.0,-7.0,-6.0,-5.0
+			  dd 4.0,5.0,6.0,7.0,0.0,-7.0,-6.0,-5.0,-4.0
+			  dd 3.0,4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0,-3.0
+			  dd 2.0,3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0,-2.0
+			  dd 1.0,2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0,-1.0
+mtxSobel9x9_2 dd 1.0,2.0,3.0,4.0,5.0,4.0,3.0,2.0,1.0
+			  dd 2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0
+			  dd 3.0,4.0,5.0,6.0,7.0,6.0,5.0,4.0,3.0
+			  dd 4.0,5.0,6.0,7.0,8.0,7.0,6.0,5.0,4.0
+			  dd 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+			  dd -4.0,-5.0,-6.0,-7.0,-8.0,-7.0,-6.0,-5.0,-4.0
+			  dd -3.0,-4.0,-5.0,-6.0,-7.0,-6.0,-5.0,-4.0,-3.0
+			  dd -2.0,-3.0,-4.0,-5.0,-6.0,-5.0,-4.0,-3.0,-2.0
+			  dd -1.0,-2.0,-3.0,-4.0,-5.0,-4.0,-3.0,-2.0,-1.0
+
 .data?
+_alpha0		dq ?
+_alpha1		dq ?
 
 .code
 
+; операции
+_add:	paddusb mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_sub:	psubusb mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_set:	pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_xor:	pxor mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_and:	pand mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_or:	por mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_lum:	movq2dq xmm0, mm2
+		vpmovzxbd xmm0, xmm0
+		vcvtdq2ps xmm0, xmm0
+		vdpps xmm0, xmm0, _gamma, 01110001b
+		cvtps2pi mm2, xmm0
+		pshufw mm2, mm2, 0
+		packuswb mm2, mm2
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_not:	pxor mm2, _mm_not
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_mul:	pxor mm7, mm7
+		punpcklbw mm2, mm7
+		punpcklbw mm3, mm7
+		pmullw mm2, mm3
+		packuswb mm2, mm2
+		packuswb mm3, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_lum_add:movq2dq xmm0, mm2
+		vpmovzxbd xmm0, xmm0
+		vcvtdq2ps xmm0, xmm0
+		vdpps xmm0, xmm0, _gamma, 01110001b
+		cvtps2pi mm2, xmm0
+		pshufw mm2, mm2, 0
+		packuswb mm2, mm2
+		paddusb mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_lum_sub:movq2dq xmm0, mm2
+		vpmovzxbd xmm0, xmm0
+		vcvtdq2ps xmm0, xmm0
+		vdpps xmm0, xmm0, _gamma, 01110001b
+		cvtps2pi mm2, xmm0
+		pshufw mm2, mm2, 0
+		packuswb mm2, mm2
+		psubusb mm2, mm3
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_alph:	movq mm5, qword ptr _alpha_not
+		pxor mm7, mm7
+		punpcklbw mm2, mm7
+		punpcklbw mm3, mm7
+		pshufw mm4, mm2, 11111111b
+		psubusw mm5, mm4
+		pmullw mm4, mm2
+		pmullw mm5, mm3
+		paddusw mm4, mm5
+		psraw mm4, 8
+		packsswb mm4, mm4
+		packuswb mm2, mm2
+		packuswb mm3, mm3
+		movq mm5, mm6
+		pand mm2, mm6
+		pandn mm5, mm4
+		por mm2, mm5
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+;((src * alpha) + (dst * (256 - alpha))) / 256;
+_fix_al:movq mm4, qword ptr _alpha0
+		movq mm5, qword ptr _alpha1
+		pxor mm7, mm7
+		punpcklbw mm2, mm7
+		punpcklbw mm3, mm7
+		pmullw mm4, mm2
+		pmullw mm5, mm3 
+		paddusw mm4, mm5
+		psraw mm4, 8
+		packsswb mm4, mm4
+		packuswb mm2, mm2
+		packuswb mm3, mm3
+		movq mm5, mm6
+		pand mm2, mm6
+		pandn mm5, mm4
+		por mm2, mm5
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+_norm:	movq mm5, mm6
+		movq mm4, mm2
+		pand mm2, mm6
+		pandn mm5, mm4
+		movq2dq xmm1, mm5
+		vpmovzxbd xmm1, xmm1
+		vpshufd xmm1, xmm1, 11011110b
+		vcvtdq2ps xmm1, xmm1
+		vmovaps xmm0, xmm1
+		vdpps xmm1, xmm1, xmm1, 01110111b
+		vrsqrtps xmm1, xmm1
+		vmulps xmm0, xmm0, xmm1
+		vmulps xmm0, xmm0, f_0_5x8
+		vaddps xmm0, xmm0, f_0_5x8
+		vmulps xmm0, xmm0, f_255x8
+		vcvtps2dq xmm0, xmm0
+		vpackssdw xmm0, xmm0, xmm0
+		vpackuswb xmm0, xmm0, xmm0
+		movdq2q mm5, xmm0
+		por mm2, mm5
+		pand mm2, mm0
+		pand mm3, mm1
+		por mm2, mm3
+		ret
+
 asm_ssh_copy proc USES rbx rsi rdi r12 r13 r14 r15 src_bar:QWORD, src_wh:QWORD, src:QWORD, dst:QWORD, dst_bar:QWORD, dst_wh:QWORD, modify:QWORD
-local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QWORD, alpha0:QWORD, alpha1:QWORD
+local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QWORD
 		call init_base_modify								; инициализация основных параметров модификатора
 		; обрезка координат
 		call asm_clip_bar
 		jc _fin
 		mov r14, rcx										; w_src
 		mov r15, rdx										; h_src
-		mov rbx, r10										; pitch_src
+		mov r13, r10										; pitch_src
 		dec rcx
 		dec rdx
 		mov w_clamp, rcx
 		mov h_clamp, rdx
-		lea rcx, dst_bar
+		mov rcx, dst_bar
 		mov rdx, dst_wh
 		mov rax, r8
 		mov r8, r9
@@ -28,17 +267,17 @@ local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QW
 		vcvtsi2ss xmm15, xmm15, dword ptr [rcx].stk_bar.h
 		call asm_clip_bar
 		jc _fin
-		vcvtsi2ss xmm0, xmm0, rcx
-		vcvtsi2ss xmm1, xmm0, rdx
+		vcvtsi2ss xmm0, xmm0, rcx							; для nearest адресации
+		vcvtsi2ss xmm1, xmm1, rdx
 		mov r9, rax											; r8 - dst, r9 - src, r10 - pitch_dst, rbx - pitch_src
 		call init_addressing								; инициализация адресации координат(mirror, repeat, clamp)
 		vdivss xmm0, xmm0, xmm14							; dx
 		vdivss xmm1, xmm1, xmm15							; dy
 		; сдвинуть на clip.x, clip.y
-		vshufps xmm15, xmm1, xmm0, 00000000b				; dy|dy|dx|dx
+		vshufps xmm15, xmm1, xmm0, 00000000b				; dx|dx|dy|dy
 		vcvtsi2ss xmm14, xmm14, _clip.y
 		vmulss xmm14, xmm14, xmm1							; y
-		vshufps xmm15, xmm15, xmm14, 10000000b				; dy|dx|y|y
+		vshufps xmm15, xmm14, xmm15, 00100000b				; dy|dx|y|y
 		vcvtsi2ss xmm14, xmm14, _clip.x
 		vmulss xmm14, xmm14, xmm0							; x
 		call init_filters
@@ -48,10 +287,14 @@ _loop_:	push rcx
 		push rdx
 		push r8
 		vmovss xmm15, xmm15, xmm14							; dy|dx|y|x
-@@:		call filter
+@@:		push rcx
+		call filter
+		movd mm3, dword ptr [r8]
 		call operation
+		movd dword ptr [r8], mm2
 		vmovhlps xmm0, xmm0, xmm15							; 0|0|dy|dx
 		vaddss xmm15, xmm15, xmm0							; dy|dx|y|x+dx
+		pop rcx
 		add r8, 4
 		loop @b
 		pop r8
@@ -65,21 +308,20 @@ _loop_:	push rcx
 		jnz _loop_
 		emms
 _fin:	ret
-OPTION PROLOGUE:NONE
-sub_alpha dw 256, 256, 256, 256
+OPTION EPILOGUE:NONE
 init_base_modify:
 		mov rsi, modify
 		vmovaps xmm13, _gamma
 		vmovaps xmm12, f_255x8
 		vmovaps xmm11, [rsi].stk_modify.flt_vec
 		vxorps xmm10, xmm10, xmm10
-		vpshufd xmm0, [rsi].stk_modify.alpha, 00000000b
-		vmulps xmm0, xmm0, f_256x8
+		vmovss xmm0, [rsi].stk_modify.alpha
+		vmulss xmm0, xmm0, f_256x8
 		movq mm1, qword ptr sub_alpha
 		cvtps2pi mm0, xmm0
 		psubusw mm1, mm0
-		movq alpha0, mm0
-		movq alpha1, mm1
+		movq _alpha0, mm0
+		movq _alpha1, mm1
 		ret
 init_filters:
 		mov r11, offset func_flt
@@ -92,22 +334,20 @@ init_filters:
 func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_normal, i_hi, i_low, i_median, i_roberts,	i_max, i_min, i_contrast, i_binary, i_gamma, i_scale_bias
 			dq f_none,	f_sobel, f_laplac, f_prewit, f_emboss, f_normal, f_hi, f_low, f_median, f_roberts,	f_max, f_min, f_contrast, f_binary,	f_famma, f_Scale_bias
 init_operation:
-;		movq mm4, mm0
-;		movd mm1, dword ptr [r8]
-;		movq mm6, _mm1000
-;		call r13											; func_ops
-;		movd mm2, msk
-;		pand mm1, mm2
-;		pandn mm2, mm0
-;		por mm1, mm2
-;		movd dword ptr [r8], mm1
-		mov r11, offset func_ops
+		movd mm0, [rsi].stk_modify.src_msk
+		movq mm1, mm0
+		pandn mm1, _mm_not
+		movq mm6, qword ptr _mm_alpha
+		mov r11, offset _func_ops
 		movsxd rax, [rsi].stk_modify.src_ops
-		lea rax, [r11 + rax * 8]
+		mov rax, [r11 + rax * 8]
 		mov operation, rax
 		ret
-func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_alph, _mul, _lum_add, _lum_sub, _norm
+f_rep_x	dd 1.0
+f_rep_y	dd 1.0
 init_addressing:
+		vmovss xmm2, f_rep_x
+		vmovss xmm3, f_rep_y
 		mov r11, offset func_addr
 		movsxd rax, [rsi].stk_modify.type_address
 		lea r11, [r11 + rax * 8]
@@ -117,23 +357,167 @@ init_addressing:
 		ret
 func_addr	dq init_lc, init_lm, init_lr, init_nr, init_nr, init_nr
 			dq l_clamp, l_mirror, l_repeat, n_clamp, n_mirror, n_repeat
-init_nr:
-init_nn:
-		ret
+init_nr:ret
 init_lm:
-init_lr:vdivss xmm0, xmm0, [rsi].stk_modify.wh_repeat.stk_range.w
-		vdivss xmm1, xmm1, [rsi].stk_modify.wh_repeat.stk_range.h
-		ret
+init_lr:vmovss xmm2, [rsi].stk_modify.wh_repeat.stk_range.w
+		vmovss xmm3, [rsi].stk_modify.wh_repeat.stk_range.h
 init_lc:vcvtsi2ss xmm0, xmm0, r14
 		vcvtsi2ss xmm1, xmm1, r15
+		vmulss xmm0, xmm0, xmm2
+		vmulss xmm1, xmm1, xmm3
 		ret
-		; адресация
-l_clamp:
-l_mirror:
-l_repeat:
-n_clamp:
-n_mirror:
-n_repeat:
+; адресация
+l_mirror:cvttps2pi mm2, xmm15
+		pextrw r11, mm2, 0
+		pextrw r12, mm2, 2
+		mov rax, r11
+		mov rbx, r14
+		coor_l_mirror
+		mov rcx, rdx			; x1
+		lea rax, [r11 + 1]
+		coor_l_mirror
+		mov r11, rdx			; x2
+		lea rax, [r12 + 1]
+		mov rbx, r15
+		coor_l_mirror
+		mov rdi, rdx			; y2
+		mov rax, r12
+		coor_l_mirror			; y1
+		mov rax, r11			; x2
+		jmp linear
+l_repeat:cvttps2pi mm2, xmm15
+		pextrw r11, mm2, 0
+		pextrw r12, mm2, 2
+		mov rax, r11
+		xor rdx, rdx
+		div r14
+		mov rcx, rdx			; x1
+		mov rax, r12
+		xor rdx, rdx
+		div r15
+		mov rsi, rdx			; y1
+		lea rax, [r12 + 1]
+		xor rdx, rdx
+		div r15
+		mov rdi, rdx			; y2
+		lea rax, [r11 + 1]
+		xor rdx, rdx
+		div r14
+		mov rax, rdx			; x2
+		mov rdx, rsi			; y1
+		jmp linear
+l_clamp:cvttps2pi mm2, xmm15
+		pextrw rcx, mm2, 0
+		pextrw rdx, mm2, 2
+		mov r11, w_clamp
+		mov r12, h_clamp
+		xor rsi, rsi
+		lea rax, [rcx + 1]
+		lea rdi, [rdx + 1]
+		cmp rcx, rsi
+		cmovl rcx, rsi
+		cmp rdx, rsi
+		cmovl rdx, rsi
+		cmp rcx, r11
+		cmovg rcx, r11
+		cmp rdx, r12
+		cmovg rdx, r12
+		cmp rax, rsi
+		cmovl rax, rsi
+		cmp rdi, rsi
+		cmovl rdi, rsi
+		cmp rax, r11
+		cmovg rax, r11
+		cmp rdi, r12
+		cmovg rdi, r12
+linear:	movd r11, mm6
+		pxor mm7, mm7
+		cvtpi2ps xmm0, mm2
+		vsubps xmm0, xmm15, xmm0
+		vmulps xmm0, xmm0, xmm12
+		cvtps2pi mm6, xmm0
+		pslld mm6, 8
+		imul rdx, r13
+		imul rdi, r13
+		add rdx, r9
+		add rdi, r9
+		movd mm2, dword ptr [rdi + rax * 4]
+		movd mm3, dword ptr [rdi + rcx * 4]
+		punpcklbw mm2, mm7
+		punpcklbw mm3, mm7
+		psubsw mm2, mm3
+		movd mm4, dword ptr [rdx + rax * 4]
+		movd mm5, dword ptr [rdx + rcx * 4]
+		punpcklbw mm4, mm7
+		punpcklbw mm5, mm7
+		psubsw mm4, mm5
+		pshufw mm7, mm6, 10101010b	; yy
+		pshufw mm6, mm6, 0			; xx
+		pmulhw mm2, mm6
+		pmulhw mm4, mm6
+		paddsw mm2, mm3
+		paddsw mm4, mm5
+		psubsw mm2, mm4
+		pmulhw mm2, mm7
+		paddsw mm2, mm4
+		packuswb mm2, mm2
+		movd mm6, r11
+		unpack_pix
+		ret
+n_clamp:cvttps2pi mm2, xmm15
+		pextrw rcx, mm2, 0
+		pextrw rdx, mm2, 2
+		mov r11, w_clamp
+		mov r12, h_clamp
+		xor rax, rax
+		cmp rcx, rax
+		cmovl rcx, rax
+		cmp rdx, rax
+		cmovl rdx, rax
+		cmp rcx, r11
+		cmovg rcx, r11
+		cmp rdx, r12
+		cmovg rdx, r12
+		imul rdx, r13
+		add rdx, r9
+		movd mm2, dword ptr [rdx + rcx * 4]
+		unpack_pix
+		ret
+n_mirror:cvtps2pi mm2, xmm15
+		pextrw rax, mm2, 0			; x
+		xor rdx, rdx
+		lea rcx, [r14 * 2]
+		div rcx
+		lea rax, [rdx + 1]
+		sub rcx, rax
+		cmp rdx, r14
+		cmovge rdx, rcx
+@@:		mov rcx, rdx
+		pextrw rax, mm2, 2			; y
+		xor rdx, rdx
+		lea r11, [r15 * 2]
+		div r11
+		lea rax, [rdx + 1]
+		sub r11, rax
+		cmp rdx, r15
+		cmovge rdx, r11
+		imul rdx, r13
+		add rdx, r9
+		movd mm2, dword ptr [rdx + rcx * 4]
+		unpack_pix
+		ret
+n_repeat:cvttps2pi mm2, xmm15
+		pextrw rax, mm2, 0
+		xor rdx, rdx
+		div r14
+		mov rcx, rdx
+		pextrw rax, mm2, 2
+		xor rdx, rdx
+		div r15
+		imul rdx, r13
+		add rdx, r9
+		movd mm2, dword ptr [rdx + rcx * 4]
+		unpack_pix
 		ret
 		; фильтры
 null:
@@ -169,184 +553,12 @@ f_contrast:
 f_binary:
 f_famma:
 f_Scale_bias:
+		call addressing
 		ret
-		; операции
-_add:
-_sub:
-_set:
-_xor:
-_and:
-_or:
-_lum:
-_not:
-_alph:
-_fix_alph:
-_mul:
-_lum_add:
-_lum_sub:
-_norm:
-		ret
-
+OPTION EPILOGUE:EPILOGUEDEF
 asm_ssh_copy endp
 
 end
-
-asmCopy proc USES rbx rsi rdi r12 r13 r14 r15 dstBar:QWORD, dstClip:QWORD, dst:QWORD, src:QWORD, srcBar:QWORD, srcClip:QWORD, ops:QWORD, adr:QWORD, filter:QWORD, msk:QWORD, nWrap:QWORD, fltVec:QWORD, alpha:DWORD, whMtx:QWORD
-LOCAL @@width:QWORD, @@height:QWORD, @@mtxA:QWORD, @@mtxB:QWORD, @@div:QWORD, @@tmpBuf:QWORD
-		; проверка на копирование в "себя"
-		mov @@tmpBuf, 0
-		cmp r8, r9
-		jnz @f
-		push rcx
-		push rdx
-		push r8
-		mov rsi, r9
-		mov rdx, srcClip
-		mov rax, [rdx + 00]
-		imul rax, [rdx + 08]
-		push rax
-		lea rcx, [rax * 4]
-		sub rsp, 32
-		call malloc
-		add rsp, 32
-		mov @@tmpBuf, rax
-		mov r9, rax
-		pop rcx
-		pop r8
-		mov rdi, rax
-		rep movsd
-		pop rdx
-		pop rcx
-@@:		; начальная инициализация
-		mov rax, fltVec
-		xorps xmm15, xmm15
-		movaps xmm14, _fp255x4
-		movaps xmm13, _gamma
-		movups xmm12, [rax]
-		; корректировка данных
-		mov rax, whMtx
-		or rax, 1
-		cmp rax, 11
-		jb @f
-		mov whMtx, 11
-@@:		movss xmm0, alpha
-		mulps xmm0, _fp256x4
-		movq mm1, qword ptr _alpha2
-		cvtps2pi mm0, xmm0
-		pshufw mm0, mm0, 0
-		movq qword ptr _alpha0, mm0
-		psubusw mm1, mm0
-		movq qword ptr _alpha1, mm1
-		; обрезка
-		; реальные габариты
-		push rcx
-		push rdx
-		push r8
-		mov rcx, srcBar
-		mov rdx, srcClip
-		mov r8, r9
-		call asmClipBar
-		pushfq
-		mov r14, rcx
-		mov r15, rdx
-		mov r10, rbx
-		dec rcx
-		dec rdx
-		mov @@width, rcx
-		mov @@height, rdx
-		mov r9, r8
-		popfq
-		pop r8
-		pop rdx
-		pop rcx
-		jnc _fin
-		cvtsi2ss xmm10, dword ptr [rcx + 16]
-		cvtsi2ss xmm11, dword ptr [rcx + 24]
-		call asmClipBar
-		jnc _fin
-		xchg r10, rbx
-		cvtsi2ss xmm0, rcx
-		cvtsi2ss xmm1, rdx
-		mov rax, adr
-		mov r11, offset f_i_tex
-		mov r12, offset f_i_flt
-		mov r13, offset f_ops
-		lea r11, [rax * 8 + r11]
-		call qword ptr [r11]								; init_tex
-		divss xmm2, xmm10									; приращение
-		divss xmm3, xmm11
-		; перемотать то что вылезло за пределы слева и сверху
-		movss xmm11, xmm3
-		pslldq xmm11, 4
-		movss xmm11, xmm2
-		pslldq xmm11, 4
-		mov rax, _clip + 08
-		neg rax
-		cvtsi2ss xmm0, rax
-		mulss xmm0, xmm3
-		movss xmm11, xmm0
-		pslldq xmm11, 4
-		mov rax, _clip + 00
-		neg rax
-		cvtsi2ss xmm7, rax
-		mulss xmm7, xmm2
-		mov rax, filter
-		lea r12, [rax * 8 + r12]
-		call qword ptr [r12]								; init_flt
-		mov r11, [r11 + 8 * 8]								; func_tex
-		mov r12, [r12 + 8 * 16]								; func_flt
-		mov rax, ops
-		mov r13, [rax * 8 + r13]							; func_ops
-		pxor mm3, mm3
-_height:push rcx
-		push rdx
-		push r8
-		movss xmm11, xmm7
-@@:		push rcx
-		call r12											; func_filter
-		movq mm4, mm0
-		movd mm1, dword ptr [r8]
-		movq mm6, _mm1000
-		call r13											; func_ops
-		movd mm2, msk
-		pand mm1, mm2
-		pandn mm2, mm0
-		por mm1, mm2
-		movd dword ptr [r8], mm1
-		movhlps xmm0, xmm11
-		addss xmm11, xmm0
-		pop rcx
-		add r8, 4
-		loop @b
-		pop r8
-		pop rdx
-		pop rcx
-		movlhps xmm0, xmm11
-		addps xmm0, xmm11
-		movhlps xmm11, xmm0
-		add r8, r10
-		dec rdx
-		jnz _height
-		emms
-_fin:	mov rcx, @@tmpBuf
-		sub rsp, 32
-		call free
-		add rsp, 32
-		ret
-OPTION EPILOGUE:NONE
-
-
-
-
-iNr:	movss xmm2, xmm0
-		movss xmm3, xmm1
-iNn:	ret
-iLM:	cvtsi2ss xmm2, nWrap
-		divss xmm0, xmm2
-		divss xmm1, xmm2
-iLC:	cvtsi2ss xmm2, r14
-		cvtsi2ss xmm3, r15
-		ret
 
 iSobelN:mov rax, whMtx
 		mov rsi, offset mtxSobel3x3_1
@@ -699,298 +911,3 @@ fScaleB:call r11
 		mulps xmm0, xmm12		; scale
 		addps xmm0, xmm2		; bias
 		jmp pckXMM0
-nMirror:cvtps2pi mm7, xmm11
-		pextrw rax, mm7, 0
-		xor rdx, rdx
-		mov rcx, r14
-		shl rcx, 1
-		div rcx
-		cmp rdx, r14
-		jb @f
-		inc rdx
-		sub rdx, rcx
-		neg rdx
-@@:		push rdx
-		pextrw rax, mm7, 2
-		xor rdx, rdx
-		mov rcx, r15
-		shl rcx, 1
-		div rcx
-		cmp rdx, r15
-		jb @f
-		inc rdx
-		sub rdx, rcx
-		neg rdx
-@@:		pop rcx
-		imul rdx, rbx
-		add rdx, r9
-		movd mm0, dword ptr [rdx + rcx * 4]
-		jmp unpack
-nRepeat:cvttps2pi mm7, xmm11
-		pextrw rax, mm7, 0
-		xor rdx, rdx
-		div r14
-		mov rcx, rdx
-		pextrw rax, mm7, 2
-		xor rdx, rdx
-		div r15
-		imul rdx, rbx
-		add rdx, r9
-		movd mm0, dword ptr [rdx + rcx * 4]
-		jmp unpack
-nClamp:	cvttps2pi mm7, xmm11
-		pextrw rax, mm7, 0
-		pextrw rcx, mm7, 2
-		xor rdx, rdx
-		cmp rax, rdx
-		cmovl rax, rdx
-		cmp rcx, rdx
-		cmovl rcx, rdx
-		cmp rax, @@width
-		cmovg rax, @@width
-		cmp rcx, @@height
-		cmovg rcx, @@height
-		imul rcx, rbx
-		add rcx, r9
-		movd mm0, dword ptr [rcx + rax * 4]
-		jmp unpack
-copyMirror:
-		push rdx
-		xor rdx, rdx
-		mov rsi, rbx
-		shl rsi, 1
-		div rsi
-		cmp rdx, rbx
-		jb @f
-		inc rdx
-		sub rdx, rsi
-		neg rdx
-@@:		mov rsi, rdx
-		pop rdx
-		ret
-lMirror:cvttps2pi mm7, xmm11
-		pextrw rax, mm7, 0
-		push rbx
-		push rax
-		mov rbx, r14
-		call copyMirror
-		mov rcx, rsi
-		pop rax
-		inc rax
-		call copyMirror
-		mov rdi, rsi
-		pextrw rax, mm7, 2
-		push rax
-		mov rbx, r15
-		call copyMirror
-		mov rdx, rsi
-		pop rax
-		inc rax
-		call copyMirror
-		mov rax, rdi
-		mov rdi, rsi
-		pop rbx
-		jmp linear
-lRepeat:cvttps2pi mm7, xmm11
-		pextrw rax, mm7, 0
-		push rax
-		xor rdx, rdx
-		div r14
-		mov rcx, rdx
-		pextrw rax, mm7, 2
-		push rax
-		xor rdx, rdx
-		div r15
-		mov rdi, rdx
-		pop rax
-		inc rax
-		xor rdx, rdx
-		div r15
-		mov rsi, rdx
-		pop rax
-		inc rax
-		xor rdx, rdx
-		div r14
-		mov rax, rdx
-		mov rdx, rdi
-		mov rdi, rsi
-		jmp linear
-lClamp:	cvttps2pi mm7, xmm11
-		pextrw rcx, mm7, 0
-		pextrw rdx, mm7, 2
-		xor rsi, rsi
-		lea rax, [rcx + 1]
-		lea rdi, [rdx + 1]
-		cmp rcx, rsi
-		cmovl rcx, rsi
-		cmp rdx, rsi
-		cmovl rdx, rsi
-		cmp rcx, @@width
-		cmovg rcx, @@width
-		cmp rdx, @@height
-		cmovg rdx, @@height
-		cmp rax, rsi
-		cmovl rax, rsi
-		cmp rdi, rsi
-		cmovl rdi, rsi
-		cmp rax, @@width
-		cmovg rax, @@width
-		cmp rdi, @@height
-		cmovg rdi, @@height
-linear:	movaps xmm0, xmm11
-		cvtpi2ps xmm1, mm7
-		subps xmm0, xmm1
-		mulps xmm0, xmm14
-		cvtps2pi mm7, xmm0
-		pslld mm7, 8
-		imul rdx, rbx
-		imul rdi, rbx
-		add rdx, r9
-		add rdi, r9
-		movd mm1, dword ptr [rdi + rcx * 4]
-		movd mm0, dword ptr [rdi + rax * 4]
-		punpcklbw mm0, mm3
-		punpcklbw mm1, mm3
-		psubsw mm0, mm1
-		movd mm5, dword ptr [rdx + rcx * 4]
-		movd mm4, dword ptr [rdx + rax * 4]
-		punpcklbw mm4, mm3
-		punpcklbw mm5, mm3
-		psubsw mm4, mm5
-		pshufw mm6, mm7, 10101010b	; yy
-		pshufw mm7, mm7, 0			; xx
-		pmulhw mm0, mm7
-		pmulhw mm4, mm7
-		paddsw mm0, mm1
-		paddsw mm4, mm5
-		psubsw mm0, mm4
-		pmulhw mm0, mm6
-		paddsw mm0, mm4
-		packuswb mm0, mm0
-unpack:	movq2dq xmm0, mm0
-		punpcklbw xmm0, xmm15
-		punpcklwd xmm0, xmm15
-		cvtdq2ps xmm0, xmm0
-		divps xmm0, xmm14
-		ret
-pixNone:ret
-pixLumAdd:	pand mm0, mm6
-			movq2dq xmm6, mm4
-			punpcklbw xmm6, xmm15
-			punpcklwd xmm6, xmm15
-			cvtdq2ps xmm6, xmm6
-			dpps xmm6, xmm13, 01110001b
-			cvtps2pi mm4, xmm6
-			pshufw mm4, mm4, 11000000b
-			packuswb mm4, mm4
-			por mm0, mm4
-			movq mm4, mm0
-pixAdd:		pand mm0, mm6
-			paddusb mm4, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixLumSub:	pand mm0, mm6
-			movq2dq xmm6, mm4
-			punpcklbw xmm6, xmm15
-			punpcklwd xmm6, xmm15
-			cvtdq2ps xmm6, xmm6
-			dpps xmm6, xmm13, 01110001b
-			cvtps2pi mm4, xmm6
-			pshufw mm4, mm4, 11000000b
-			packuswb mm4, mm4
-			por mm0, mm4
-			movq mm4, mm0
-pixSub:		pand mm0, mm6
-			psubusb mm4, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixLum:		pand mm0, mm6
-			movq2dq xmm6, mm4
-			punpcklbw xmm6, xmm15
-			punpcklwd xmm6, xmm15
-			cvtdq2ps xmm6, xmm6
-			dpps xmm6, xmm13, 01110001b
-			cvtps2pi mm6, xmm6
-			pshufw mm6, mm6, 11000000b
-			packuswb mm6, mm6
-			por mm0, mm6
-			ret
-pixMull:	pand mm0, mm6				; сохраняем альфу
-			punpcklbw mm4, mm3
-			punpcklbw mm1, mm3
-			pmullw mm4, mm1
-			packuswb mm4, mm4
-			packuswb mm1, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-pixSet:		ret
-pixAnd:		pand mm0, mm6
-			pand mm4, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixOr:		pand mm0, mm6
-			por mm4, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixNot:		pxor mm0, qword ptr _not
-			ret
-pixXor:		pand mm0, mm6
-			pxor mm4, mm1
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixAlpha:	pand mm0, mm6
-			movq mm5, mm1
-			punpcklbw mm4, mm3
-			punpcklbw mm5, mm3
-			pshufw mm2, mm4, 11111111b
-			pmullw mm4, mm2
-			movq mm7, qword ptr _alpha
-			psubusw mm7, mm2
-			pmullw mm5, mm7
-			paddusw mm4, mm5
-			psraw mm4, 8
-			packsswb mm4, mm4
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-;((src * alpha) + (dst * (256 - alpha))) / 256;
-pixFixed:	pand mm0, mm6
-			movq mm5, mm1
-			punpcklbw mm4, mm3
-			punpcklbw mm5, mm3
-			pmullw mm4, qword ptr _alpha0
-			pmullw mm5, qword ptr _alpha1
-			paddusw mm4, mm5
-			psraw mm4, 8
-			packsswb mm4, mm4
-			pandn mm6, mm4
-			por mm0, mm6
-			ret
-pixNorm:	pand mm0, mm6
-			pandn mm6, mm4
-			movq2dq xmm1, mm6
-			punpcklbw xmm1, xmm15
-			punpcklwd xmm1, xmm15
-			pshufd xmm1, xmm1, 11011110b
-			cvtdq2ps xmm1, xmm1
-			movaps xmm0, xmm1
-			dpps xmm1, xmm1, 01110111b
-			rsqrtps xmm1, xmm1
-			mulps xmm0, xmm1
-			mulps xmm0, _fp0_5x3
-			addps xmm0, _fp0_5x3
-			mulps xmm0, xmm14
-			cvtps2dq xmm0, xmm0
-			packssdw xmm0, xmm0
-			packuswb xmm0, xmm0
-			movdq2q mm4, xmm0
-			por mm0, mm4
-			ret
-asmCopy endp
-
-end

@@ -193,7 +193,7 @@ protected:
 
 extern "C"
 {
-	ssh_u asm_ssh_shufb(const Range<int>& rn_dst, const Bar<int>& rn_src, void* buf, ssh_d color);
+	ssh_u asm_ssh_shufb(const Bar<int>& bar, const Range<int>& clip, void* buf);
 }
 
 struct Atl
@@ -288,7 +288,7 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 	for(int i = 0; i < atls.size(); i++)
 	{
 		Atl* atl(atls[i]);
-		asm_ssh_shufb(rn, atl->ixywh, buf, colors[i & 7]);
+//		asm_ssh_shufb(rn, atl->ixywh, buf, colors[i & 7]);
 	}
 	File f(path, File::create_write);
 	// заголовок
@@ -300,35 +300,8 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 	f.close();
 }
 
-inline namespace _1
-{
-	typedef int _tp;
-}
-
-inline namespace _2
-{
-	typedef long _tp;
-}
-
 int _tmain(int argc, _TCHAR* argv[])
 {
-	Xml xml;
-	HXML h(xml.add_node(xml.root(), L"fff", L""));
-	int ii(1);
-	xml.set_attr(h, L"11", ii);
-	/*
-	for(int i = 0; i < 108; i++)
-	{
-		atls += new Atl(ssh_rand(5, 205), ssh_rand(5, 205));
-	}
-	Range<int> rn(2048, 2048);
-	packed_atlas(rn);
-	save_atlas(L"e:\\atlas1.tga", rn);
-//	Range<int> rn1(2048, 2048);
-//	packed_atlas_old(rn1);
-//	save_atlas(L"e:\\atlas2.tga", rn1);
-	return 0;
-	*/
 	ENUM_DATA* _s = _stk;
 	Singlton<Log> _lg;
 	try
@@ -339,7 +312,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		_lg->init(&_log);
 		Image* img;
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_font(L"font", L"Arial", nullptr, -16, 0);
+		img->set_map(L"e:\\1.jpg", 0);
+		img->set_empty(Range<int>(512, 512), 1);
+		ImgMod mod;
+		mod.msks.w = 0xffffffff;
+		mod.ops.w = ImgMod::Pix::set;
+		mod.type_address = ImgMod::Addr::lmirror;
+		mod.wh_rep.w = 2.0f;
+		mod.wh_rep.h = 2.0f;
+		asm_ssh_copy(Bar<int>(0, 0, 640, 480), Range<int>(640, 480), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(-200, -40, 512, 512), Range<int>(512, 512), &mod);
+		img->save(L"e:\\1_jpg.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
+		//img->set_font(L"font", L"Arial", nullptr, -16, 0);
+//		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
 		return 0;
 		img->save(L"e:\\bc1", ImgCnv::Types::dds, FormatsMap::bc1, 0);
 		img->release();

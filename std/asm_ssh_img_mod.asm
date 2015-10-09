@@ -1,6 +1,18 @@
 
 include asm_ssh.inc
 
+.const
+align 16
+_gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
+f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
+f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
+f_0_5x8		dd 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5
+f_100x4		dd 100.0, 100.0, 100.0, 100.0
+flt_max		dd 3.402823466e+38F
+
+.data?
+_clip		stk_bar<>
+
 .code
 
 ; rcx(bar), rdx(clip)
@@ -18,10 +30,11 @@ local tmp:stk_bar
 		ret
 asm_absolute_bar endp
 
-;rcx(bar), rdx(clip) r8(dst) r11(offset stk_clip)-> out rcx(width) rdx(height) r10(pitch) r8(dst)
+;rcx(bar), rdx(clip) r8(dst) -> out rcx(width) rdx(height) r10(pitch) r8(dst)
 asm_clip_bar proc USES rax rdi rsi rbx
-		mov qword ptr [_clip + 0], 0		; стираем область выхода за пределы клипа
-		mov qword ptr [_clip + 8], 0
+		xor rax, rax
+		mov qword ptr [_clip + 00], rax		; стираем область выхода за пределы клипа
+		mov qword ptr [_clip + 08], rax
 		movsxd rsi, dword ptr [rdx + 00]	; wc
 		movsxd rdi, dword ptr [rdx + 04]	; hc
 		movsxd rax, dword ptr [rcx + 00]	; xb
@@ -36,26 +49,28 @@ asm_clip_bar proc USES rax rdi rsi rbx
 		jge @f
 		add rcx, rax						; wb += xb <= 0 -> error
 		jle _err
-		mov _clip.x, rax					; -xb -> clip.x
+		neg rax
+		mov _clip.x, eax					; -xb -> clip.x
 		xor rax, rax						; xb = 0
 @@:		lea r10, [rax + rcx]				; ww = xb + xw
 		sub r10, rsi						; ww -= wc <= 0 -> skip
 		jle @f
 		sub rcx, r10						; wb -= ww <= 0 -> error
 		jle _err
-		mov _clip.w, r10					; ww -> clip.w
+		mov _clip.w, r10d					; ww -> clip.w
 @@:		test rbx, rbx						; yb >= 0 -> skip
 		jge @f
 		add rdx, rbx						; hb += yb <= 0 -> error
 		jle _err
-		mov _clip.y, rbx					; -yb -> clip.y
+		neg rbx
+		mov _clip.y, ebx					; -yb -> clip.y
 		xor rbx, rbx						; yb = 0
 @@:		lea r10, [rbx + rdx]				; hh = yb + hb
 		sub r10, rdi						; hh -= wh <= 0 -> skip
 		jle @f
 		sub rdx, r10						; wh -= hh <= 0 -> error
 		jle _err
-		mov _clip.h, r10					; hh -> clip.h
+		mov _clip.h, r10d					; hh -> clip.h
 @@:		shl rsi, 2							; wc *= 4
 		push rsi
 		imul rsi, rbx						; wc *= yb
@@ -69,7 +84,7 @@ _err:	stc
 asm_clip_bar endp
 
 ;rcx(bar) rdx(clip) r8(dst)
-asm_ssh_v_flip proc public USES r11
+asm_ssh_v_flip proc public USES r11 r12
 		call asm_clip_bar
 		jc _fin
 		dec rdx
@@ -83,7 +98,7 @@ _loop:	mov r9, r8
 		mov [r9], rax
 		add r9, 8
 		sub r12, 2
-		jg @b
+		jb @b
 		jz @f
 		mov eax, [r9]			; если ширина не четная
 		xchg rax, [r9 + r11]

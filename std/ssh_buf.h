@@ -11,9 +11,9 @@ namespace ssh
 		// конструктор копии
 		Buffer(const Buffer& buf, ssh_u size = 0) : sz(size ? size : buf.size()), is_owner(true) { const_cast<Buffer<T>*>(&buf)->is_owner = false; data = buf.data; }
 		// конструктор переноса
-		Buffer(Buffer&& buf) : data(buf.data), sz(buf.sz), is_owner(buf.is_owner) {buf.data = nullptr;}
+		Buffer(Buffer&& buf) : sz(buf.sz), is_owner(buf.is_owner), data(buf.data) {buf.data = nullptr;}
 		// создать буфер определённого размера
-		Buffer(ssh_u count) : is_owner(true), sz(count * sizeof(T)), data(new T[count]) {}
+		Buffer(ssh_u count) : sz(count * sizeof(T)), is_owner(true), data(new T[count]) {}
 		// создать из существующего неопределённого буфера
 		Buffer(T* p, ssh_u count, bool is_own = true) : sz(count * sizeof(T)), is_owner(is_own), data(p) {}
 		// деструктор
@@ -51,9 +51,9 @@ namespace ssh
 				data = nullptr;
 			}
 		}
-		T* data;
 		ssh_u sz;
 		bool is_owner;
+		T* data;
 	};
 
 #define buf_ws	Buffer<ssh_ws> 

@@ -262,7 +262,6 @@ namespace ssh
 	{
 		SSH_TRACE;
 		String base_path(ssh_file_path(path) + name());
-		head.count = layers();
 		if(is_xml)
 		{
 			Xml xml;
@@ -333,6 +332,7 @@ namespace ssh
 			make();
 			// определить размер базовых параметров
 			ssh_u sz(0);
+			head.count = layers();
 			if(type() == TypesMap::AtlasMap)
 			{
 				// определить размер буфера под все карты(если это атлас)
@@ -385,7 +385,7 @@ namespace ssh
 				}
 			}
 			File f(base_path + L".img", File::create_write);
-			f.write(&head, sizeof(HEADER));
+			f.write(&head, sizeof(HEADER) - sizeof(ssh_u));
 			f.write(buf, buf.size());
 			f.write(head.tex, head.tex.size());
 		}
@@ -398,9 +398,7 @@ namespace ssh
 		ssh_cs* pbuf(buf);
 		if(*(int*)(pbuf) == 0x01020304)
 		{
-			memcpy(&head, pbuf, sizeof(HEADER));
-			// хак - стираем указатель на уже недопустимый буфер, где раньше хранилась текстура
-			*(ssh_u*)(head.count + sizeof(head.count)) = 0;
+			memcpy(&head, pbuf, sizeof(HEADER) - sizeof(ssh_u)); pbuf += (sizeof(HEADER) - sizeof(ssh_u));
 			if(head.tp == TypesMap::AtlasMap)
 			{
 				for(int i = 0; i < head.count; i++)
@@ -468,7 +466,14 @@ namespace ssh
 							}
 							break;
 						case Cmds::make:
-							if(xml.is_attr(hnode, L"is_save")) save(xml.attr(hnode, L"path", tmp), ImgCnv::Types::dds, (FormatsMap)ssh_cnv_value(xml.attr(hnode, L"format", tmp), m_img_fmts, SSH_CAST(FormatsMap::rgba8)), layer, mip); else make();
+							if(xml.is_attr(hnode, L"is_save"))
+							{
+								save(xml.attr(hnode, L"path", tmp), ImgCnv::Types::dds, (FormatsMap)ssh_cnv_value(xml.attr(hnode, L"format", tmp), m_img_fmts, SSH_CAST(FormatsMap::rgba8)), layer, mip);
+							}
+							else
+							{
+								make();
+							}
 							break;
 						case Cmds::modify:
 							{

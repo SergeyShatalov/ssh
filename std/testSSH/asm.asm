@@ -1,4 +1,5 @@
 
+extern asm_clip_bar:near
 .data
 align 16
 ;_tmp	dd 0, 0, 0, 0
@@ -13,9 +14,21 @@ rgba	db 10, 15, 20, 16, 25, 30, 35, 32, 40, 45, 50, 48, 55, 60, 65, 64
 colors	dd 64 dup(0)
 result	dd 128 dup(0)
 result1	dd 128 dup(0)
+_mm0	dq -1
+_mm1	dq 0102030405060708h
+_m1000	db 255, 0, 0, 0, 255, 0, 0, 0
+_xmm0	dd 2.0, 30.0, 0.5, 0.25
+
 .code
 
 asm_ssh_shufb proc public USES rbx r15 r10 r11
+		movups xmm0, _xmm0
+		pextrw eax, xmm0, 0
+		movd mm0, dword ptr _mm1
+		pxor mm5, mm5
+		punpcklbw mm0, mm5
+		packuswb mm0, mm0
+		call asm_clip_bar
 		movsxd r10, dword ptr [rcx]			;pitch
 		shl r10, 2
 		movsxd rax, dword ptr [rdx]
