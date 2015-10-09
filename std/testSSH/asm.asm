@@ -22,6 +22,9 @@ _xmm0	dd 2.0, 30.0, 0.5, 0.25
 .code
 
 asm_ssh_shufb proc public USES rbx r15 r10 r11
+		ret
+		mov rax, 5
+		bsr rax, rax
 		movups xmm0, _xmm0
 		pextrw eax, xmm0, 0
 		movd mm0, dword ptr _mm1

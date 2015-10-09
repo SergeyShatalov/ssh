@@ -1,101 +1,81 @@
 
 include asm_ssh.inc
 
-coor_l_mirror macro
+clamp macro p1, p2, p3
+		cmp p1, p2
+		cmovl p1, p2
+		cmp p1, p3
+		cmovg p1, p3
+endm
+
+coord_l_mirror macro p1
 		xor rdx, rdx
-		lea rsi, [rbx * 2]
+		lea rsi, [p1 * 2]
 		div rsi
 		lea rax, [rdx + 1]
 		sub rsi, rax
-		cmp rdx, rbx
+		cmp rdx, p1
 		cmovge rdx, rsi
 endm
 
 unpack_pix macro
 		movq2dq xmm0, mm2
-		pmovzxbd xmm0, xmm0
-		cvtdq2ps xmm0, xmm0
-		divps xmm0, xmm12
+		vpmovzxbd xmm0, xmm0
+		vcvtdq2ps xmm0, xmm0
+		vdivps xmm0, xmm0, xmm12
+endm
+
+pack_pix macro
+		vmulps xmm0, xmm0, xmm12
+		vcvtps2dq xmm0, xmm0
+		vpackusdw xmm0, xmm0, xmm0
+		movdq2q mm2, xmm0
+		packuswb mm2, mm2
 endm
 
 .const
-
+align 16
+dataBin		dd 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0
 sub_alpha	dw 256, 256, 256, 256
 _mm_alpha	dq 00000000ff000000h
 _alpha_not	dw 255,255,255,255
 _mm_not		dq -1
+flt_factor	dd 0.0625
 _func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_al, _mul, _lum_add, _lum_sub, _norm
 
-mtxPrewit	dd -1, 0, 1
-			dd -1, 0, 1
-			dd -1, 0, 1
-			dd -1, -1, -1
-			dd 0, 0, 0
-			dd 1, 1, 1
-mtxPrewit1	dd -1.0, 0.0, 1.0
-			dd -1.0, 0.0, 1.0
-			dd -1.0, 0.0, 1.0
-mtxPrewit2	dd -1.0, -1.0, -1.0
-			dd 0.0,  0.0,  0.0
-			dd 1.0,  1.0,  1.0
-mtxEmboss	dd 0.0,  1.0,  0.0
-			dd -1.0, 0.0, 1.0
-			dd 0.0, -1.0, 0.0
-mtxLaplacian dd -1.0,-2.0,-1.0
-			 dd -2.0,12.0,-2.0
-			 dd -1.0,-2.0,-1.0
-mtxSobel3x3_1 dd 1.0,0.0,-1.0
-			  dd 2.0,0.0,-2.0
-			  dd 1.0,0.0,-1.0
-mtxSobel3x3_2 dd 1.0,2.0,1.0
-			  dd 0.0,0.0,0.0
-			  dd -1.0,-2.0,-1.0
-mtxSobel5x5_1 dd 1.0,2.0,0.0,-2.0,-1.0
-			  dd 2.0,3.0,0.0,-3.0,-2.0
-			  dd 3.0,4.0,0.0,-4.0,-3.0
-			  dd 2.0,3.0,0.0,-3.0,-2.0
-			  dd 1.0,2.0,0.0,-2.0,-1.0
-mtxSobel5x5_2 dd 1.0,2.0,3.0,2.0,1.0
-			  dd 2.0,3.0,4.0,3.0,2.0
-			  dd 0.0,0.0,0.0,0.0,0.0
-			  dd -2.0,-3.0,-4.0,-3.0,-2.0
-			  dd -1.0,-2.0,-3.0,-2.0,-1.0
-mtxSobel7x7_1 dd 1.0,2.0,3.0,0.0,-3.0,-2.0,-1.0
-			  dd 2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0
-			  dd 3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0
-			  dd 4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0
-			  dd 3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0
-			  dd 2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0
-			  dd 1.0,2.0,3.0,0.0,-3.0,-2.0,-1.0
-mtxSobel7x7_2 dd 1.0,2.0,3.0,4.0,3.0,2.0,1.0
-			  dd 2.0,3.0,4.0,5.0,4.0,3.0,2.0
-			  dd 3.0,4.0,5.0,6.0,5.0,4.0,3.0
-			  dd 0.0,0.0,0.0,0.0,0.0,0.0,0.0
-			  dd -3.0,-4.0,-5.0,-6.0,-5.0,-4.0,-3.0
-			  dd -2.0,-3.0,-4.0,-5.0,-4.0,-3.0,-2.0
-			  dd -1.0,-2.0,-3.0,-4.0,-3.0,-2.0,-1.0
-mtxSobel9x9_1 dd 1.0,2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0,-1.0
-			  dd 2.0,3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0,-2.0
-			  dd 3.0,4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0,-3.0
-			  dd 4.0,5.0,6.0,7.0,0.0,-7.0,-6.0,-5.0,-4.0
-			  dd 5.0,6.0,7.0,8.0,0.0,-8.0,-7.0,-6.0,-5.0
-			  dd 4.0,5.0,6.0,7.0,0.0,-7.0,-6.0,-5.0,-4.0
-			  dd 3.0,4.0,5.0,6.0,0.0,-6.0,-5.0,-4.0,-3.0
-			  dd 2.0,3.0,4.0,5.0,0.0,-5.0,-4.0,-3.0,-2.0
-			  dd 1.0,2.0,3.0,4.0,0.0,-4.0,-3.0,-2.0,-1.0
-mtxSobel9x9_2 dd 1.0,2.0,3.0,4.0,5.0,4.0,3.0,2.0,1.0
-			  dd 2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0
-			  dd 3.0,4.0,5.0,6.0,7.0,6.0,5.0,4.0,3.0
-			  dd 4.0,5.0,6.0,7.0,8.0,7.0,6.0,5.0,4.0
-			  dd 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-			  dd -4.0,-5.0,-6.0,-7.0,-8.0,-7.0,-6.0,-5.0,-4.0
-			  dd -3.0,-4.0,-5.0,-6.0,-7.0,-6.0,-5.0,-4.0,-3.0
-			  dd -2.0,-3.0,-4.0,-5.0,-6.0,-5.0,-4.0,-3.0,-2.0
-			  dd -1.0,-2.0,-3.0,-4.0,-5.0,-4.0,-3.0,-2.0,-1.0
+mtx_prewit1	dd -1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0
+mtx_prewit2	dd -1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0
+mtx_emboss	dd 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0
+
+mtx_laplac1	dd 0.0, -1.0, 0.0, -1.0, 4.0, -1.0, 0.0, -1.0, 0.0
+mtx_laplac2	dd -1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0
+mtx_laplac3	dd 1.0, -2.0, 1.0, -2.0, 4.0, -2.0, 1.0, -2.0, 1.0
+mtx_laplac4	dd 0.0, -1.0, 0.0, -1.0, 5.0, -1.0, 0.0, -1.0, 0.0
+mtx_laplac5	dd -1.0, -1.0, -1.0, -1.0, 9.0, -1.0, -1.0, -1.0, -1.0
+mtx_laplac6	dd 1.0, -2.0, 1.0, -2.0, 5.0, -2.0, 1.0, -2.0, 1.0
+
+_sobel			dq mtx_sobel3_1, mtx_sobel3_2, mtx_sobel5_1, mtx_sobel5_2, mtx_sobel7_1, mtx_sobel7_2, mtx_sobel9_1, mtx_sobel9_2 
+mtx_sobel3_1	dd 1.0, 0.0, -1.0, 2.0, 0.0, -2.0, 1.0, 0.0, -1.0
+mtx_sobel3_2	dd 1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0
+mtx_sobel5_1	dd 1.0, 2.0, 0.0, -2.0, -1.0, 2.0, 3.0, 0.0, -3.0, -2.0, 3.0, 4.0, 0.0, -4.0, -3.0, 2.0, 3.0, 0.0, -3.0, -2.0, 1.0, 2.0, 0.0, -2.0, -1.0
+mtx_sobel5_2	dd 1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 4.0, 3.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0, -3.0, -4.0, -3.0, -2.0, -1.0, -2.0, -3.0, -2.0, -1.0
+mtx_sobel7_1	dd 1.0, 2.0, 3.0, 0.0, -3.0, -2.0, -1.0, 2.0, 3.0, 4.0, 0.0, -4.0, -3.0, -2.0, 3.0, 4.0, 5.0, 0.0, -5.0, -4.0, -3.0
+				dd 4.0, 5.0, 6.0, 0.0, -6.0, -5.0, -4.0, 3.0, 4.0, 5.0, 0.0, -5.0, -4.0, -3.0, 2.0, 3.0, 4.0, 0.0, -4.0, -3.0, -2.0, 1.0, 2.0, 3.0, 0.0, -3.0, -2.0, -1.0
+mtx_sobel7_2	dd 1.0, 2.0, 3.0, 4.0, 3.0, 2.0, 1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0, 3.0, 4.0, 5.0, 6.0, 5.0, 4.0, 3.0
+				dd 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -3.0, -4.0, -5.0, -6.0, -5.0, -4.0, -3.0, -2.0, -3.0, -4.0, -5.0, -4.0, -3.0, -2.0, -1.0, -2.0, -3.0, -4.0, -3.0, -2.0, -1.0
+mtx_sobel9_1	dd 1.0, 2.0, 3.0, 4.0, 0.0, -4.0, -3.0, -2.0, -1.0, 2.0, 3.0, 4.0, 5.0, 0.0, -5.0, -4.0, -3.0, -2.0, 3.0, 4.0, 5.0, 6.0, 0.0, -6.0, -5.0, -4.0, -3.0
+				dd 4.0, 5.0, 6.0, 7.0, 0.0, -7.0, -6.0, -5.0, -4.0, 5.0, 6.0, 7.0, 8.0, 0.0, -8.0, -7.0, -6.0, -5.0, 4.0, 5.0, 6.0, 7.0, 0.0, -7.0, -6.0, -5.0, -4.0
+				dd 3.0, 4.0, 5.0, 6.0, 0.0, -6.0, -5.0, -4.0, -3.0, 2.0, 3.0, 4.0, 5.0, 0.0, -5.0, -4.0, -3.0, -2.0, 1.0, 2.0, 3.0, 4.0, 0.0, -4.0, -3.0, -2.0, -1.0
+mtx_sobel9_2	dd 1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 5.0, 4.0, 3.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 6.0, 5.0, 4.0, 3.0
+				dd 4.0, 5.0, 6.0, 7.0, 8.0, 7.0, 6.0, 5.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.0, -5.0, -6.0, -7.0, -8.0, -7.0, -6.0, -5.0, -4.0
+				dd -3.0, -4.0, -5.0, -6.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -3.0, -4.0, -5.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, -2.0, -3.0, -4.0, -5.0, -4.0, -3.0, -2.0, -1.0
 
 .data?
+align 16
+tmp_mtx		dd 15 * 15 * 16 dup(?)
 _alpha0		dq ?
 _alpha1		dq ?
+w_mtx		dq ?
 
 .code
 
@@ -189,7 +169,7 @@ _alph:	movq mm5, qword ptr _alpha_not
 		pmullw mm5, mm3
 		paddusw mm4, mm5
 		psraw mm4, 8
-		packsswb mm4, mm4
+		packuswb mm4, mm4
 		packuswb mm2, mm2
 		packuswb mm3, mm3
 		movq mm5, mm6
@@ -210,7 +190,7 @@ _fix_al:movq mm4, qword ptr _alpha0
 		pmullw mm5, mm3 
 		paddusw mm4, mm5
 		psraw mm4, 8
-		packsswb mm4, mm4
+		packuswb mm4, mm4
 		packuswb mm2, mm2
 		packuswb mm3, mm3
 		movq mm5, mm6
@@ -237,7 +217,7 @@ _norm:	movq mm5, mm6
 		vaddps xmm0, xmm0, f_0_5x8
 		vmulps xmm0, xmm0, f_255x8
 		vcvtps2dq xmm0, xmm0
-		vpackssdw xmm0, xmm0, xmm0
+		vpackusdw xmm0, xmm0, xmm0
 		vpackuswb xmm0, xmm0, xmm0
 		movdq2q mm5, xmm0
 		por mm2, mm5
@@ -247,7 +227,7 @@ _norm:	movq mm5, mm6
 		ret
 
 asm_ssh_copy proc USES rbx rsi rdi r12 r13 r14 r15 src_bar:QWORD, src_wh:QWORD, src:QWORD, dst:QWORD, dst_bar:QWORD, dst_wh:QWORD, modify:QWORD
-local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QWORD
+local w_clamp:DWORD, h_clamp:DWORD, addressing:QWORD, filter:QWORD, operation:QWORD, mtx_a:QWORD, mtx_b:QWORD
 		call init_base_modify								; инициализация основных параметров модификатора
 		; обрезка координат
 		call asm_clip_bar
@@ -257,8 +237,8 @@ local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QW
 		mov r13, r10										; pitch_src
 		dec rcx
 		dec rdx
-		mov w_clamp, rcx
-		mov h_clamp, rdx
+		mov w_clamp, ecx
+		mov h_clamp, edx
 		mov rcx, dst_bar
 		mov rdx, dst_wh
 		mov rax, r8
@@ -267,8 +247,6 @@ local w_clamp:QWORD, h_clamp:QWORD, addressing:QWORD, filter:QWORD, operation:QW
 		vcvtsi2ss xmm15, xmm15, dword ptr [rcx].stk_bar.h
 		call asm_clip_bar
 		jc _fin
-		vcvtsi2ss xmm0, xmm0, rcx							; для nearest адресации
-		vcvtsi2ss xmm1, xmm1, rdx
 		mov r9, rax											; r8 - dst, r9 - src, r10 - pitch_dst, rbx - pitch_src
 		call init_addressing								; инициализация адресации координат(mirror, repeat, clamp)
 		vdivss xmm0, xmm0, xmm14							; dx
@@ -311,10 +289,9 @@ _fin:	ret
 OPTION EPILOGUE:NONE
 init_base_modify:
 		mov rsi, modify
-		vmovaps xmm13, _gamma
-		vmovaps xmm12, f_255x8
 		vmovaps xmm11, [rsi].stk_modify.flt_vec
-		vxorps xmm10, xmm10, xmm10
+		vmovaps xmm12, f_255x8
+		vmovaps xmm13, _gamma
 		vmovss xmm0, [rsi].stk_modify.alpha
 		vmulss xmm0, xmm0, f_256x8
 		movq mm1, qword ptr sub_alpha
@@ -329,10 +306,12 @@ init_filters:
 		lea r11, [r11 + rax * 8]
 		mov rax, [r11 + 128]
 		mov filter, rax
+		movsxd rax, [rsi].stk_modify.w_mtx
+		mov w_mtx, rax
 		call qword ptr [r11]
 		ret
-func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_normal, i_hi, i_low, i_median, i_roberts,	i_max, i_min, i_contrast, i_binary, i_gamma, i_scale_bias
-			dq f_none,	f_sobel, f_laplac, f_prewit, f_emboss, f_normal, f_hi, f_low, f_median, f_roberts,	f_max, f_min, f_contrast, f_binary,	f_famma, f_Scale_bias
+func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_sobel,	i_hi, i_low, null,	   i_rbrts,	null,  null,  i_contr, null, i_gamma, i_scl_b
+			dq f_none,	f_sobel, f_laplac, f_prewit, f_emboss, f_nrml,	f_hi, f_low, f_median, f_rbrts,	f_max, f_min, f_contr, f_bin,f_gamma, f_scl_b
 init_operation:
 		movd mm0, [rsi].stk_modify.src_msk
 		movq mm1, mm0
@@ -355,9 +334,8 @@ init_addressing:
 		mov addressing, rax
 		call qword ptr [r11]
 		ret
-func_addr	dq init_lc, init_lm, init_lr, init_nr, init_nr, init_nr
+func_addr	dq init_lc, init_lm, init_lr, init_lc, init_lm, init_lr
 			dq l_clamp, l_mirror, l_repeat, n_clamp, n_mirror, n_repeat
-init_nr:ret
 init_lm:
 init_lr:vmovss xmm2, [rsi].stk_modify.wh_repeat.stk_range.w
 		vmovss xmm3, [rsi].stk_modify.wh_repeat.stk_range.h
@@ -367,28 +345,20 @@ init_lc:vcvtsi2ss xmm0, xmm0, r14
 		vmulss xmm1, xmm1, xmm3
 		ret
 ; адресация
-l_mirror:cvttps2pi mm2, xmm15
-		pextrw r11, mm2, 0
-		pextrw r12, mm2, 2
-		mov rax, r11
-		mov rbx, r14
-		coor_l_mirror
+l_mirror:mov rax, r11
+		coord_l_mirror r14
 		mov rcx, rdx			; x1
 		lea rax, [r11 + 1]
-		coor_l_mirror
+		coord_l_mirror r14
 		mov r11, rdx			; x2
 		lea rax, [r12 + 1]
-		mov rbx, r15
-		coor_l_mirror
+		coord_l_mirror r15
 		mov rdi, rdx			; y2
 		mov rax, r12
-		coor_l_mirror			; y1
+		coord_l_mirror r15		; y1
 		mov rax, r11			; x2
 		jmp linear
-l_repeat:cvttps2pi mm2, xmm15
-		pextrw r11, mm2, 0
-		pextrw r12, mm2, 2
-		mov rax, r11
+l_repeat:mov rax, r11
 		xor rdx, rdx
 		div r14
 		mov rcx, rdx			; x1
@@ -406,33 +376,21 @@ l_repeat:cvttps2pi mm2, xmm15
 		mov rax, rdx			; x2
 		mov rdx, rsi			; y1
 		jmp linear
-l_clamp:cvttps2pi mm2, xmm15
-		pextrw rcx, mm2, 0
-		pextrw rdx, mm2, 2
-		mov r11, w_clamp
-		mov r12, h_clamp
-		xor rsi, rsi
-		lea rax, [rcx + 1]
-		lea rdi, [rdx + 1]
-		cmp rcx, rsi
-		cmovl rcx, rsi
-		cmp rdx, rsi
-		cmovl rdx, rsi
-		cmp rcx, r11
-		cmovg rcx, r11
-		cmp rdx, r12
-		cmovg rdx, r12
-		cmp rax, rsi
-		cmovl rax, rsi
-		cmp rdi, rsi
-		cmovl rdi, rsi
-		cmp rax, r11
-		cmovg rax, r11
-		cmp rdi, r12
-		cmovg rdi, r12
+l_clamp:movsxd rcx, w_clamp
+		movsxd rdx, h_clamp
+		lea eax, [r11d + 1]
+		lea edi, [r12d + 1]
+		cmp r11d, ecx
+		cmovg r11, rcx
+		cmp eax, ecx
+		cmovg rax, rcx
+		cmp r12d, edx
+		cmovg r12, rdx
+		cmp edi, edx
+		cmovg rdi, rdx
 linear:	movd r11, mm6
 		pxor mm7, mm7
-		cvtpi2ps xmm0, mm2
+		cvtdq2ps xmm0, xmm0
 		vsubps xmm0, xmm15, xmm0
 		vmulps xmm0, xmm0, xmm12
 		cvtps2pi mm6, xmm0
@@ -464,27 +422,18 @@ linear:	movd r11, mm6
 		movd mm6, r11
 		unpack_pix
 		ret
-n_clamp:cvttps2pi mm2, xmm15
-		pextrw rcx, mm2, 0
-		pextrw rdx, mm2, 2
-		mov r11, w_clamp
-		mov r12, h_clamp
-		xor rax, rax
-		cmp rcx, rax
-		cmovl rcx, rax
-		cmp rdx, rax
-		cmovl rdx, rax
-		cmp rcx, r11
-		cmovg rcx, r11
-		cmp rdx, r12
-		cmovg rdx, r12
-		imul rdx, r13
-		add rdx, r9
-		movd mm2, dword ptr [rdx + rcx * 4]
+n_clamp:movsxd rcx, w_clamp
+		movsxd rdx, h_clamp
+		cmp r11d, ecx
+		cmovg r11, rcx
+		cmp r12d, edx
+		cmovg r12, rdx
+		imul r12, r13
+		add r12, r9
+		movd mm2, dword ptr [r12 + r11 * 4]
 		unpack_pix
 		ret
-n_mirror:cvtps2pi mm2, xmm15
-		pextrw rax, mm2, 0			; x
+n_mirror:mov rax, r11
 		xor rdx, rdx
 		lea rcx, [r14 * 2]
 		div rcx
@@ -493,26 +442,25 @@ n_mirror:cvtps2pi mm2, xmm15
 		cmp rdx, r14
 		cmovge rdx, rcx
 @@:		mov rcx, rdx
-		pextrw rax, mm2, 2			; y
+		mov rax, r12
 		xor rdx, rdx
-		lea r11, [r15 * 2]
-		div r11
+		lea rsi, [r15 * 2]
+		div rsi
 		lea rax, [rdx + 1]
-		sub r11, rax
+		sub rsi, rax
 		cmp rdx, r15
-		cmovge rdx, r11
+		cmovge rdx, rsi
 		imul rdx, r13
 		add rdx, r9
 		movd mm2, dword ptr [rdx + rcx * 4]
 		unpack_pix
 		ret
-n_repeat:cvttps2pi mm2, xmm15
-		pextrw rax, mm2, 0
+n_repeat:mov rax, r11
 		xor rdx, rdx
 		div r14
 		mov rcx, rdx
-		pextrw rax, mm2, 2
 		xor rdx, rdx
+		mov rax, r12
 		div r15
 		imul rdx, r13
 		add rdx, r9
@@ -520,373 +468,343 @@ n_repeat:cvttps2pi mm2, xmm15
 		unpack_pix
 		ret
 		; фильтры
-null:
-i_sobel:
-i_laplac:
-i_prewit:
-i_emboss:
-i_normal:
-i_hi:
-i_low:
-i_median:
-i_roberts:
-i_max:
-i_min:
-i_contrast:
-i_binary:
-i_gamma:
-i_scale_bias:
+null:	ret
+i_sobel:mov r11, offset _sobel
+		bsr rax, rax
+		shl rax, 4
+		lea r11, [r11 + rax - 16]
+		mov r12, [r11]
+		mov r11, [r11 + 8]
+		mov mtx_a, r12
+		mov mtx_b, r11
+		vmovss xmm10, flt_factor
 		ret
-f_none:
-f_sobel:
-f_laplac:
-f_prewit:
-f_emboss:
-f_normal:
-f_hi:
-f_low:
-f_median:
-f_roberts:
-f_max:
-f_min:
-f_contrast:
-f_binary:
-f_famma:
-f_Scale_bias:
-		call addressing
+i_emboss:vmovaps xmm10, f_0_5x8
+i_laplac:imul rax, 36
+		mov r11, offset mtx_laplac1
+		add rax, r11
+		mov mtx_a, rax
+i_prewit:mov w_mtx, 3
 		ret
-OPTION EPILOGUE:EPILOGUEDEF
-asm_ssh_copy endp
-
-end
-
-iSobelN:mov rax, whMtx
-		mov rsi, offset mtxSobel3x3_1
-		mov rdi,offset mtxSobel3x3_2
-		cmp rax,3
-		jbe @f
-		mov rsi, offset mtxSobel5x5_1
-		mov rdi, offset mtxSobel5x5_2
-		cmp rax, 5
-		jz @f
-		mov rsi, offset mtxSobel7x7_1
-		mov rdi, offset mtxSobel7x7_2
-		cmp rax, 7
-		jz @f
-		mov rsi, offset mtxSobel9x9_1
-		mov rdi, offset mtxSobel9x9_2
-@@:		mov @@mtxA, rsi
-		mov @@mtxB, rdi
-		movss xmm10, fltFactor
+i_hi:	vmovaps xmm9, f_3_0x8
+i_low:	or rax, 1
+		imul rax, rax
+		vcvtsi2ss xmm10, xmm10, rax
+		vpshufd xmm10, xmm10, 0
 		ret
-iEmboss:movaps xmm10, _fp0_5x4
-iLP:	mov whMtx, 3
+i_rbrts:mov w_mtx, 2
 		ret
-iLowHI:	mov rax, whMtx
-		mov rsi, offset _fp1_0
-		cmp rax, 1
-		jz @f
-		mov rsi, offset _fp9_0
-		cmp rax, 3
-		jz @f
-		mov rsi, offset _fp25_0
-		cmp rax, 5
-		jz @f
-		mov rsi, offset _fp49_0
-		cmp rax, 7
-		jz @f
-		mov rsi, offset _fp81_0
-		cmp rax, 9
-		jz @f
-		mov rsi, offset _fp121_0
-@@:		mov @@div, rsi
-		movaps xmm10, _fp3_0x4
-		ret
-iRoberts:mov whMtx, 2
-		ret
-iGamma:	movaps xmm10, _fp1_0
-		movaps xmm9, _fp2_0x4
-		movaps xmm8, _fp1_0
-		ret
-iContr:	push rcx
-		xorps xmm10, xmm10
-		mov rsi, r9
+i_contr:push rcx
+		push r9
+		vxorps xmm10, xmm10, xmm10
 		mov rax, r15
 		imul rax, r14
-		cvtsi2ss xmm0, rax
-		shufps xmm0, xmm0, 0
+		vcvtsi2ss xmm0, xmm0, rax
+		vshufps xmm0, xmm0, xmm0, 0
 		mov rax, r15
-iContr0:mov rdi, rsi
+i_cont0:mov rdi, r9
 		mov rcx, r14
-@@:		movd xmm1, dword ptr [rdi]
-		punpcklbw xmm1, xmm15
-		punpcklwd xmm1, xmm15
-		cvtdq2ps xmm1, xmm1
-		divps xmm1, xmm14
+@@:		vpmovzxbd xmm1, dword ptr [rdi]
+		vcvtdq2ps xmm1, xmm1
+		vdivps xmm1, xmm1, xmm12
 		add rdi, 4
-		addps xmm10, xmm1
+		vaddps xmm10, xmm10, xmm1
 		loop @b
-		add rsi, rbx
+		add r9, r13
 		dec rax
-		jnz iContr0
-		divps xmm10, xmm0
-		;shufps xmm12, xmm12, 0
+		jnz i_cont0
+		vdivps xmm10, xmm10, xmm0
+		;vpshufd xmm11, xmm11, 0
+		pop r9
 		pop rcx
 		ret
-iScaleB:pshufd xmm2, xmm12, 01010101b
-		shufps xmm12, xmm12, 0
+i_gamma:vmovaps xmm10, f_1_0x8
+		vmovaps xmm9, f_2_0x8
+		vmovaps xmm8, xmm10
 		ret
-fMtx:	push r8
-		movaps xmm6, xmm11
-		xorps xmm2, xmm2
-		mov rax, whMtx
+i_scl_b:vpshufd xmm10, xmm11, 01010101b
+		vshufps xmm11, xmm11, xmm11, 0
+		ret
+clc_mtx:vmovaps xmm7, xmm15
+		vxorps xmm1, xmm1, xmm1
+		mov rax, w_mtx
+		mov rdx, rax
 		shr rax, 1
-		cvtsi2ss xmm0, eax
-		movhlps xmm2, xmm11
-		shufps xmm0, xmm0, 0
-		mulps xmm0, xmm2
-		subps xmm11, xmm0
-		movlhps xmm11, xmm11
-		mov r8, offset mtx
-		mov rdx, whMtx
-_mtx:	movhlps xmm0, xmm11
-		movss xmm11, xmm0
+		vcvtsi2ss xmm0, xmm0, rax
+		vshufps xmm0, xmm0, xmm0, 0				; 1|1|1|1
+		vmovhlps xmm1, xmm1, xmm15				; 0|0|dy|dx
+		vmulps xmm0, xmm0, xmm1					; 0|0|dy|dx
+		vsubps xmm15, xmm15, xmm0				; dy|dx|y-dy|x-dx
+		vmovlhps xmm15, xmm15, xmm15			; y-dy|x-dx|y-dy|x-dx
+		mov rbx, offset tmp_mtx
+clc_mt0:vmovhlps xmm0, xmm0, xmm15				; 0|0|y-dy|x-dx
+		vmovss xmm15, xmm15, xmm0				; y-dy|x-dx|y-dy|x-dx
 		push rdx
-		mov rcx, whMtx
+		mov rcx, w_mtx
 @@:		push rcx
-		call r11
-		movaps [r8], xmm0
-		dpps xmm0, xmm12, 01110001b
-		movss dword ptr [r8 + 12], xmm0
-		add r8, 16
+		cvttps2dq xmm0, xmm15
+		xor rsi, rsi
+		vpextrd r11, xmm0, 0
+		vpextrd r12, xmm0, 1
+		cmp r11d, esi
+		cmovl r11, rsi
+		cmp r12d, esi
+		cmovl r12, rsi
+		call addressing
+		vmovaps [rbx], xmm0
+		vdpps xmm0, xmm0, xmm11, 01110001b
+		vmovss dword ptr [rbx + 12], xmm0
+		add rbx, 16
 		pop rcx
-		addss xmm11, xmm2
+		vaddss xmm15, xmm15, xmm1
 		loop @b
 		pop rdx
-		addps xmm11, xmm2
+		vaddps xmm15, xmm15, xmm1
 		dec rdx
-		jnz _mtx
-		movaps xmm11, xmm6
-		pop r8
-		mov rsi, whMtx
-		mov rdi, offset mtx + 12
+		jnz clc_mt0
+		vmovaps xmm15, xmm7
+		mov rsi, w_mtx
+		mov rdi, offset tmp_mtx + 12
 		ret
-fNone:	call r11
-pckXMM0:mulps xmm0, xmm14
-		cvtps2dq xmm0, xmm0
-		packssdw xmm0, xmm0
-		packuswb xmm0, xmm0
-		movdq2q mm0, xmm0
+f_none:	cvttps2dq xmm0, xmm15
+		vpextrd r11, xmm0, 0
+		vpextrd r12, xmm0, 1
+		jmp addressing
+f_sobel:call clc_mtx
+		vxorps xmm1, xmm1, xmm1
+		vxorps xmm2, xmm2, xmm2
+		mov rdx, mtx_a
+		mov rax, mtx_b
+		imul rsi, rsi
+		xor rcx, rcx
+@@:		vmovss xmm0, dword ptr [rdi]
+		vfmadd231ss xmm1, xmm0, dword ptr [rdx + rcx * 4]
+		vfmadd231ss xmm2, xmm0, dword ptr [rax + rcx * 4]
+		add rdi, 16
+		inc rcx
+		cmp rcx, rsi
+		jb @b
+		vmulss xmm1, xmm1, xmm1
+		vmulss xmm2, xmm2, xmm2
+		vaddss xmm1, xmm1, xmm2
+		vsqrtss xmm0, xmm1, xmm1
+		vshufps xmm0, xmm0, xmm0, 0
+		pack_pix
 		ret
-fSobel:	call fMtx
-		xorps xmm0, xmm0
-		xorps xmm3, xmm3
-		mov rdx, @@mtxA
-		mov rax, @@mtxB
-		imul rsi, rsi
-		mov rcx, rsi
-@@:		movss xmm1, dword ptr [rdi]
-		movss xmm2, xmm1
-		mulss xmm1, dword ptr [rdx]
-		mulss xmm2, dword ptr [rax]
-		addss xmm0, xmm1
-		addss xmm3, xmm2
-		add rdi, 16
-		add rdx, 4
-		add rax, 4
-		loop @b
-		mulss xmm0, xmm0
-		mulss xmm3, xmm3
-		addss xmm0, xmm3
-		sqrtss xmm0, xmm0
-		shufps xmm0, xmm0, 0
-		jmp pckXMM0
-fNormal:call fMtx
-		xorps xmm0, xmm0
-		xorps xmm2, xmm2
-		mov rdx, @@mtxA
-		mov rax, @@mtxB
-		imul rsi, rsi
-		mov rcx, rsi
-@@:		movss xmm1, dword ptr [rdi]
-		mulss xmm1, dword ptr [rdx]
-		addss xmm2, xmm1					;du
-		movss xmm1, dword ptr [rdi]
-		mulss xmm1, dword ptr [rax]
-		addss xmm0, xmm1					;dv
-		add rdi, 16
-		add rdx, 4
-		add rax, 4
-		loop @b
-		shufps xmm0, xmm2, 11000000b		;00|00|20|??
-		movss xmm0, xmm3					;30|00|20|??
-		jmp pckXMM0
-fLaplac:call fMtx
-		xorps xmm0, xmm0
-		mov rsi, offset mtxLaplacian
+f_laplac:call clc_mtx
+		vxorps xmm1, xmm1, xmm1
+		mov rsi, mtx_a
 		mov rcx, 9
-@@:		movss xmm1, dword ptr [rdi]
-		mulss xmm1, dword ptr [rsi]
-		addss xmm0, xmm1
+@@:		vmovss xmm0, dword ptr [rdi]
+		vfmadd231ss xmm1, xmm0, dword ptr [rsi]
 		add rdi, 16
 		add rsi, 4
 		loop @b
-		shufps xmm0, xmm0, 0
-		jmp pckXMM0
-fPrewit:call fMtx
-		xorps xmm0, xmm0
-		xorps xmm2, xmm2
-		mov rsi, offset mtxPrewit1
+		vshufps xmm0, xmm1, xmm1, 0
+		pack_pix
+		ret
+f_prewit:call clc_mtx
+		vxorps xmm1, xmm1, xmm1
+		vxorps xmm2, xmm2, xmm2
+		mov rsi, offset mtx_prewit1
 		mov rax, rdi
 		mov rcx, 9
-@@:		movss xmm1, dword ptr [rdi]
-		mulss xmm1, dword ptr [rsi]
-		addss xmm0, xmm1
+@@:		vmovss xmm0, dword ptr [rdi]
+		vfmadd231ss xmm1, xmm0, dword ptr [rsi]
 		add rdi, 16
 		add rsi, 4
 		loop @b
 		mov rcx, 9
-@@:		movss xmm1, dword ptr [rax]
-		mulss xmm1, dword ptr [rsi]
-		addss xmm2, xmm1
+@@:		vmovss xmm0, dword ptr [rax]
+		vfmadd231ss xmm2, xmm0, dword ptr [rsi]
 		add rax, 16
 		add rsi, 4
 		loop @b
-		maxss xmm0, xmm2
-		shufps xmm0, xmm0, 0
-		jmp pckXMM0
-fEmboss:call fMtx
-		xorps xmm0, xmm0
-		mov rsi, offset mtxEmboss
-		mov ecx, 9
-@@:		movss xmm1, dword ptr [rdi]
-		mulss xmm1, dword ptr [rsi]
-		addss xmm0, xmm1
+		vmaxss xmm0, xmm1, xmm2
+		vshufps xmm0, xmm0, xmm0, 0
+		pack_pix
+		ret
+f_emboss:call clc_mtx
+		vxorps xmm1, xmm1, xmm1
+		mov rsi, offset mtx_emboss
+		mov rcx, 9
+@@:		vmovss xmm0, dword ptr [rdi]
+		vfmadd231ss xmm1, xmm0, dword ptr [rsi]
 		add rdi, 16
 		add rsi, 4
 		loop @b
-		shufps xmm0, xmm0, 0
-		addps xmm0, xmm10
-		jmp pckXMM0
-fHi:	call fMtx
+		vshufps xmm0, xmm1, xmm1, 0
+		vaddps xmm0, xmm0, xmm10
+		pack_pix
+		ret
+f_nrml:	call clc_mtx
+		vxorps xmm1, xmm1, xmm1
+		vxorps xmm2, xmm2, xmm2
+		mov rdx, mtx_a
+		mov rax, mtx_b
 		imul rsi, rsi
-		mov rdi, offset mtx
-		xorps xmm1, xmm1
+		xor rcx, rcx
+@@:		vmovss xmm0, dword ptr [rdi]
+		vfmadd231ss xmm1, xmm0, dword ptr [rdx + rcx * 4]
+		vfmadd231ss xmm2, xmm0, dword ptr [rax + rcx * 4]
+		add rdi, 16
+		inc rcx
+		cmp rcx, rsi
+		jb @b
+		vshufps xmm0, xmm2, xmm1, 11000000b	; 00|00|20|??
+		vmovss xmm0, xmm0, xmm10			; 30|00|20|??
+		pack_pix
+		ret
+f_hi:	call clc_mtx
+		imul rsi, rsi
+		mov rdi, offset tmp_mtx
+		mov r11, rdi
+		vxorps xmm1, xmm1, xmm1
 		mov rcx, rsi
-@@:		addps xmm1, [rdi]
+@@:		vaddps xmm1, xmm1, [rdi]
 		add rdi, 16
 		loop @b
 		shr rsi, 1
 		shl rsi, 4
-		mov rax, @@div
-		mov rdi, offset mtx
-		movaps xmm0, [rsi + rdi]
-		divps xmm1, [rax]
-		subps xmm0, xmm1
-		mulps xmm0, xmm3
-		addps xmm0, xmm1
-		jmp pckXMM0
-fLow:	call fMtx
+		vdivps xmm1, xmm1, xmm10
+		vmovaps xmm0, [rsi + r11]
+		vsubps xmm0, xmm0, xmm1
+		vmulps xmm0, xmm0, xmm9
+		vaddps xmm0, xmm0, xmm1
+		pack_pix
+		ret
+f_low:	call clc_mtx
 		imul rsi, rsi
-		mov rdi, offset mtx
-		xorps xmm0, xmm0
+		mov rdi, offset tmp_mtx
+		mov r11, rdi
+		vxorps xmm0, xmm0, xmm0
 		mov rcx, rsi
-@@:		addps xmm0, [rdi]
+@@:		vaddps xmm0, xmm0, [rdi]
 		add rdi, 16
 		loop @b
-		mov rax, @@div
-		divps xmm0, [rax]
-		jmp pckXMM0
-fMedian:call fMtx
-		imul rsi, rsi
 		shr rsi, 1
-		inc rsi
-		xor rcx, rcx
-median0:movss xmm0, dword ptr [rcx * 4 + rdi]
-		movss xmm2, xmm0
-		mov rax, rcx
-		lea rdx, [rcx + 1]
-median1:cmp rdx, rsi
-		jae median3
-		movss xmm1, dword ptr [rdx * 4 + rdi]
-		ucomiss xmm0, xmm1
-		jnc @f
-		movss xmm0, xmm1
-		mov rax, rdx
-@@:		inc rdx
-		jmp median1
-median3:movss dword ptr [rcx * 4 + rdi], xmm0
-		movss dword ptr [rax * 4 + rdi], xmm2
-		inc rcx
-		cmp rcx, rsi
-		jl median0
-		shl rax, 4
-		movaps xmm0, [rax + rdi - 12]
-		jmp pckXMM0
-fRoberts:call fMtx
-		movss xmm0, dword ptr [rdi + 0 * 16]
-		subss xmm0, dword ptr [rdi + 3 * 16]
-		movss xmm1, dword ptr [rdi + 2 * 16]
-		subss xmm1, dword ptr [rdi + 1 * 16]
-		mulss xmm0, xmm0
-		mulss xmm1, xmm1
-		addss xmm0, xmm1
-		sqrtss xmm0, xmm0
-		shufps xmm0, xmm0, 0
-		jmp pckXMM0
-fMax:	call fMtx
+		shl rsi, 4
+		vdivps xmm0, xmm0, xmm10
+		vmovaps xmm0, [rsi + r11]
+		vsubps xmm0, xmm0, xmm1
+		vdivps xmm0, xmm0, xmm9
+		vaddps xmm0, xmm0, xmm1
+		pack_pix
+		ret
+f_median:call clc_mtx
+		mov rdi, offset tmp_mtx
+		mov r12, rdi
 		imul rsi, rsi
-		movss xmm0, dword ptr [rdi]
-		xor rax, rax
-		mov rcx, 1
+		xor rcx, rcx
+		mov rbx, rsi
+		shr rbx, 1
+		inc rbx
+median0:vmovss xmm0, dword ptr [rdi + 12]
+		mov rax, rdi
+		mov r11, rdi
+		vmovss xmm2, xmm0, xmm0
+		lea rdx, [rcx + 1]
+@@:		cmp rdx, rsi
+		jae @f
+		vmovss xmm1, dword ptr [r11 + 12]
+		add r11, 16
+		inc rdx
+		vucomiss xmm0, xmm1
+		jae @b
+		vmovss xmm0, xmm0, xmm1
+		lea rax, [r11 - 16]
+		jmp @b
+@@:		vmovaps xmm0, [rax]
+		vmovaps xmm1, [rdi]
+		vmovaps [rax], xmm1
+		vmovaps [rdi], xmm0
 		add rdi, 16
-max0:	movss xmm1, dword ptr [rdi]
-		ucomiss xmm0, xmm1
-		jnc @f
-		movss xmm0, xmm1
+		inc rcx
+		cmp rcx, rbx
+		jl median0
+		shl rbx, 4
+		movaps xmm0, [rbx + r12]
+		pack_pix
+		ret
+f_rbrts:call clc_mtx
+		vmovss xmm0, dword ptr [rdi + 0 * 16]
+		vsubss xmm0, xmm0, dword ptr [rdi + 3 * 16]
+		vmovss xmm1, dword ptr [rdi + 1 * 16]
+		vsubss xmm1, xmm1, dword ptr [rdi + 2 * 16]
+		vmulss xmm0, xmm0, xmm0
+		vmulss xmm1, xmm1, xmm1
+		vaddss xmm0, xmm0, xmm1
+		vsqrtss xmm0, xmm0, xmm0
+		vshufps xmm0, xmm0, xmm0, 0
+		pack_pix
+		ret
+f_max:	call clc_mtx
+		lea r11, [rdi - 12]
+		imul rsi, rsi
+		vxorps xmm0, xmm0, xmm0
+		xor rax, rax
+		mov rcx, rax
+max0:	vmovss xmm1, dword ptr [rdi]
+		vucomiss xmm0, xmm1
+		jae @f
+		vmovss xmm0, xmm0, xmm1
 		mov rax, rcx
 @@:		add rdi, 16
 		inc rcx
 		cmp rcx, rsi
-		jl max0
+		jb max0
 		shl rax, 4
-		mov rdi, offset mtx
-		movaps xmm0, [rdi + rax]
-		jmp pckXMM0
-fMin:	call fMtx
+		vmovaps xmm0, [r11 + rax]
+		pack_pix
+		ret
+f_min:	call clc_mtx
+		lea r11, [rdi - 12]
 		imul rsi, rsi
-		movss xmm0, dword ptr [rdi]
+		vmovss xmm0, flt_max
 		xor rax, rax
-		mov rcx, 1
-		add rdi, 16
-min0:	movss xmm1, dword ptr [rdi]
-		ucomiss xmm0, xmm1
-		jc @f
-		movss xmm0, xmm1
+		mov rcx, rax
+min0:	vmovss xmm1, dword ptr [rdi]
+		vucomiss xmm0, xmm1
+		jbe @f
+		vmovss xmm0, xmm0, xmm1
 		mov rax, rcx
 @@:		add rdi, 16
 		inc rcx
 		cmp rcx, rsi
 		jl min0
 		shl rax, 4
-		mov rdi, offset mtx
-		movaps xmm0, [rdi + rax]
-		jmp pckXMM0
+		vmovaps xmm0, [r11 + rax]
+		pack_pix
+		ret
 ;NewY:=K*(OldY-AveY)+AveY
-fContr:	call r11
-		subps xmm0, xmm10
-		mulps xmm0, xmm12
-		addps xmm0, xmm10
-		jmp pckXMM0
-fBin:	call r11
-		dpps xmm0, xmm13, 01110001b
-		ucomiss xmm0, xmm12
+f_contr:call f_none
+		vsubps xmm0, xmm0, xmm10
+		vmulps xmm0, xmm0, xmm11
+		vaddps xmm0, xmm0, xmm10
+		pack_pix
+		ret
+f_bin:	call f_none
+		vdpps xmm0, xmm0, xmm13, 01110001b
+		vucomiss xmm0, xmm11
 		setnc al
 		movzx rax, al
 		shl rax, 4
 		mov rdi, offset dataBin
-		movaps xmm0, [rax + rdi]
-		jmp pckXMM0
+		vmovaps xmm0, [rax + rdi]
+		pack_pix
+		ret
+f_gamma:
+		ret
+f_scl_b:call f_none
+		vmulps xmm0, xmm0, xmm11	; scale
+		vaddps xmm0, xmm0, xmm10	; bias
+		pack_pix
+		ret
+OPTION EPILOGUE:EPILOGUEDEF
+asm_ssh_copy endp
+
+end
+
 fGamma:	call r11
 		movaps xmm1, xmm0
 		rcpss xmm2, xmm12
@@ -906,8 +824,4 @@ fGamma:	call r11
 		orps xmm3, xmm4
 		mulps xmm0, xmm3
 		loop @b
-		jmp pckXMM0
-fScaleB:call r11
-		mulps xmm0, xmm12		; scale
-		addps xmm0, xmm2		; bias
 		jmp pckXMM0

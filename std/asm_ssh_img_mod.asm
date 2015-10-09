@@ -7,8 +7,11 @@ _gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
 f_0_5x8		dd 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5
+f_3_0x8		dd 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0
+f_1_0x8		dd 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+f_2_0x8		dd 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0
 f_100x4		dd 100.0, 100.0, 100.0, 100.0
-flt_max		dd 3.402823466e+38F
+flt_max		dd 3.402823466e+38F, 3.402823466e+38F, 3.402823466e+38F, 3.402823466e+38F
 
 .data?
 _clip		stk_bar<>
@@ -32,9 +35,8 @@ asm_absolute_bar endp
 
 ;rcx(bar), rdx(clip) r8(dst) -> out rcx(width) rdx(height) r10(pitch) r8(dst)
 asm_clip_bar proc USES rax rdi rsi rbx
-		xor rax, rax
-		mov qword ptr [_clip + 00], rax		; стираем область выхода за пределы клипа
-		mov qword ptr [_clip + 08], rax
+		mov qword ptr [_clip + 00], 0		; стираем область выхода за пределы клипа
+		mov qword ptr [_clip + 08], 0
 		movsxd rsi, dword ptr [rdx + 00]	; wc
 		movsxd rdi, dword ptr [rdx + 04]	; hc
 		movsxd rax, dword ptr [rcx + 00]	; xb

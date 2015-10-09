@@ -6,13 +6,6 @@ OPTION NOKEYWORD:<width type>
 ;OPTION PROLOGUE:PrologueDef
 ;OPTION EPILOGUE:EpilogueDef
 
-stk_clip struct
-	x dq 0
-	y dq 0
-	w dq 0
-	h dq 0
-stk_clip ends
-
 bc1 struct
 	dw rgb0
 	dw rgb1
@@ -110,7 +103,9 @@ externdef f_0_5x8:DWORD
 externdef f_100x4:DWORD
 externdef _clip:stk_bar
 externdef flt_max:DWORD
-
+externdef f_3_0x8:DWORD
+externdef f_1_0x8:DWORD
+externdef f_2_0x8:DWORD
 ;data segment common
 ;.data
 ;align 16
