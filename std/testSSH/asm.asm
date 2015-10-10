@@ -18,57 +18,123 @@ _mm0	dq -1
 _mm1	dq 0102030405060708h
 _m1000	db 255, 0, 0, 0, 255, 0, 0, 0
 _xmm0	dd 2.0, 30.0, 0.5, 0.25
-
+tmp_mtx	dd 10.0, 1.0, 5.0, 6.0, 11.0, 25.0, 40.0, 60.0, 0.0, 4.0, 7.0, 8.0, 3.0, 0.0, 1.0, 9.0
+flt_max dd 3.402823466e+38F
+_1		dd 0.5,0.5,0.5,0.5
+_2		dd 0.2,0.2,0.2,0.2
+f_2_0	dd 2.0,2.0,2.0,2.0
+f_1_0	dd 1.0,1.0,1.0,1.0
+_255	dd 255.0, 255.0, 255.0, 255.0
 .code
+externdef powf:near
+asm_ssh_shufb proc public
+		ret
+		vmovups xmm0, _1		;0.5
+		vmovups xmm12, _2	;0.2
+		vmovups xmm10, f_1_0
+		vmovups xmm9, f_2_0
 
-asm_ssh_shufb proc public USES rbx r15 r10 r11
-		ret
-		mov rax, 5
-		bsr rax, rax
-		movups xmm0, _xmm0
-		pextrw eax, xmm0, 0
-		movd mm0, dword ptr _mm1
-		pxor mm5, mm5
-		punpcklbw mm0, mm5
-		packuswb mm0, mm0
-		call asm_clip_bar
-		movsxd r10, dword ptr [rcx]			;pitch
-		shl r10, 2
-		movsxd rax, dword ptr [rdx]
-		movsxd rcx, dword ptr [rdx + 4]
-		imul rcx, r10
-		lea rcx, [rcx + rax * 4]
-		add r8, rcx
-		movsxd rcx, dword ptr [rdx + 8]
-		movsxd rdx, dword ptr [rdx + 12]
-_loop:	push r8
-		push rcx
-@@:		or [r8], r9d
-		add r8, 4
+		vmovaps xmm1, xmm0
+		vmovaps xmm2, xmm12
+		;vshufps xmm2, xmm2, xmm2, 0
+		vmovaps xmm0, xmm10
+		mov rcx, 12
+@@:		vsqrtps xmm1, xmm1
+		vroundps xmm3, xmm2, 11b
+		vsubps xmm2, xmm2, xmm3
+		vmulps xmm2, xmm2, xmm9
+		vcmpps xmm3, xmm2, xmm10, 5
+		vandps xmm4, xmm1, xmm3
+		vandnps xmm3, xmm3, xmm10
+		vorps xmm3, xmm3, xmm4
+		vmulps xmm0, xmm0, xmm3
 		loop @b
-		pop rcx
-		pop r8
-		add r8, r10
-		dec rdx
-		jnz _loop
+		movups xmm1, _255
+		mulps xmm1, xmm0
+		cvtps2dq xmm1, xmm1
+
+		;movups _1, xmm0
+
+		vcvtps2pd ymm0, xmmword ptr _1
+		vcvtps2pd ymm12, xmmword ptr _2
+		vcvtps2pd ymm10, xmmword ptr f_1_0
+		vcvtps2pd ymm9, xmmword ptr f_2_0
+
+		vmovaps ymm1, ymm0
+		vmovaps ymm2, ymm12
+		;vshufps ymm2, ymm2, ymm2, 0
+		vmovaps ymm0, ymm10
+		mov rcx, 20
+@@:		vsqrtpd ymm1, ymm1
+		vroundpd ymm3, ymm2, 11b
+		vsubpd ymm2, ymm2, ymm3
+		vmulpd ymm2, ymm2, ymm9
+		vcmppd ymm3, ymm2, ymm10, 5
+		vandpd ymm4, ymm1, ymm3
+		vandnpd ymm3, ymm3, ymm10
+		vorpd ymm3, ymm3, ymm4
+		vmulpd ymm0, ymm0, ymm3
+		loop @b
+		vcvtpd2ps xmm0, ymm0
+		vmovups _1, xmm0
+		xorps xmm1, xmm1
+
+
+		vzeroall
+
+		sqrtss xmm1, xmm1
+		roundss xmm3, xmm2, 11b
+		subss xmm2, xmm3
+		mulss xmm2, f_2_0
+		cmpss xmm2, xmm10, 5
+
+		vmovaps xmm1, xmm0
+		vmovaps xmm2, xmm11				; 1/gamma|1/gamma|1/gamma|1/gamma
+		vmovaps xmm0, xmm10
+		vsqrtps xmm1, xmm1
+		vroundps xmm3, xmm2, 11b
+		vsubps xmm2, xmm2, xmm3
+		vmulps xmm2, xmm2, xmm9
+		vcmpps xmm3, xmm2, xmm10, 5
+		vandps xmm4, xmm1, xmm3
+		vandnps xmm3, xmm3, xmm10
+		vorps xmm0, xmm3, xmm4
+		vmulps xmm0, xmm0, xmm3		
+		movss xmm0, _1 + 0
+		roundss xmm0, xmm0, 11b
 		ret
-		mov rax, offset _1
-		mov byte ptr [rax + 4], 1
-_1:		vpshufd xmm0, xmm0, 0
-		vpshufd xmm0, xmm0, 0
-		vmovaps xmm10, grid
-		vmovaps xmm11, half
-		vmovaps ymm12, f_255x8
-		mov rbx, 4
-		mov r15, 16
-		mov r8, offset result
-		mov r9, offset rgba
-		mov r10, offset colors
-		mov r11, offset alpha
-		;call asm_set_colors
-		mov r9, offset result
-		mov r8, offset result1
-		;call asm_compress_colors
+		movss xmm1, _1 + 4
+		sub rsp, 8
+;		call powf
+		add rsp, 8
+		mov rdi, offset tmp_mtx
+		mov rsi, 4
+		imul rsi, rsi
+		lea r12, [rdi + rsi * 4]
+		mov rbx, rsi
+		shr rbx, 1
+		lea rbx, [rdi + rbx * 4]
+median0:vmovss xmm0, flt_max
+		mov rax, rdi
+		mov r11, rdi
+@@:		cmp r11, r12
+		jae @f
+		vmovss xmm1, dword ptr [r11]
+		add r11, 4
+		vucomiss xmm0, xmm1
+		jbe @b
+		vmovss xmm0, xmm0, xmm1
+		lea rax, [r11 - 4]
+		jmp @b
+@@:		vmovss xmm0, dword ptr [rax]
+		vmovss xmm1, dword ptr [rdi]
+		vmovss dword ptr [rax], xmm1
+		vmovss dword ptr [rdi], xmm0
+		add rdi, 4
+		cmp rdi, r12
+		jb median0
+		mov eax, dword ptr [rbx]
+		ret
 		ret
 asm_ssh_shufb endp
 

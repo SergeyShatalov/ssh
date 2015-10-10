@@ -302,6 +302,7 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	float x = -2.47656508055759199108314e+1;
 	ENUM_DATA* _s = _stk;
 	Singlton<Log> _lg;
 	try
@@ -314,20 +315,33 @@ int _tmain(int argc, _TCHAR* argv[])
 		asm_ssh_shufb();
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
 		img->set_map(L"e:\\1.jpg", 0);
-		img->set_empty(Range<int>(640, 480), 1);
+		int w = 1600, h = 1200;
+		img->set_empty(Range<int>(w, h), 1);
 		ImgMod mod;
 		mod.msks.w = 0xffffffff;
 		mod.ops.w = ImgMod::Pix::set;
 		mod.type_address = ImgMod::Addr::lrepeat;
-		mod.wh_rep.w = 2.0f;
+		mod.wh_rep.w = 1.0f;
 		mod.wh_rep.h = 1.0f;
-		mod.type_filter = ImgMod::Flt::median;
-		mod.w_mtx = 5;
-		//mod.flt_vec = vec4(2, 2, 2, 2);
-		mod.flt_vec = vec4(1.1, 0.5, 0.2, 0.2);
-		asm_ssh_copy(Bar<int>(0, 0, 640, 480), Range<int>(640, 480), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, 640, 480), Range<int>(640, 480), &mod);
-		img->save(L"e:\\1_jpg.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
+		mod.type_filter = ImgMod::Flt::gamma;
+		mod.w_mtx = 0;
+		mod.flt_vec = vec4(2.2, 2, 2, 2);
+		//mod.flt_vec = vec4(9, 0.5, 0.2, 0.2);
+		asm_ssh_copy(Bar<int>(0, 0, 640, 480), Range<int>(640, 480), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
+		img->save(L"e:\\1_jpg1.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
+//		mod.type_filter = ImgMod::Flt::median;
+	//mod.type_filter = ImgMod::Flt::hi;
+		mod.w_mtx = 3;
+		mod.wh_rep.w = 1.0f;
+		mod.wh_rep.h = 1.0f;
+		mod.alpha = 0.55f;
+		mod.ops.w = ImgMod::Pix::var_alpha;
+		mod.flt_vec = vec4(1.5, 2, 2, 2);
+		//asm_ssh_copy(Bar<int>(0, 0, 640, 480), Range<int>(640, 480), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
+		asm_ssh_copy(Bar<int>(0, 0, w, h), Range<int>(w, h), img->get_map(1)->pixels(), img->get_map(1)->pixels(), Bar<int>(480, 360, 640, 480), Range<int>(w, h), &mod);
+		img->save(L"e:\\1_jpg2.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
 		//img->set_font(L"font", L"Arial", nullptr, -16, 0);
+		img->release();
 		return 0;
 		img->save(L"e:\\bc1", ImgCnv::Types::dds, FormatsMap::bc1, 0);
 		img->release();

@@ -33,6 +33,7 @@ base64_chars	dw 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 
 
 .code
 
+
 ; преобразовать число в строку, в зависимости от системы счисления 0-decimal, (1-bin, 2-oct, 3-hex, 4-float,5-double)
 ; rcx - число
 ; rdx - система счисления
@@ -577,5 +578,9 @@ _str:	cmp rax, 34
 _str1:	clc
 		ret
 asm_ssh_parse_xml endp
+
+asm_ssh_pow proc
+		ret
+asm_ssh_pow endp
 
 end

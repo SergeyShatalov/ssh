@@ -95,6 +95,7 @@ stk_modify ends
 externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
 externdef asm_absolute_bar:near
+externdef asm_ssh_pow:near
 externdef _func_ops:QWORD
 externdef _gamma:DWORD
 externdef f_255x8:DWORD
@@ -106,6 +107,9 @@ externdef flt_max:DWORD
 externdef f_3_0x8:DWORD
 externdef f_1_0x8:DWORD
 externdef f_2_0x8:DWORD
+externdef malloc:near
+externdef free:near
+externdef powf:near
 ;data segment common
 ;.data
 ;align 16
