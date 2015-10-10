@@ -1,12 +1,8 @@
 
 include asm_ssh.inc
 
-clamp macro p1, p2, p3
-		cmp p1, p2
-		cmovl p1, p2
-		cmp p1, p3
-		cmovg p1, p3
-endm
+XMM_LINEAR		= 0
+
 
 coord_l_mirror macro p1
 		xor rdx, rdx
@@ -318,6 +314,7 @@ _fin:	mov rcx, buf
 OPTION EPILOGUE:NONE
 init_base_modify:
 		mov rsi, modify
+		vmovaps xmm8, f_1_0x8
 		vmovaps xmm11, [rsi].stk_modify.flt_vec
 		vmovaps xmm12, f_255x8
 		vmovaps xmm13, _gamma
@@ -408,52 +405,74 @@ l_repeat:mov rax, r11
 		mov rax, rdx			; x2
 		mov rdx, rsi			; y1
 		jmp linear
-l_clamp:movsxd rcx, w_clamp
-		movsxd rdx, h_clamp
-		lea eax, [r11d + 1]
-		lea edi, [r12d + 1]
-		cmp r11d, ecx
-		cmovg r11, rcx
-		cmp eax, ecx
-		cmovg rax, rcx
-		cmp r12d, edx
-		cmovg r12, rdx
-		cmp edi, edx
-		cmovg rdi, rdx
-linear:	movd r11, mm6
-		pxor mm7, mm7
-		cvtdq2ps xmm0, xmm0
-		vsubps xmm0, xmm15, xmm0
-		vmulps xmm0, xmm0, xmm12
-		cvtps2pi mm6, xmm0
-		pslld mm6, 8
+l_clamp:mov rcx, r11
+		mov rdx, r12
+		movsxd r11, w_clamp
+		movsxd r12, h_clamp
+		lea eax, [ecx + 1]
+		lea edi, [edx + 1]
+		cmp ecx, r11d
+		cmovg rcx, r11
+		cmp eax, r11d
+		cmovg rax, r11
+		cmp edx, r12d
+		cmovg rdx, r12
+		cmp edi, r12d
+		cmovg rdi, r12
+linear:	
+if XMM_LINEAR
+		; дает более четкий результат
+		vroundps xmm0, xmm15, 11b
+		vsubps xmm0, xmm15, xmm0			; fracXY
+		vsubps xmm1, xmm8, xmm0				; 1.0 - fracXY
 		imul rdx, r13
 		imul rdi, r13
 		add rdx, r9
 		add rdi, r9
-		movd mm2, dword ptr [rdi + rax * 4]
-		movd mm3, dword ptr [rdi + rcx * 4]
+		pmovzxbd xmm2, dword ptr [rdx + rcx * 4]	; f1
+		pmovzxbd xmm3, dword ptr [rdx + rax * 4]	; f2
+		pmovzxbd xmm4, dword ptr [rdi + rcx * 4]	; f3
+		pmovzxbd xmm5, dword ptr [rdi + rax * 4]	; f4
+		cvtdq2ps xmm2, xmm2
+		cvtdq2ps xmm3, xmm3
+		cvtdq2ps xmm4, xmm4
+		cvtdq2ps xmm5, xmm5
+		pshufd xmm6, xmm0, 00000000b				; tx = fracX
+		pshufd xmm7, xmm1, 00000000b				; sx = 1.0 - fracX
+		mulps xmm2, xmm6							; f1 *= tx
+		vfmadd231ps xmm2, xmm3, xmm7				; i1 = f1 + f2 * sx
+		mulps xmm4, xmm6							; f3 *= tx
+		vfmadd231ps xmm4, xmm5, xmm7				; i2 = f3 + f4 * sx
+		pshufd xmm6, xmm0, 01010101b				; ty = fracY
+		pshufd xmm7, xmm1, 01010101b				; sy = 1.0 - fracY
+		mulps xmm2, xmm6							; i1 *= ty
+		vfmadd231ps xmm2, xmm4, xmm7				; res = i1 + i2 * sy
+		vdivps xmm0, xmm2, xmm12
+		ret ; 26 инструкций
+else
+		; дает более сглаженный результат и выполняется быстрее в разы
+		pxor mm7, mm7
+		imul rdx, r13
+		imul rdi, r13
+		add rdx, r9
+		add rdi, r9
+		movd mm2, dword ptr [rdx + rcx * 4]
+		movd mm3, dword ptr [rdx + rax * 4]
+		movd mm4, dword ptr [rdi + rcx * 4]
+		movd mm5, dword ptr [rdi + rax * 4]
 		punpcklbw mm2, mm7
 		punpcklbw mm3, mm7
-		psubsw mm2, mm3
-		movd mm4, dword ptr [rdx + rax * 4]
-		movd mm5, dword ptr [rdx + rcx * 4]
 		punpcklbw mm4, mm7
 		punpcklbw mm5, mm7
-		psubsw mm4, mm5
-		pshufw mm7, mm6, 10101010b	; yy
-		pshufw mm6, mm6, 0			; xx
-		pmulhw mm2, mm6
-		pmulhw mm4, mm6
 		paddsw mm2, mm3
 		paddsw mm4, mm5
-		psubsw mm2, mm4
-		pmulhw mm2, mm7
 		paddsw mm2, mm4
+		psraw mm2, 2
 		packuswb mm2, mm2
-		movd mm6, r11
 		unpack_pix
-		ret
+		ret ; 22 инструкции
+endif
+
 n_clamp:movsxd rcx, w_clamp
 		movsxd rdx, h_clamp
 		cmp r11d, ecx
@@ -603,10 +622,12 @@ clc_mt0:vmovhlps xmm0, xmm0, xmm15				; 0|0|y-dy|x-dx
 		imul rsi, rsi
 		mov rdi, offset tmp_mtx
 		ret
-f_none:	cvttps2dq xmm0, xmm15
+f_none:	cvtps2dq xmm0, xmm15
 		vpextrd r11, xmm0, 0
 		vpextrd r12, xmm0, 1
-		jmp addressing
+		call addressing
+		pack_pix
+		ret
 f_sobel:call clc_mtx
 		vxorps xmm1, xmm1, xmm1
 		vxorps xmm2, xmm2, xmm2

@@ -320,10 +320,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		ImgMod mod;
 		mod.msks.w = 0xffffffff;
 		mod.ops.w = ImgMod::Pix::set;
-		mod.type_address = ImgMod::Addr::lrepeat;
+		mod.type_address = ImgMod::Addr::lclamp;
 		mod.wh_rep.w = 1.0f;
 		mod.wh_rep.h = 1.0f;
-		mod.type_filter = ImgMod::Flt::gamma;
+		mod.type_filter = ImgMod::Flt::none;
 		mod.w_mtx = 0;
 		mod.flt_vec = vec4(2.2, 2, 2, 2);
 		//mod.flt_vec = vec4(9, 0.5, 0.2, 0.2);
@@ -335,7 +335,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		mod.wh_rep.w = 1.0f;
 		mod.wh_rep.h = 1.0f;
 		mod.alpha = 0.55f;
-		mod.ops.w = ImgMod::Pix::var_alpha;
+		mod.ops.w = ImgMod::Pix::fix_alpha;
 		mod.flt_vec = vec4(1.5, 2, 2, 2);
 		//asm_ssh_copy(Bar<int>(0, 0, 640, 480), Range<int>(640, 480), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
 		asm_ssh_copy(Bar<int>(0, 0, w, h), Range<int>(w, h), img->get_map(1)->pixels(), img->get_map(1)->pixels(), Bar<int>(480, 360, 640, 480), Range<int>(w, h), &mod);

@@ -25,9 +25,17 @@ _2		dd 0.2,0.2,0.2,0.2
 f_2_0	dd 2.0,2.0,2.0,2.0
 f_1_0	dd 1.0,1.0,1.0,1.0
 _255	dd 255.0, 255.0, 255.0, 255.0
+
 .code
 externdef powf:near
 asm_ssh_shufb proc public
+		movups xmm0, _1
+		movups xmm1, _255
+		mulps xmm0, xmm1
+		movdq2q mm0, xmm0
+		cvtps2pi mm0, xmm0
+		pslld mm0, 8
+;		jmp rip
 		ret
 		vmovups xmm0, _1		;0.5
 		vmovups xmm12, _2	;0.2

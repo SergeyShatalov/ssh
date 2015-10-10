@@ -579,8 +579,4 @@ _str1:	clc
 		ret
 asm_ssh_parse_xml endp
 
-asm_ssh_pow proc
-		ret
-asm_ssh_pow endp
-
 end

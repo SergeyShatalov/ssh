@@ -6,6 +6,9 @@ OPTION NOKEYWORD:<width type>
 ;OPTION PROLOGUE:PrologueDef
 ;OPTION EPILOGUE:EpilogueDef
 
+pw typedef ptr word
+pd typedef ptr dword
+
 bc1 struct
 	dw rgb0
 	dw rgb1
@@ -109,7 +112,6 @@ externdef f_1_0x8:DWORD
 externdef f_2_0x8:DWORD
 externdef malloc:near
 externdef free:near
-externdef powf:near
 ;data segment common
 ;.data
 ;align 16
