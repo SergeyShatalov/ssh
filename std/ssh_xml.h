@@ -87,7 +87,7 @@ namespace ssh
 		template <typename T> void set_attr(HXML h, ssh_wcs name, const T& val)
 		{
 			auto n(h->value->attr(name));
-			if(n) n->val = String(val); else h->value->add_attr(new XmlNode(name, val));
+			if(n) n->val = String(val); else h->value->add_attr(new XmlNode(name, String(val)));
 		}
 		// получить значение атрибута
 		template <typename T> T attr(HXML h, ssh_wcs name, const T& def) const

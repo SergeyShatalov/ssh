@@ -45,7 +45,7 @@ namespace ssh
 			//mosaik,			// формирование мазаики
 			figure,			// отрисовка фигуры
 			gradient,		// градиентная заливка
-			//replace,		// замена цвета
+			replace,		// замена цвета
 			histogramm		// гистограмма
 		};
 		// системы координат
@@ -359,7 +359,7 @@ namespace ssh
 		};
 		enum class Types : int
 		{
-			tga, bmp, fse, bfs, dds, gif, jpg, undef
+			tga, bmp, fse, bfs, dds, gif, jpg, psd, png, undef
 		};
 		struct IMAGE
 		{
@@ -395,6 +395,10 @@ namespace ssh
 		void makeBFS(ssh_cs* buf);
 		// сформировать файл формата GIF
 		void makeGIF(ssh_cs* buf);
+		// сформировать файл формата PSD
+		void makePSD(ssh_cs* buf);
+		// сформировать файл формата PNG
+		void makePNG(ssh_cs* buf);
 		// список изображений
 		List<IMAGE*> imgs;
 	};
@@ -511,14 +515,16 @@ namespace ssh
 		void asm_ssh_cnv(FormatsMap fmt, const Range<int>& wh, void* dst, void* src, int is);
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
-		void asm_ssh_unpack_bmp(ssh_u w, ssh_u h, void* dst, void* src, void* pal);
+		void asm_ssh_unpack_bmp(ssh_u pitch, void* pal, void* dst, void* src, ssh_u _4bit);
+		void asm_ssh_unpack4_bmp(ssh_u pitch, void* pal, void* dst, void* src);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
+		void asm_ssh_replace(const Range<int>& vals, const Range<int>& msks, void* pix, const Range<int>& clip);
 		void asm_ssh_figure(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_histogramm(const Range<int>& tmp, ImgMod* modify, void* buf);
-		void asm_ssh_correct(const Range<int>& clip, const Range<int>& rn, void* pix, ImgMod::Histogramms type);
+		void asm_ssh_correct(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod::Histogramms type);
 		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
 		void asm_ssh_noise_terrain(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_flip_90(const Range<int>& clip, void* dst, void* pix);

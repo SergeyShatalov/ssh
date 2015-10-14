@@ -30,7 +30,7 @@ namespace ssh
 		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
 		String(const String& str) { init(); *this = str; }
 		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep, false)) { buf[rep] = 0; _wcsset(buf, ws); data()->update(); } }
-		template <typename T> String(T v, Radix r = Radix::_dec) { init(); fromNum(v, r); }
+		template <typename T> explicit String(T v, Radix r = Radix::_dec) { init(); fromNum(v, r); }
 		// деструктор
 		~String() { empty(); }
 		// привидение типа

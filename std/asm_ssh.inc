@@ -73,8 +73,8 @@ stk_modify struct
 		dst_ops			dd 0
 		src_msk			dd 0				; маски
 		dst_msk			dd 0
-		src_msk_val		dd 0				; значения маски
-		dst_msk_val		dd 0
+		src_val			dd 0				; значения маски
+		dst_val			dd 0
 		sides			dd 0				; маска границы
 		w_border		dd 0				; ширина границы
 		radius			dd 0				; радиус
@@ -99,6 +99,7 @@ externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
 externdef asm_absolute_bar:near
 externdef asm_ssh_pow:near
+
 externdef _func_ops:QWORD
 externdef _gamma:DWORD
 externdef f_255x8:DWORD
@@ -110,6 +111,8 @@ externdef flt_max:DWORD
 externdef f_3_0x8:DWORD
 externdef f_1_0x8:DWORD
 externdef f_2_0x8:DWORD
+externdef _mm_not:QWORD
+
 externdef malloc:near
 externdef free:near
 ;data segment common

@@ -10,7 +10,7 @@ namespace ssh
 #pragma warning(disable:4005)
 	// форматы файлов
 #define ssh_enum_tp ImgCnv::Types
-	SSH_ENUMS(m_img_cnv_fmts, _E(tga), _E(dds), _E(bmp), _E(gif), _E(jpg), _E(fse), _E(bfs));
+	SSH_ENUMS(m_img_cnv_fmts, _E(tga), _E(dds), _E(bmp), _E(gif), _E(jpg), _E(fse), _E(bfs), _E(psd), _E(png));
 	// комманды
 #define ssh_enum_tp Image::Cmds
 	SSH_ENUMS(m_img_cmds, _E(none), _E(make), _E(open), _E(save), _E(modify), _E(remove), _E(font), _E(empty), _E(duplicate), _E(draw));

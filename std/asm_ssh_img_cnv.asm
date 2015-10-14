@@ -305,60 +305,74 @@ _pack:	mov eax, [r9]		; из src в eax
 asm_ssh_unpack_tga endp
 
 ; rcx(w) rdx(h) r8(dst) r9(src)
-asm_ssh_unpack_bmp proc public USES r10 r11 r12 rbx rdi w:QWORD, h:QWORD, dst:QWORD, src:QWORD, pal:QWORD
-		mov r10, pal
-_height:mov rdi, rcx
-_width:	xor r11, r11
-		movzx rbx, byte ptr [r9]			; длина последовательности
-		movzx rax, byte ptr [r9 + 1]		; из src в eax
+; 00 00 - конец строки
+; 00 01 - конец файла
+; 00 02 - XY - x += X, y += Y
+; 00 n(03..FF), XY1..XYn
+; n(01..FF), XY  n раз
+; каждая комманда по четному адресу
+asm_ssh_unpack_bmp proc USES rsi rdi rbx r12 r13 pitch:QWORD, pal:QWORD, dst:QWORD, src:QWORD, _4bit:QWORD
+		mov r10, rcx
+		xor rbx, rbx
+		mov rax, 0f004h
+		mov r13, _4bit
+		test r13, r13
+		cmovnz rbx, rax
+_loop:	mov ax, [r9]
 		inc r9
-		test rbx, rbx
-		jnz @f
-		mov rbx, rax
-		inc r11
-		inc r9
-@@:		sub rdi, rbx
-		jge unpack
-		or rdi, rdi
-unpack:	movzx rax, byte ptr [r9]
-		add r9, r11
-@@:		mov r12d, dword ptr [rax * 4 + r10]	; реальное значение из палитры
-		mov [r8], r12d						; сохраняем значение в dst
-		add r8, 3
-		dec rbx
-		jnz unpack
-		test r11, r11
-		jz skip
-		cmp byte ptr [r9], 0
-		jnz skip
-		inc r9
-skip:	sub r9, r11
-		inc r9
-		test rdi, rdi
-		jg _width
-		dec r9
-@@:		inc r9
-		mov al, [r9]
+		movzx rdi, al
+		xor rsi, rsi
 		test al, al
-		jz @b
-		dec rdx
-		jnz _height
-		ret
+		jnz @f
+		inc r9
+		test ah, ah
+		jz _loop
+		cmp ah, 1
+		jz fin
+		inc rsi
+		movzx edi, ah
+		cmp ah, 2
+		jnz @f
+		movzx rax, byte ptr [r9]
+		inc r9
+		lea r8, [r8 + rax * 4]
+		movzx rax, byte ptr [r9]
+		imul rax, r10
+		add r8, rax
+		inc r9
+		jmp _loop
+@@:		mov rcx, rbx
+_l:		xor r12, r12
+		movzx rax, byte ptr[r9]
+		test cl, cl
+		cmovz r12, rsi
+		add r9, r12
+		test r13, r13
+		jz @f
+		and al, ch
+		shr al, cl
+		ror ch, 4
+		xor cl, 4
+@@:		mov eax, dword ptr [rax * 4 + rdx]	; реальное значение из палитры
+		or eax, 0ff000000h
+		mov [r8], eax
+		add r8, 4
+		dec rdi
+		jnz _l
+		xor rsi, 1
+		add r9, rsi
+		mov r11, r9
+		and r11, 1
+		add r9, r11
+@@:		jmp _loop
+fin:	ret
 asm_ssh_unpack_bmp endp
 
 ;rcx(iTrans) rdx(pal) r8(dst) r9(stk)
-asm_ssh_unpack_gif proc public iTrans:DWORD, pal:QWORD, dst:QWORD, src:QWORD, stk:QWORD
+asm_ssh_unpack_gif proc public USES rsi rdi rbx r11 r12 r13 r14 r15 iTrans:DWORD, pal:QWORD, dst:QWORD, src:QWORD, stk:QWORD
 LOCAL temp[1024]:BYTE	
 LOCAL s_dict[4096]:DWORD
 LOCAL v_dict[512]:QWORD
-		push rsi
-		push rdi
-		push rbx
-		push r11
-		push r12
-		push r13
-		push r14
-		push r15
 		movq mm1, qword ptr shift1
 		movq mm2, qword ptr shift2
 		movq mm3, qword ptr shift3
@@ -433,15 +447,7 @@ _next0:	mov r8, rax										; v_old = value
 		shl rdx, 1
 		or rdx, 3
 		jmp _loop
-_fin:	pop r15
-		pop r14
-		pop r13
-		pop r12
-		pop r11
-		pop rbx
-		pop rdi
-		pop rsi
-		emms
+_fin:	emms
 		ret
 shift1 db 0, 1, 3, -1, -1, -1, -1, -1
 shift2 db 0, 2, 3, -1, -1, -1, -1, -1

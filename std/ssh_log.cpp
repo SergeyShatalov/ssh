@@ -140,60 +140,58 @@ namespace ssh
 		}
 	}
 
-	void Log::init(LOG* lg)
+	void Log::init(const LOG& lg)
 	{
+		shutdown();
+
 		try
 		{
-			shutdown();
+			_log = new LOG;
+			_log->string_begin = apply_template(L"", L"", 0, 0, L"", lg.string_begin);
+			_log->string_continue = apply_template(L"", L"", 0, 0, L"", lg.string_continue);
+			_log->string_finish = lg.string_finish;
 
-			if(!lg) lg = &_log;
-			_log._out = lg->_out;
-			_log.string_begin = apply_template(L"", L"", 0, 0, L"", lg->string_begin);
-			_log.string_continue = apply_template(L"", L"", 0, 0, L"", lg->string_continue);
-			_log.string_finish = lg->string_finish;
-			
-			switch(_log._out)
+			switch(_log->_out)
 			{
 				case TypeOutput::Net:
-					_log.host_name = lg->host_name;
-					_log.host_flags = lg->host_flags;
-					_log.host_cert = lg->host_cert;
-					_log.host_pwd_cert = lg->host_pwd_cert;
+					_log->host_name = lg.host_name;
+					_log->host_flags = lg.host_flags;
+					_log->host_cert = lg.host_cert;
+					_log->host_pwd_cert = lg.host_pwd_cert;
 					if((hEventSocket = CreateEvent(nullptr, true, false, nullptr)))
 						sock.setCallbacks(socket_receive, nullptr, nullptr, nullptr, nullptr);
 					break;
 				case TypeOutput::Screen:
-					_log.screen_template = lg->screen_template;
+					_log->screen_template = lg.screen_template;
 					break;
 				case TypeOutput::File:
-					_log.file_template = lg->file_template;
-					file.open(lg->file_path, lg->file_flags);
-					file.write(_log.string_begin, L"utf-8");
+					_log->file_template = lg.file_template;
+					file.open(lg.file_path, lg.file_flags);
+					file.write(_log->string_begin, L"utf-8");
 					break;
 				case TypeOutput::Mail:
-					_log.email_template = lg->email_template;
-					_log.email_max_msgs = lg->email_max_msgs;
-					_log.email_subject = lg->email_subject;
-					_log.email_host = lg->email_host;
-					_log.email_flags = lg->email_flags;
-					_log.email_login = lg->email_login;
-					_log.email_pass = lg->email_pass;
-					_log.email_address = lg->email_address;
-					_log.email_count_msgs = 0;
-					_log.email_blocked = false;
-					_log.file_path = ssh_system_paths(SystemInfo::siTempFolder) + ssh_gen_name(L"__MAIL__LOG__");
-					file.open(_log.file_path, File::create_read_write);// | File::access_temp_remove);
-					file.write(_log.string_begin, cp_utf);
+					_log->email_template = lg.email_template;
+					_log->email_max_msgs = lg.email_max_msgs;
+					_log->email_subject = lg.email_subject;
+					_log->email_host = lg.email_host;
+					_log->email_flags = lg.email_flags;
+					_log->email_login = lg.email_login;
+					_log->email_pass = lg.email_pass;
+					_log->email_address = lg.email_address;
+					_log->email_count_msgs = 0;
+					_log->email_blocked = false;
+					_log->file_path = ssh_system_paths(SystemInfo::siTempFolder) + ssh_gen_name(L"__MAIL__LOG__");
+					file.open(_log->file_path, File::create_read_write);// | File::access_temp_remove);
+					file.write(_log->string_begin, cp_utf);
 					break;
 				case TypeOutput::Debug:
-					_log.debug_template = lg->debug_template;
-					OutputDebugString(_log.string_begin);
+					_log->debug_template = lg.debug_template;
+					OutputDebugString(_log->string_begin);
 					break;
 			}
 		}
 		catch(const Exception&)
 		{
-			_log._out = TypeOutput::Null;
 			shutdown();
 		}
 		// установть обработчики нестандартных исключительных ситуаций
@@ -208,30 +206,34 @@ namespace ssh
 	{
 		tracer.stop();
 		MemMgr::instance()->stop();
-		_log.string_finish = apply_template(L"", L"", 0, 0, L"", _log.string_finish);
-		switch(_log._out)
+		if(_log)
 		{
-			case TypeOutput::Net:
-				sendSocket(_log.string_finish);
-				break;
-			case TypeOutput::Screen:
-				break;
-			case TypeOutput::File:
-				if(!file.is_close()) file.write(_log.string_finish, L"utf-8");
-				break;
-			case TypeOutput::Mail:
-				if(!file.is_close()) file.write(_log.string_finish, cp_utf);
-				send_email(L"");
-				break;
-			case TypeOutput::Debug:
-				OutputDebugStringW(_log.string_finish);
-				break;
-		}
-		_log._out = TypeOutput::Null;
-		if(hEventSocket)
-		{
-			CloseHandle(hEventSocket);
-			hEventSocket = nullptr;
+			_log->string_finish = apply_template(L"", L"", 0, 0, L"", _log->string_finish);
+			switch(_log->_out)
+			{
+				case TypeOutput::Net:
+					sendSocket(_log->string_finish);
+					break;
+				case TypeOutput::Screen:
+					break;
+				case TypeOutput::File:
+					if(!file.is_close()) file.write(_log->string_finish, L"utf-8");
+					break;
+				case TypeOutput::Mail:
+					if(!file.is_close()) file.write(_log->string_finish, cp_utf);
+					send_email(L"");
+					break;
+				case TypeOutput::Debug:
+					OutputDebugStringW(_log->string_finish);
+					break;
+			}
+			_log->_out = TypeOutput::Null;
+			if(hEventSocket)
+			{
+				CloseHandle(hEventSocket);
+				hEventSocket = nullptr;
+			}
+			SSH_DEL(_log);
 		}
 		file.close();
 		sock.close();
@@ -248,79 +250,85 @@ namespace ssh
 
 	void Log::add(ssh_wcs msg)
 	{
-		String _msg(apply_template(L"", L"", 0, 0, msg, _log.trace_template));
-		switch(_log._out)
+		if(_log)
 		{
-			case TypeOutput::Net:
-				if(sock.is_closed())
-				{
-					sock.init(_log.host_name, 0, _log.host_flags, _log.host_cert, _log.host_pwd_cert);
-					sendSocket(_log.string_begin);
-				}
-				sendSocket(_msg);
-				break;
-			case TypeOutput::File:
-				if(!file.is_close()) file.write(_msg, L"utf-8");
-				break;
-			case TypeOutput::Mail:
-				if(!_log.email_blocked)
-				{
-					if(!file.is_close()) file.write(_msg, cp_utf);
-					_log.email_count_msgs++;
-					if(_log.email_count_msgs >= _log.email_max_msgs)
-						send_email(_log.string_continue);
-				}
-				break;
-			case TypeOutput::Debug:
-				OutputDebugStringW(_msg);
-				break;
+			String _msg(apply_template(L"", L"", 0, 0, msg, _log->trace_template));
+			switch(_log->_out)
+			{
+				case TypeOutput::Net:
+					if(sock.is_closed())
+					{
+						sock.init(_log->host_name, 0, _log->host_flags, _log->host_cert, _log->host_pwd_cert);
+						sendSocket(_log->string_begin);
+					}
+					sendSocket(_msg);
+					break;
+				case TypeOutput::File:
+					if(!file.is_close()) file.write(_msg, L"utf-8");
+					break;
+				case TypeOutput::Mail:
+					if(!_log->email_blocked)
+					{
+						if(!file.is_close()) file.write(_msg, cp_utf);
+						_log->email_count_msgs++;
+						if(_log->email_count_msgs >= _log->email_max_msgs)
+							send_email(_log->string_continue);
+					}
+					break;
+				case TypeOutput::Debug:
+					OutputDebugStringW(_msg);
+					break;
+			}
 		}
 	}
 
 	void Log::add(TypeMessage type, ssh_wcs fn, ssh_wcs fl, int ln, ssh_wcs msg, ...)
 	{
-		if(!tracer.is_disabled)
+		if(_log)
 		{
-			tracer.stop();
-			String msgArgs;
-			// формируем сообщение
-			va_list	arglist;
-			va_start(arglist, msg);
-			msgArgs.fmt(msg, arglist);
-			va_end(arglist);
-			msgArgs.replace(L'\r', L'.');
-			msgArgs.replace(L'\n', L'.');
-			// формируем сообщение на основании шаблона
-			switch(_log._out)
+			if(!tracer.is_disabled)
 			{
-				case TypeOutput::Net:
-					if(sock.is_closed())
-					{
-						sock.init(_log.host_name, 0, _log.host_flags, _log.host_cert, _log.host_pwd_cert);
-						sendSocket(_log.string_begin);
-					}
-					sendSocket(apply_template(fn, fl, ln, type, msgArgs, _log.file_template));
-					break;
-				case TypeOutput::Screen:
-					if(MessageBox(nullptr, apply_template(fn, fl, ln, type, msgArgs, _log.screen_template), ssh_system_paths(SystemInfo::siNameProg), MB_ICONERROR | MB_YESNO) == IDNO) { exit(4); }
-					break;
-				case TypeOutput::File:
-					if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.file_template), L"utf-8");
-					break;
-				case TypeOutput::Mail:
-					if(!_log.email_blocked)
-					{
-						if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log.email_template), cp_utf);
-						_log.email_count_msgs++;
-						if(_log.email_count_msgs >= _log.email_max_msgs)
-							send_email(_log.string_continue);
-					}
-					break;
-				case TypeOutput::Debug:
-					OutputDebugStringW(apply_template(fn, fl, ln, type, msgArgs, _log.debug_template));
-					break;
+				tracer.stop();
+				String msgArgs;
+				// формируем сообщение
+				va_list	arglist;
+				va_start(arglist, msg);
+				msgArgs.fmt(msg, arglist);
+				va_end(arglist);
+				msgArgs.replace(L'\r', L'.');
+				msgArgs.replace(L'\n', L'.');
+				// формируем сообщение на основании шаблона
+				switch(_log->_out)
+				{
+					case TypeOutput::Net:
+						if(sock.is_closed())
+						{
+							sock.init(_log->host_name, 0, _log->host_flags, _log->host_cert, _log->host_pwd_cert);
+							sendSocket(_log->string_begin);
+						}
+						sendSocket(apply_template(fn, fl, ln, type, msgArgs, _log->file_template));
+						break;
+					case TypeOutput::Screen:
+						if(MessageBox(nullptr, apply_template(fn, fl, ln, type, msgArgs, _log->screen_template), ssh_system_paths(SystemInfo::siNameProg), MB_ICONERROR | MB_YESNO) == IDNO) { exit(4); }
+						break;
+					case TypeOutput::File:
+						if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log->file_template), L"utf-8");
+						break;
+					case TypeOutput::Mail:
+						if(!_log->email_blocked)
+						{
+							if(!file.is_close()) file.write(apply_template(fn, fl, ln, type, msgArgs, _log->email_template), cp_utf);
+							_log->email_count_msgs++;
+							if(_log->email_count_msgs >= _log->email_max_msgs)
+								send_email(_log->string_continue);
+						}
+						break;
+					case TypeOutput::Debug:
+						OutputDebugStringW(apply_template(fn, fl, ln, type, msgArgs, _log->debug_template));
+						break;
+				}
+				tracer.start();
 			}
-			tracer.start();
 		}
 	}
 
@@ -328,23 +336,23 @@ namespace ssh
 	{
 		if(!file.is_close())
 		{
-			_log.email_blocked = true;
+			_log->email_blocked = true;
 			// читаем из файла
 			file.set_pos(0, File::begin);
 			String str(file.read(cp_utf, 0));
 			file.close();
 			// обнуляем файл
-			file.open(_log.file_path, File::create_read_write);
+			file.open(_log->file_path, File::create_read_write);
 			file.write(ln, cp_utf);
-			_log.email_count_msgs = 0;
+			_log->email_count_msgs = 0;
 			// отправка на почту
-			Buffer<Mail> m(new Mail(_log.email_host, _log.email_login, _log.email_pass, _log.email_flags), 1);
+			Buffer<Mail> m(new Mail(_log->email_host, _log->email_login, _log->email_pass, _log->email_flags), 1);
 			m->set_charset(L"cp1251");
-			m->add_recipient(L"", _log.email_address);
-			m->set_sender(ssh_system_paths(SystemInfo::siNameProg), _log.email_address);
+			m->add_recipient(L"", _log->email_address);
+			m->set_sender(ssh_system_paths(SystemInfo::siNameProg), _log->email_address);
 			m->set_message(L"Система логгирования для отладки программы.");
-			m->smtp(_log.email_subject, str);
-			_log.email_blocked = false;
+			m->smtp(_log->email_subject, str);
+			_log->email_blocked = false;
 		}
 	}
 

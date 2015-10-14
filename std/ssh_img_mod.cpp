@@ -10,7 +10,7 @@ namespace ssh
 	static ENUM_DATA m_mod_coords[] = { { L"@", SSH_CAST(ImgMod::Coord::absolute) },{ L"%", SSH_CAST(ImgMod::Coord::percent) },{ nullptr, 0 } };
 	// модификаторы
 #define ssh_enum_tp ImgMod::Types
-	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(figure), _E(gradient), _E(histogramm));
+	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(figure), _E(gradient), _E(replace), _E(histogramm));
 	// фильтры
 #define ssh_enum_tp ImgMod::Flt
 	SSH_ENUMS(m_mod_flts, _E(none), _E(sobel), _E(laplacian), _E(prewit), _E(emboss), _E(normal), _E(hi), _E(low), _E(median), _E(roberts), _E(max), _E(min), _E(contrast), _E(binary), _E(gamma), _E(scale_bias));
@@ -144,6 +144,7 @@ namespace ssh
 				}
 				case Types::figure: asm_ssh_figure(bar, clip, map->pixels(), this); break;
 				case Types::gradient: asm_ssh_gradient(bar, clip, map->pixels(), this); break;
+				case Types::replace: asm_ssh_replace(vals, msks, map->pixels(), clip); break;
 				case Types::histogramm:
 					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(256, 1) : wh);
 					Buffer<ssh_cs> buf(tmp.w * tmp.h * 4);

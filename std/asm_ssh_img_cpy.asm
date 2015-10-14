@@ -3,7 +3,6 @@ include asm_ssh.inc
 
 XMM_LINEAR		= 0
 
-
 coord_l_mirror macro p1
 		xor rdx, rdx
 		lea rsi, [p1 * 2]
@@ -34,8 +33,7 @@ align 16
 dataBin		dd 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0
 sub_alpha	dw 256, 256, 256, 256
 _mm_alpha	dq 00000000ff000000h
-_alpha_not	dw 255,255,255,255
-_mm_not		dq -1
+_alpha_not	dw 255, 255, 255, 255
 _func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_al, _mul, _lum_add, _lum_sub, _norm
 
 mtx_prewit1	dd -1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0
@@ -67,12 +65,10 @@ mtx_sobel9_2	dd 1.0, 2.0, 3.0, 4.0, 5.0, 4.0, 3.0, 2.0, 1.0, 2.0, 3.0, 4.0, 5.0,
 
 .data?
 align 16
-tmp_mtx		dd 15 * 15 * 16 dup(?)
-tmp_median	dw 256 dup(?)
+tmp_mtx		dd 4096 dup(?)
 _alpha0		dq ?
 _alpha1		dq ?
 w_mtx		dq ?
-__tmp dd 0
 
 .code
 
@@ -122,8 +118,7 @@ _not:	pxor mm2, _mm_not
 		pand mm3, mm1
 		por mm2, mm3
 		ret
-_mul:	pxor mm7, mm7
-		punpcklbw mm2, mm7
+_mul:	punpcklbw mm2, mm7
 		punpcklbw mm3, mm7
 		pmullw mm2, mm3
 		packuswb mm2, mm2
@@ -157,7 +152,6 @@ _lum_sub:movq2dq xmm0, mm2
 		por mm2, mm3
 		ret
 _alph:	movq mm5, qword ptr _alpha_not
-		pxor mm7, mm7
 		punpcklbw mm2, mm7
 		punpcklbw mm3, mm7
 		pshufw mm4, mm2, 11111111b
@@ -180,7 +174,6 @@ _alph:	movq mm5, qword ptr _alpha_not
 ;((src * alpha) + (dst * (256 - alpha))) / 256;
 _fix_al:movq mm4, qword ptr _alpha0
 		movq mm5, qword ptr _alpha1
-		pxor mm7, mm7
 		punpcklbw mm2, mm7
 		punpcklbw mm3, mm7
 		pmullw mm4, mm2
@@ -226,6 +219,7 @@ _norm:	movq mm5, mm6
 asm_ssh_copy proc USES rbx rsi rdi r12 r13 r14 r15 src_bar:QWORD, src_wh:QWORD, src:QWORD, dst:QWORD, dst_bar:QWORD, dst_wh:QWORD, modify:QWORD
 local w_clamp:DWORD, h_clamp:DWORD, addressing:QWORD, filter:QWORD, operation:QWORD, mtx_a:QWORD, mtx_b:QWORD, buf:QWORD
 		; проверка на копирование в "себя"
+		vzeroupper
 		mov buf, 0
 		cmp r8, r9
 		jnz @f
@@ -339,9 +333,10 @@ init_filters:
 		cmova rax, r12
 		call qword ptr [r11]
 		ret
-func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_normal,i_hi, i_low, null,	   i_rbrts,	null,  null,  i_contr, null, i_gamma, i_scl_b
+func_flt	dq null,	i_sobel, i_laplac, i_prewit, i_emboss, i_normal,i_hi, i_low, i_median, i_rbrts,	null,  null,  i_contr, null, i_gamma, i_scl_b
 			dq f_none,	f_sobel, f_laplac, f_prewit, f_emboss, f_nrml,	f_hi, f_low, f_median, f_rbrts,	f_max, f_min, f_contr, f_bin,f_gamma, f_scl_b
 init_operation:
+		pxor mm7, mm7
 		movd mm0, [rsi].stk_modify.src_msk
 		movq mm1, mm0
 		pandn mm1, _mm_not
@@ -451,7 +446,6 @@ if XMM_LINEAR
 		ret ; 26 инструкций
 else
 		; дает более сглаженный результат и выполняется быстрее в разы
-		pxor mm7, mm7
 		imul rdx, r13
 		imul rdi, r13
 		add rdx, r9
@@ -526,14 +520,14 @@ i_normal:
 		mov rax, 3
 i_sobel:mov r11, offset _sobel
 		or rax, 3
-		mov w_mtx, rax
-		bsr rax, rax
-		shl rax, 4
-		lea r11, [r11 + rax - 16]
+		bsr r12, rax
+		shl r12, 4
+		lea r11, [r11 + r12 - 16]
 		mov r12, [r11]
 		mov r11, [r11 + 8]
 		mov mtx_a, r12
 		mov mtx_b, r11
+i_median:mov w_mtx, rax
 		ret
 i_emboss:vmovaps xmm10, f_0_5x8
 i_laplac:imul rax, 36
@@ -542,12 +536,11 @@ i_laplac:imul rax, 36
 		mov mtx_a, rax
 i_prewit:mov w_mtx, 3
 		ret
-i_low:	;and rax, -1
-i_hi:	mov w_mtx, rax
+i_hi:	vmovaps xmm9, f_3_0x8
+i_low:	mov w_mtx, rax
 		imul rax, rax
 		vcvtsi2ss xmm10, xmm10, rax
 		vpshufd xmm10, xmm10, 0
-		vmovaps xmm9, f_3_0x8
 		ret
 i_rbrts:mov w_mtx, 2
 		ret
@@ -704,9 +697,8 @@ f_nrml:	call clc_mtx
 		vshufps xmm0, xmm1, xmm2, 00000000b	; dv|dv|du|du
 		vpsrldq xmm0, xmm0, 4				; 0|dv|dv|du
 		vshufps xmm0, xmm0, xmm10, 00000100b; 0.0625|0.0625|dv|du
-		vdpps xmm1, xmm0, xmm0, 01110001b	; tmp = dot
-		vrsqrtss xmm1, xmm1, xmm1			; tmp = 1 / sqrt(tmp)
-		vpshufd xmm1, xmm1, 0
+		vdpps xmm1, xmm0, xmm0, 01110111b	; tmp = dot
+		vrsqrtps xmm1, xmm1					; tmp = 1 / sqrt(tmp)
 		vmulps xmm0, xmm0, xmm1				; v *= tmp
 		vmulps xmm0, xmm0, xmm9				; v *= 0.5
 		vaddps xmm0, xmm0, xmm9				; v += 0.5
@@ -738,33 +730,27 @@ f_low:	call clc_mtx
 		vdivps xmm0, xmm1, xmm10
 		pack_pix
 		ret
-f_median:call clc_mtx
-		lea rax, [rsi * 8]
-		lea r12, [rdi + rax * 2]
+f_median: call clc_mtx
+		lea r12, [rsi - 1]
 		mov rbx, rsi
 		shr rbx, 1
 		lea rax, [rbx * 8]
 		lea rbx, [rdi + rax * 2]
-median0:vmovss xmm0, flt_max
-		lea rax, [rdi + 16]
-		mov r11, rdi
-@@:		cmp r11, r12
-		jae @f
-		vmovss xmm1, dword ptr [r11 + 12]
-		add r11, 16
-		vucomiss xmm0, xmm1
-		jbe @b
-		vmovss xmm0, xmm0, xmm1
-		mov rax, r11
-		jmp @b
-@@:		sub rax, 16
-		vmovaps xmm0, [rax]
-		vmovaps xmm1, [rdi]
-		vmovaps [rax], xmm1
+median0:vmovaps xmm0, [rdi]
+		lea r11, [rdi + 16]
+		mov rcx, r12
+@@:		vmovaps xmm2, xmm0
+		vmovaps xmm1, [r11]
+		vminps xmm0, xmm2, xmm0				; находим минимум по всем каналам и перезаписываем его с текущим
+		vmaxps xmm1, xmm2, xmm1				; сортируя по возрастанию
+		vmovaps [r11], xmm1
 		vmovaps [rdi], xmm0
+		add r11, 16
+		loop @b
+		dec r12
 		add rdi, 16
-		cmp rdi, r12
-		jb median0
+		cmp rdi, rbx
+		jbe median0
 		movaps xmm0, [rbx]
 		pack_pix
 		ret
@@ -837,6 +823,7 @@ f_bin:	call f_none
 		pack_pix
 		ret
 ; rgba = pow(rgba, 1/gamma)
+; pow(x,y) = do {x = sqrt(x); y = frac(y) * 2; if (y >= 1) res *= x; } while(x == 1);
 f_gamma:call f_none
 		vmovaps xmm1, xmm0
 		vmovaps xmm2, xmm11

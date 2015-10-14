@@ -20,8 +20,8 @@ _m1000	db 255, 0, 0, 0, 255, 0, 0, 0
 _xmm0	dd 2.0, 30.0, 0.5, 0.25
 tmp_mtx	dd 10.0, 1.0, 5.0, 6.0, 11.0, 25.0, 40.0, 60.0, 0.0, 4.0, 7.0, 8.0, 3.0, 0.0, 1.0, 9.0
 flt_max dd 3.402823466e+38F
-_1		dd 0.5,0.5,0.5,0.5
-_2		dd 0.2,0.2,0.2,0.2
+_1		dd 0.5,0.5,-0.5,-1.5
+_2		dd 0.2,1.2,1.2,1.2
 f_2_0	dd 2.0,2.0,2.0,2.0
 f_1_0	dd 1.0,1.0,1.0,1.0
 _255	dd 255.0, 255.0, 255.0, 255.0
@@ -29,6 +29,32 @@ _255	dd 255.0, 255.0, 255.0, 255.0
 .code
 externdef powf:near
 asm_ssh_shufb proc public
+; pow(x,y) = do {x = sqrt(x); y = frac(y) * 2; if (y >= 1) res *= x; } while(x == 1);
+		mov al, 240
+		ror al, 4
+		ror al, 4
+		ror al, 4
+		ror al, 4
+		lea rax, [rbx + rax + rax]
+
+		movss xmm0, _1			; x
+		movss xmm1, _2			; y
+		movss xmm2, f_2_0		; 2.0
+		movss xmm3, f_1_0		; 1.0
+		movss xmm4, xmm3		; res = 1.0
+		mov rcx, 15
+_loop:	sqrtss xmm0, xmm0		; x = sqrt(x)
+		roundss xmm5, xmm1, 11b
+		subss xmm1, xmm5
+		mulss xmm1, xmm2		; y = frac(y) * 2.0
+		vcmpss xmm6, xmm1, xmm3, 5
+		ucomiss xmm1, xmm3
+		jb @f
+		mulss xmm4, xmm0
+@@:		loop _loop
+;		ucomiss xmm0, xmm3
+;		jg _loop
+		ret
 		movups xmm0, _1
 		movups xmm1, _255
 		mulps xmm0, xmm1

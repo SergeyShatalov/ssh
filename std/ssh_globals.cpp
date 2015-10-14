@@ -10,7 +10,7 @@ namespace ssh
 	typedef int (CALLBACK* __cnv_close)(void* h);
 	typedef size_t(CALLBACK* __cnv_make)(void* cd, const char** inbuf, size_t* inbytesleft, char** outbuf, size_t* outbytesleft);
 
-	static __ext_undname _und((__ext_undname)ssh_dll_proc(L"sshEXT", "ext_undname"));
+	static __ext_undname _und((__ext_undname)ssh_dll_proc(L"sshEXT.dll", "ext_undname"));
 	static __cnv_open _open((__cnv_open)ssh_dll_proc(L"sshCNV.dll", "iconv_open"));
 	static __cnv_close _close((__cnv_close)ssh_dll_proc(L"sshCNV.dll", "iconv_close"));
 	static __cnv_make _make((__cnv_make)ssh_dll_proc(L"sshCNV.dll", "iconv"));
@@ -261,7 +261,7 @@ namespace ssh
 	// извлечь расширение файла
 	String SSH ssh_file_ext(const String& path, bool is_pt)
 	{
-		ssh_l pt((wcsrchr(path, L'.') - (ssh_wcs)path) + is_pt);
+		ssh_l pt((wcsrchr(path, L'.') - (ssh_wcs)path) + !is_pt);
 		return path.substr(pt);
 	}
 	// извлечь имя файла с расширением

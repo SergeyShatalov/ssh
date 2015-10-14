@@ -164,14 +164,14 @@ namespace ssh
 		// добавить сообщение
 		virtual void add(TypeMessage type, ssh_wcs func, ssh_wcs file, int line, ssh_wcs msg, ...);
 		// инициализация
-		virtual void init(LOG* lg);
+		virtual void init(const LOG & lg);
 		// добавить трассировку стека
 		void add(ssh_wcs msg);
 		// вернуть трейсер
 		StackTrace* get_tracer() { return &tracer; }
 	protected:
 		// конструктор
-		Log() : hEventSocket(0) {}
+		Log() {}
 		// деструктор
 		virtual ~Log() { close(); }
 		void shutdown();
@@ -183,14 +183,14 @@ namespace ssh
 		virtual void close();
 		// отправить почту
 		void send_email(const String& ln);
-		// структру описания
-		LOG _log;
+		// структура описания
+		LOG* _log = nullptr;
 		// сокет
 		Socket sock;
 		// файл
 		File file;
 		// хэндл события
-		HANDLE hEventSocket;
+		HANDLE hEventSocket = 0;
 		// трейсер
 		StackTrace tracer;
 		// индекс синглтона
