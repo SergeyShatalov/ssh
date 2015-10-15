@@ -62,7 +62,7 @@ namespace ssh
 		siProgFolder, siWorkFolder, siTempFolder, siUserFolder, siNameProg, siUserName, siCompName, siCustom, siPlatform, siTotalMemory, siPhysicalMemory, siCpuSpeed, siCpuCaps
 	};
 
-	void* ssh_dll_proc(ssh_wcs dll, ssh_ccs proc, ssh_wcs suffix = L"d");
+	ssh_u SSH ssh_dll_proc(ssh_wcs dll, ssh_ccs proc, ssh_wcs suffix = L"d");
 	void SSH ssh_make_path(ssh_wcs path, bool is_file);
 	void SSH ssh_remove_comments(String* lst, ssh_u count, bool is_simple);
 	bool SSH ssh_is_null(ssh_wcs str);

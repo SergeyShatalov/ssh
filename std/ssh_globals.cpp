@@ -190,7 +190,7 @@ namespace ssh
 		return String(out.to<ssh_ws>(), (_out - out) / 2);
 	}
 
-	void* ssh_dll_proc(ssh_wcs dll, ssh_ccs proc, ssh_wcs suffix)
+	ssh_u SSH ssh_dll_proc(ssh_wcs dll, ssh_ccs proc, ssh_wcs suffix)
 	{
 		SSH_TRACE;
 		// хэндлы загруженных dll
@@ -204,10 +204,10 @@ namespace ssh
 		module += (ssh_file_ext(dll, true));
 		if(!(hdll = dlls[module]))
 		{
-			if(!(hdll = LoadLibrary(module))) return nullptr;
+			if(!(hdll = LoadLibrary(module))) return 0;
 			dlls[module] = hdll;
 		}
-		return GetProcAddress(hdll, proc);
+		return (ssh_u)GetProcAddress(hdll, proc);
 	}
 
 	String SSH ssh_system_paths(SystemInfo type, int csidl)

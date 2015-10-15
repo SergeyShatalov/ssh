@@ -516,7 +516,7 @@ namespace ssh
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_unpack_bmp(ssh_u pitch, void* pal, void* dst, void* src, ssh_u _4bit);
-		void asm_ssh_unpack4_bmp(ssh_u pitch, void* pal, void* dst, void* src);
+		void asm_ssh_unpack_psd(ssh_u w, ssh_u h, void* dst, void* src, ssh_u channel_count, ssh_u compression);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);

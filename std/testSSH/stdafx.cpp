@@ -307,6 +307,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	Singlton<Log> _lg;
 	try
 	{
+		ssh_u gh1 = ssh_hash(L"jpeg");
+		ssh_u gh2 = ssh_hash(L"psd");
+		ssh_u gh3 = ssh_hash(L"png");
 		//ssh_u resss = asm_ssh_shufb(0x0102030405060708);
 		Log::LOG _log;
 		_log._out = Log::TypeOutput::File;
@@ -314,8 +317,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		Image* img;
 		asm_ssh_shufb();
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_map(L"e:\\rle4.bmp", 0);
-		img->save(L"e:\\rle4_bmp.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
+		img->set_map(L"e:\\1.psd", 0);
+		img->save(L"e:\\psd.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
 		img->release();
 		return 0;
 		int w = 1536, h = 2048;

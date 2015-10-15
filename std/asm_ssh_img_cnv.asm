@@ -528,4 +528,80 @@ asm_ssh_compute_fmt_size proc public
 _fmt_sz dd 8, 16, 16, 4, 1, 1, 4, 3, 3, 2, 2, 2, 3, 0
 asm_ssh_compute_fmt_size endp
 
+psd_components dd 2,1,0,3
+
+asm_ssh_unpack_psd proc w:QWORD, h:QWORD, dst:QWORD, src:QWORD, channels:QWORD, compression:QWORD
+comment $
+		pushad
+		mov edi,pixels
+		test edi,edi
+		jz finish
+		mov ecx,w
+		imul ecx,h
+		push ecx
+		push edi
+		mov eax,0ff000000h
+		rep stosd
+		pop edi
+		pop edx					;pixel_count
+		mov eax,channels
+		mov ebx,offset components
+		mov ecx,eax
+		mov esi,buf
+		cmp compression,0
+		jz nComp
+		imul eax,h
+		shl eax,1
+		add esi,eax
+loop0:	push edx
+		push edi
+		push ecx
+		add edi,[ebx]
+loop2:	movzx ecx,byte ptr [esi];len
+		inc esi
+		cmp cl,128
+		jae yComp
+		inc ecx
+		sub edx,ecx
+l0:		mov al,[esi]
+		mov [edi],al
+		add edi,4
+		add esi,1
+		loop l0
+		jmp next
+yComp:	jz next
+		xor ecx,255
+		add ecx,2
+		sub edx,ecx
+		lodsb					;val
+l1:		mov [edi],al
+		add edi,4
+		loop l1
+next:	test edx,edx
+		jg loop2
+		pop ecx
+		pop edi
+		pop edx
+		add ebx,4
+		loop loop0
+		popad
+		ret
+nComp:	push edx
+		mov edi,pixels
+		add edi,[ebx]
+loop1:	mov al,[esi]
+		mov [edi],al
+		add edi,4
+		add esi,1
+		dec edx
+		jnz loop1
+		pop edx
+		add ebx,4
+		loop nComp
+finish:	popad
+		ret
+$
+		ret
+asm_ssh_unpack_psd endp
+
 end
