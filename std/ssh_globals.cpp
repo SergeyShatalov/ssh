@@ -204,7 +204,11 @@ namespace ssh
 		module += (ssh_file_ext(dll, true));
 		if(!(hdll = dlls[module]))
 		{
-			if(!(hdll = LoadLibrary(module))) return 0;
+			if(!(hdll = LoadLibrary(module)))
+			{
+				::GetLastError();
+				return 0;
+			}
 			dlls[module] = hdll;
 		}
 		return (ssh_u)GetProcAddress(hdll, proc);

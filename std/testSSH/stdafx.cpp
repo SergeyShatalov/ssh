@@ -317,7 +317,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		Image* img;
 		asm_ssh_shufb();
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_map(L"e:\\1.psd", 0);
+		img->set_map(L"e:\\1.png", 0);
 		img->save(L"e:\\psd.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
 		img->release();
 		return 0;

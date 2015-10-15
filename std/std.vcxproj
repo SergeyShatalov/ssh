@@ -46,6 +46,7 @@
     <OutDir>e:\Разработка\Bin\</OutDir>
     <IntDir>e:\Разработка\tmp\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)d</TargetName>
+    <LibraryPath>E:\Разработка\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -70,6 +71,7 @@
       <ModuleDefinitionFile>ssh_def.def</ModuleDefinitionFile>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/SECTION:.text,ERW %(AdditionalOptions)</AdditionalOptions>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
