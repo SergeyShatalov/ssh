@@ -221,18 +221,18 @@ namespace ssh
 	class SSH Tracer
 	{
 	public:
-		Tracer(ssh_wcs _fn, ssh_wcs _fl, int _ln) : ln(_ln), fl(_fl), fn(_fn)
+		Tracer(ssh_wcs _fn, ssh_wcs _fl, int _ln) : fn(_fn)// ln(_ln), fl(_fl), 
 		{
 			if(!StackTrace::is_disabled) log->get_tracer()->add(true, _fn, _fl, _ln);
 		}
 		~Tracer()
 		{
-			if(!StackTrace::is_disabled) log->get_tracer()->add(false, fn, fl, ln);
+			if(!StackTrace::is_disabled) log->get_tracer()->add(false, fn, nullptr, 0);
 		}
 	protected:
 		//Section sect;
-		int ln;
-		ssh_wcs fl;
+		//int ln;
+		//ssh_wcs fl;
 		ssh_wcs fn;
 	};
 }

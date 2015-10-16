@@ -1,12 +1,6 @@
 
 #pragma once
 
-//extern "C"
-//{
-//	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
-//	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
-//};
-
 typedef void* (CALLBACK* __regx_compile)(ssh_wcs pattern, ssh_l options);
 typedef ssh_l(CALLBACK* __regx_exec)(const void* re, ssh_wcs subj, ssh_l len_subj, ssh_l idx, ssh_l options, ssh_l* vec, ssh_l count_vec);
 typedef ssh_l(CALLBACK* __regx_free)(void* p);
@@ -26,11 +20,14 @@ namespace ssh
 		String() { init(); }
 		String(String&& str) { buf = str.buf; str.init(); }
 		String(ssh_wcs wcs, ssh_u len = -1) { init(); if(wcs) { ssh_u t(SSH_STRLEN(wcs)); make(wcs, len > t ? t : len); } }
+		String(ssh_ws* ws, ssh_u len = -1) : String((ssh_wcs)ws, len) {}
 		String(ssh_ccs ccs, ssh_u len = -1);
 		String(const Buffer<ssh_cs>& buf) { init(); *this = buf; }
 		String(const String& str) { init(); *this = str; }
 		String(ssh_ws ws, ssh_u rep) { init(); if(alloc(rep, false)) { buf[rep] = 0; _wcsset(buf, ws); data()->update(); } }
-		template <typename T> explicit String(T v, Radix r = Radix::_dec) { init(); fromNum(v, r); }
+		template <typename T> String(const T& v, Radix r = Radix::_dec) { init(); fromNum(v, r); }
+		String(float v) { init(); fromNum(v, Radix::_flt); }
+		String(double v) { init(); fromNum(v, Radix::_dbl); }
 		// деструктор
 		~String() { empty(); }
 		// привидение типа
@@ -46,7 +43,7 @@ namespace ssh
 		operator double() const { return toNum<double>(0, _dbl); }
 		operator float() const { return toNum<float>(0, _flt); }
 		template <typename T> T toNum(ssh_u idx, Radix R = String::_dec) const { return *(T*)asm_ssh_wton(buf + idx, R, nullptr); }
-		template <typename T> void fromNum(T v, Radix R = String::_dec) { *this = asm_ssh_ntow(&v, R); }
+		template <typename T> void fromNum(const T& v, Radix R = String::_dec) { *this = asm_ssh_ntow(&v, R); }
 		// вернуть по индексу
 		ssh_ws operator[](ssh_u idx) const { return get(idx); }
 		// операторы сравнения

@@ -361,7 +361,6 @@ namespace ssh
 
 	ssh_u SSH ssh_offset_line(const String& text, ssh_l ln)
 	{
-		SSH_TRACE;
 		ssh_wcs _text(text);
 		ssh_wcs txt(_text);
 		while(ln-- > 0)
@@ -451,7 +450,6 @@ namespace ssh
 	
 	ssh_u SSH ssh_cnv_value(ssh_wcs str, ENUM_DATA* stk, ssh_u def)
 	{
-		SSH_TRACE;
 		ssh_ws* t;
 		ssh_wcs _wcs;
 		ssh_u val(0);
@@ -479,7 +477,6 @@ namespace ssh
 	
 	GUID SSH ssh_make_guid(ssh_wcs src)
 	{
-		SSH_TRACE;
 		src += (src[0] == L'{' ? 1 : 0);
 		GUID _guid;
 		ssh_ws* dst((ssh_ws*)src);
@@ -496,7 +493,6 @@ namespace ssh
 	
 	void SSH ssh_make_path(ssh_wcs path, bool is_file)
 	{
-		SSH_TRACE;
 		ssh_ws dir[MAX_PATH];
 		ssh_ws* _path((ssh_ws*)path);
 		bool is;
@@ -707,7 +703,6 @@ namespace ssh
 	
 	String SSH ssh_cnv_string(ssh_u flags, ENUM_DATA* stk, ssh_wcs def, bool enumerate)
 	{
-		SSH_TRACE;
 		String ret;
 		ssh_u i(0);
 		ssh_wcs _wcs;

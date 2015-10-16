@@ -9,7 +9,7 @@ namespace ssh
 	struct XmlNode
 	{
 		// конструктор
-		XmlNode() : attrs(nullptr), next(nullptr) {}
+		XmlNode() : attrs(nullptr), next(nullptr), last(nullptr) {}
 		XmlNode(ssh_wcs name, const String& v) : XmlNode() { nm = name; val = v; }
 		~XmlNode() { SSH_DEL(attrs); SSH_DEL(next); }
 		// вернуть атрибут по имени
@@ -81,19 +81,19 @@ namespace ssh
 		// получить значение узла
 		template <typename T> T val(HXML h) const
 		{
-			return h->value->val;
+			return (T)(h->value->val);
 		}
 		// установить значение атрибута
-		template <typename T> void set_attr(HXML h, ssh_wcs name, const T& val)
+		template<typename T> void set_attr(HXML h, ssh_wcs name, const T& val)
 		{
 			auto n(h->value->attr(name));
-			if(n) n->val = String(val); else h->value->add_attr(new XmlNode(name, String(val)));
+			if(n) n->val = val; else h->value->add_attr(new XmlNode(name, val));
 		}
 		// получить значение атрибута
 		template <typename T> T attr(HXML h, ssh_wcs name, const T& def) const
 		{
 			auto n(h->value->attr(name));
-			return (n ? n->val : def);
+			return (n ? (T)n->val : (T)def);
 		}
 		// вернуть признак наличия атрибута
 		bool is_attr(HXML h, ssh_wcs name) const
@@ -101,7 +101,7 @@ namespace ssh
 			return (h->value->attr(name) != nullptr);
 		}
 		// добавить узел
-		HXML add_node(HXML h, ssh_wcs name, ssh_wcs val)
+		template <typename T> HXML add_node(HXML h, ssh_wcs name, const T& val)
 		{
 			return tree.add(h, new XmlNode(name, val));
 		}

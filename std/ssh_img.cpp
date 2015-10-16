@@ -268,7 +268,7 @@ namespace ssh
 			HXML hroot(xml.add_node(xml.root(), L"image", L""));
 			xml.set_attr(hroot, L"type", ssh_cnv_string(SSH_CAST(type()), m_img_maps, L""));
 			xml.set_attr(hroot, L"format", ssh_cnv_string(SSH_CAST(format()), m_img_fmts, L""));
-			xml.set_attr<int>(hroot, L"mips", head.mip);
+			xml.set_attr(hroot, L"mips", head.mip);
 			xml.set_attr(hroot, L"wh", ssh_implode<int>(L",", head.wh, 2, L"0", nullptr, false, false));
 			// слои и мипы
 			// создаем вложенную папку для файлов
@@ -476,10 +476,7 @@ namespace ssh
 							}
 							break;
 						case Cmds::modify:
-							{
-								ImgMod mod(&xml, hnode, this, -1);
-								mod.apply(get_map(layer, mip));
-							}
+							ImgMod(&xml, hnode, this).apply(get_map(layer, mip));
 							break;
 						case Cmds::open:
 							set_map(xml.attr(hnode, L"path", tmp), layer, mip);

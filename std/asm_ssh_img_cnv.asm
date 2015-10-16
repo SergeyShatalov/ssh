@@ -17,10 +17,42 @@ cnvFuncs	dq bgra8_,	_bgra8
 			dq r5g6b5_,	_r5g6b5
 			dq rgb5a1_,	_rgb5a1
 			dq rgba4_,	_rgba4
+			dq la8_,	_la8
 			dq font_,	0
 
 .code
 
+la8_unpack db 0, 0, 0, 1, 2, 2, 2, 3
+la8_:	; x x x x a2 l2 a1 l1 -> a2 l2 l2 l2 a1 l1 l1 l1
+		movd mm0, dword ptr [r9]
+		pshufb mm0, qword ptr la8_unpack
+		movq [r8], mm0
+		add r9, 4
+		add r8, 8
+		ret
+la8_pack db -1, 3, -1, -1, -1, 7, -1, -1
+_la8:	; a2 r2 g2 b2 a1 r1 g1 b1 -> 0 0 0 0 a2 l2 a1 l1
+		movq mm0, qword ptr [r9]
+		pshufb mm0, qword ptr la8_pack
+		vpmovzxbd ymm0, dword ptr [r9]
+		vcvtdq2ps ymm0, ymm0
+		vdpps ymm0, ymm0, ymm1, 01110001b
+		vcvtps2dq ymm0, ymm0
+		vpackssdw ymm0, ymm0, ymm0
+		vpackuswb ymm0, ymm0, ymm0
+		movdq2q mm1, xmm0
+		por mm1, mm0
+		psrlq mm0, 32
+		vextracti128 xmm0, ymm0, 1
+		movdq2q mm2, xmm0
+		por mm2, mm0
+		movd rax, mm1
+		mov [r8], ax
+		movd rax, mm2
+		mov [r8 + 2], ax
+		add r8, 4
+		add r9, 8
+		ret
 bgra8_swap	db 2, 1, 0, 3, 6, 5, 4, 7
 bgra8_:	; a2 r2 g2 b2 a1 r1 g1 b1 -> a2 b2 g2 r2 a1 b1 g1 r1
 _bgra8:	; a2 b2 g2 r2 a1 b1 g1 r1 -> a2 r2 g2 b2 a1 r1 g1 b1
@@ -79,8 +111,8 @@ _bgr8:	; a2 b2 g2 r2 a1 b1 g1 r1 -> 00 00 r2 g2 b2 r1 g1 b1
 		add r9, 8
 		add r8, 6
 		ret
-a8_unpack db 1, 1, 1, 1, 0, 0, 0, 0
-a8_alpha db 0, 0, 0, -1, 0, 0, 0, -1
+a8_unpack db 0, 0, 0, -1, 1, 1, 1, -1
+a8_alpha  db 0, 0, 0, -1, 0, 0, 0, -1
 a8_:	; x x x x x x a2 a1 -> a2 a2 a2 a2 a1 a1 a1 a1
 		movzx rax, word ptr [r9]
 		movd mm0, rax
@@ -90,7 +122,7 @@ a8_:	; x x x x x x a2 a1 -> a2 a2 a2 a2 a1 a1 a1 a1
 		add r9, 2
 		add r8, 8
 		ret
-a8_pack db 2, 7, -1, -1, -1, -1, -1, -1
+a8_pack db 3, 7, -1, -1, -1, -1, -1, -1
 _a8:	; a2 r2 g2 b2 a1 r1 g1 b1 -> 0 0 0 0 0 0 a2 a1
 		movq mm0, [r9]
 		pshufb mm0, qword ptr a8_pack
@@ -106,18 +138,17 @@ l8_:	; x x x x x x l2 l1 -> 0 l2 l2 l2 0 l1 l1 l1
 		movd mm0, rax
 		pshufb mm0, qword ptr l8_unpack
 		por mm0, qword ptr l8_alpha
+		pmullw mm0, qword ptr _mm_gamma
 		movq [r8], mm0
 		add r9, 2
 		add r8, 8
 		ret
-l8_pack db 2, 6, -1, -1, -1, -1, -1, -1
 _l8:	; a2 r2 g2 b2 a1 r1 g1 b1 -> 0 0 0 0 0 0 l2 l1
-		movq xmm0, qword ptr [r9]
-		vpmovzxbd ymm0, xmm0
+		vpmovzxbd ymm0, dword ptr [r9]
 		vcvtdq2ps ymm0, ymm0
-		vdpps ymm0, ymm0, ymm1, 01110111b
+		vdpps ymm0, ymm0, ymm1, 01110001b
 		vcvtps2dq ymm0, ymm0
-		vpackusdw ymm0, ymm0, ymm0
+		vpackssdw ymm0, ymm0, ymm0
 		vpackuswb ymm0, ymm0, ymm0
 		movd rax, xmm0
 		mov [r8], al
@@ -127,8 +158,7 @@ _l8:	; a2 r2 g2 b2 a1 r1 g1 b1 -> 0 0 0 0 0 0 l2 l1
 		add r9, 8
 		add r8, 2
 		ret
-font_:	movq xmm0, qword ptr [r9]
-		vpmovzxbd ymm0, xmm0
+font_:	vpmovzxbd ymm0, dword ptr [r9]
 		vcvtdq2ps ymm0, ymm0
 		vdpps ymm0, ymm0, ymm1, 01110111b
 		vcvtps2dq ymm0, ymm0
@@ -242,6 +272,7 @@ _rgba4:	mov r12, offset rgba4_pack
 
 ;rcx(fmt), rdx(wh), r8(dst), r9(src), is
 asm_ssh_cnv proc public USES r10 r11 r12 rbx rsi rdi r13 r14 r15 fmt:DWORD, wh:QWORD, dst:QWORD, src:QWORD, is:DWORD
+		vzeroupper
 		movsxd r11, is
 		movsxd rax, ecx
 		movsxd rcx, dword ptr [rdx]			; width
@@ -528,80 +559,70 @@ asm_ssh_compute_fmt_size proc public
 _fmt_sz dd 8, 16, 16, 4, 1, 1, 4, 3, 3, 2, 2, 2, 3, 0
 asm_ssh_compute_fmt_size endp
 
-psd_components dd 2,1,0,3
-
-asm_ssh_unpack_psd proc w:QWORD, h:QWORD, dst:QWORD, src:QWORD, channels:QWORD, compression:QWORD
-comment $
-		pushad
-		mov edi,pixels
-		test edi,edi
-		jz finish
-		mov ecx,w
-		imul ecx,h
-		push ecx
-		push edi
-		mov eax,0ff000000h
-		rep stosd
-		pop edi
-		pop edx					;pixel_count
-		mov eax,channels
-		mov ebx,offset components
-		mov ecx,eax
-		mov esi,buf
-		cmp compression,0
-		jz nComp
-		imul eax,h
-		shl eax,1
-		add esi,eax
-loop0:	push edx
-		push edi
-		push ecx
-		add edi,[ebx]
-loop2:	movzx ecx,byte ptr [esi];len
-		inc esi
-		cmp cl,128
-		jae yComp
-		inc ecx
-		sub edx,ecx
-l0:		mov al,[esi]
-		mov [edi],al
-		add edi,4
-		add esi,1
-		loop l0
-		jmp next
-yComp:	jz next
-		xor ecx,255
-		add ecx,2
-		sub edx,ecx
-		lodsb					;val
-l1:		mov [edi],al
-		add edi,4
-		loop l1
-next:	test edx,edx
-		jg loop2
-		pop ecx
-		pop edi
-		pop edx
-		add ebx,4
-		loop loop0
-		popad
+asm_ssh_unpack_psd proc USES rdi r12 r13 w:QWORD, h:QWORD, dst:QWORD, src:QWORD, channels:QWORD, compression:QWORD, stride:QWORD
+		mov r13, stride
+		imul rcx, rdx
+		mov r10, rcx
+		xor r11, r11
+		mov r12, channels
+		cmp compression, 0
+		jz no
+_loop:	lea rdi, [r8 + r11]
+		mov rdx, r10
+_loop0:	movzx rcx, byte ptr [r9]			; len
+		inc r9
+		cmp cl, 128
+		jae _yes
+		inc rcx
+		sub rdx, rcx
+@@:		mov al, [r9]
+		mov [rdi], al
+		add rdi, r13
+		inc r9
+		loop @b
+		test rcx, rcx
+_yes:	jz next
+		not cl
+		add cl, 2
+		sub rdx, rcx
+		mov al, [r9]						; val
+		inc r9
+@@:		mov [rdi], al
+		add rdi, r13
+		loop @b
+next:	test rdx, rdx
+		ja _loop0
+		inc r11
+		cmp r11, r12
+		jnz _loop
 		ret
-nComp:	push edx
-		mov edi,pixels
-		add edi,[ebx]
-loop1:	mov al,[esi]
-		mov [edi],al
-		add edi,4
-		add esi,1
-		dec edx
-		jnz loop1
-		pop edx
-		add ebx,4
-		loop nComp
-finish:	popad
-		ret
-$
+no:		mov rdx, r10
+		lea rdi, [r8 + r11]
+@@:		mov al, [r9]
+		mov [rdi], al
+		add rdi, r13
+		inc r9
+		dec rdx
+		jnz @b
+		inc r11
+		cmp r11, r12
+		jnz no
 		ret
 asm_ssh_unpack_psd endp
+
+asm_ssh_indexed_psd proc sz:QWORD, pal:QWORD, dst:QWORD
+@@:		movzx rax, byte ptr [r8]
+		mov r10b, [r8 + 1]
+		shl r10, 8
+		mov r10b, [rdx + rax]
+		shl r10, 8
+		mov r10b, [rdx + rax + 256]
+		shl r10, 8
+		mov r10b, [rdx + rax + 512]
+		mov [r8], r10d
+		add r8, 4
+		loop @b
+		ret
+asm_ssh_indexed_psd endp
 
 end

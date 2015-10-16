@@ -16,7 +16,7 @@ namespace ssh
 {
 	enum class FormatsMap : int
 	{
-		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, font, undef
+		bc1, bc2, bc3, bgra8, a8, l8, rgba8, rgb8, bgr8, r5g6b5, rgb5a1, rgba4, la8, font, undef
 	};
 
 	struct QUAD
@@ -29,7 +29,7 @@ namespace ssh
 	class Image;
 	class ImgMap;
 
-	class ImgMod
+	class SSH ImgMod
 	{
 	public:
 		// типы модификаторов
@@ -180,7 +180,9 @@ namespace ssh
 		};
 		ImgMod() {}
 		// инициализирующий конструктор из xml
-		ImgMod(Xml* xml, HXML hroot, Image* img = nullptr, int layer_map = -1);
+		ImgMod(Xml* xml, HXML hroot, Image* img = nullptr) { make(xml, hroot, img); }
+		// создать модификатор
+		void make(Xml* xml, HXML hroot, Image* img = nullptr);
 		// применить модификатор для карты
 		void apply(ImgMap* map);
 		// преобразование из процентного задания координат в абсолютные
@@ -398,7 +400,7 @@ namespace ssh
 		// сформировать файл формата PSD
 		void makePSD(ssh_cs* buf);
 		// сформировать файл формата PNG
-		void makePNG(ssh_cs* buf);
+		void makePNG(ssh_cs* buf) {}
 		// список изображений
 		List<IMAGE*> imgs;
 	};
@@ -516,7 +518,8 @@ namespace ssh
 		void asm_ssh_h_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_v_flip(const Bar<int>& bar, const Range<int>& wh, void* buf);
 		void asm_ssh_unpack_bmp(ssh_u pitch, void* pal, void* dst, void* src, ssh_u _4bit);
-		void asm_ssh_unpack_psd(ssh_u w, ssh_u h, void* dst, void* src, ssh_u channel_count, ssh_u compression);
+		void asm_ssh_unpack_psd(ssh_u w, ssh_u h, void* dst, void* src, ssh_u channel_count, ssh_u compression, ssh_u pal);
+		void asm_ssh_indexed_psd(ssh_u sz, void* pal, void* src);
 		void asm_ssh_unpack_tga(const Range<int>& wh, void* pal, void* dst, void* src, int bpp, int flags);
 		void asm_ssh_unpack_gif(int iTrans, void* pal, void* dst, void* src, void* stk);
 		void asm_ssh_copy(const Bar<int>& src_bar, const Range<int>& src_wh, void* src, void* dst, const Bar<int>& dst_bar, const Range<int>& dst_wh, ImgMod* modify);
@@ -528,7 +531,7 @@ namespace ssh
 		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
 		void asm_ssh_noise_terrain(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_flip_90(const Range<int>& clip, void* dst, void* pix);
-		void asm_ssh_border_3d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
+		void asm_ssh_border3d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_group(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_table(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_border2d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);

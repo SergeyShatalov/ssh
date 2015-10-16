@@ -365,7 +365,7 @@ namespace ssh
 		cdepth++;
 		if(indent < 0) indent = 0;
 		String _indent(L' ', indent * 2);
-		add_node(tmp.fmt(L"%s%c%s()  -  (%s:%i)", _indent, (is ? L'+' : L'-'), func, file, line));
+		add_node(file ? tmp.fmt(L"%s%c%s()  -  (%s:%i)", _indent, (is ? L'+' : L'-'), func, file, line) : tmp.fmt(L"%s%c%s()", _indent, (is ? L'+' : L'-'), func));
 		if(is) indent++;
 		is_disabled = false;
 	}

@@ -1,9 +1,11 @@
 
 include asm_ssh.inc
 
+public _alpha_not, _mm_gamma
+
 .const
 align 16
-_gamma		dd 0.3, 0.59, 0.11, 0.0, 0.3, 0.59, 0.11, 0.0
+_gamma		dd 0.3, 0.59, 0.11, 1.0, 0.3, 0.59, 0.11, 1.0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
 f_0_5x8		dd 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5
@@ -13,10 +15,12 @@ f_2_0x8		dd 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0
 f_100x4		dd 100.0, 100.0, 100.0, 100.0
 flt_max		dd 3.402823466e+38F, 3.402823466e+38F, 3.402823466e+38F, 3.402823466e+38F
 _fabs		dd 7fffffffh, 7fffffffh, 7fffffffh, 7fffffffh
-_mm_not		dq -1
+_mm_not		dd -1, -1, -1, -1
+_alpha_not	dw 255, 255, 255, 255
+_mm_gamma	dw 77, 151, 28, 1, 77, 151, 28, 1
 
 .data?
-_clip		stk_bar<>
+_clip		stk_bar<?>
 
 .code
 
@@ -87,8 +91,7 @@ _err:	stc
 		ret
 asm_clip_bar endp
 
-;rcx(bar) rdx(clip) r8(dst)
-asm_ssh_v_flip proc public USES r11 r12
+asm_ssh_v_flip proc public USES r11 r12 bar:QWORD, clip:QWORD, dst:QWORD
 		call asm_clip_bar
 		jc _fin
 		dec rdx
@@ -115,8 +118,7 @@ _loop:	mov r9, r8
 _fin:	ret
 asm_ssh_v_flip endp
 
-;rcx(bar) rdx(clip) r8(dst)
-asm_ssh_h_flip proc public USES r11
+asm_ssh_h_flip proc public USES r11 bar:QWORD, clip:QWORD, dst:QWORD
 		call asm_clip_bar
 		jc _fin
 		shr rcx, 1
@@ -144,8 +146,7 @@ _fin:	ret
 swap_h_flip db 4, 5, 6, 7, 0, 1, 2, 3
 asm_ssh_h_flip endp
 
-; rcx(range), rdx(dst), r8(src)
-asm_ssh_flip_90 proc
+asm_ssh_flip_90 proc wh:QWORD, dst:QWORD, src:QWORD
 		mov r9, rdx
 		mov rdx, [rcx + 08]		; w->h
 		mov rcx, [rcx + 00]		; h->w
@@ -166,13 +167,11 @@ _11:	add r10, rbx
 _fin:	ret
 asm_ssh_flip_90 endp
 
-;(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_figure proc
+asm_ssh_figure proc bar:QWORD, clip:QWORD, pix:QWORD, modify:QWORD
 		ret
 asm_ssh_figure endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_gradient proc
+asm_ssh_gradient proc USES r11 r12 r13 r14 r15 rsi rbx bar:QWORD, clip:QWORD, pix:QWORD, modify:QWORD
 		vzeroupper
 		movsxd r14, [rcx].stk_bar.w
 		movsxd r15, [rcx].stk_bar.h
@@ -181,12 +180,12 @@ asm_ssh_gradient proc
 		pxor mm7, mm7
 		movd mm0, [r9].stk_modify.src_msk
 		movq mm1, mm0
-		pandn mm1, _mm_not
+		pandn mm1, qword ptr _mm_not
 		mov r11, offset _func_ops
 		mov r12, offset _func_tex
 		movsxd rax, [r9].stk_modify.src_ops
 		mov r11, [r11 + rax * 8]						; функция пиксельной операции
-		movsxd rax, [r9].stk_modify.coord
+		movsxd rax, [r9].stk_modify.type_address
 		mov r12, [r12 + rax * 8]						; функция адресации координат
 		; преобразовать начальный и конечный цвет в плавающий формат
 		vxorps xmm10, xmm10, xmm10
@@ -197,13 +196,15 @@ asm_ssh_gradient proc
 		vpmovzxbd xmm15, dword ptr [r9].stk_modify.dst_val
 		vcvtdq2ps xmm14, xmm14
 		vcvtdq2ps xmm15, xmm15
-		vdivps xmm14, xmm14, xmm12
-		vdivps xmm15, xmm15, xmm12
+		vdivps xmm14, xmm14, xmm12						; color1
+		vdivps xmm15, xmm15, xmm12						; color2
 		; произвести предрасчет градиента
 		vcvtsi2ss xmm0, xmm0, r14						; plane_x
-		vcvtsi2ss xmm1, xmm0, r15						; plane_y
-		vdivss xmm0, xmm0, [r9].stk_modify.wh_repeat.w
-		vdivss xmm1, xmm1, [r9].stk_modify.wh_repeat.h
+		vcvtsi2ss xmm1, xmm1, r15						; plane_y
+		vdivss xmm6, xmm0, [r9].stk_modify.wh_repeat.w
+		vdivss xmm7, xmm1, [r9].stk_modify.wh_repeat.h
+		vdivss xmm8, xmm0, xmm6							; dx
+		vdivss xmm9, xmm1, xmm7							; dy
 		vmulss xmm2, xmm0, xmm0							; xx = plane_x * plane_x
 		vfmadd231ss xmm2, xmm1, xmm1					; xx += plane_y * plane_y
 		vrsqrtss xmm4, xmm2, xmm2						; length = 1.0f / sqrtf(xx)
@@ -211,92 +212,230 @@ asm_ssh_gradient proc
 		vmulss xmm0, xmm0, xmm2
 		vmulss xmm1, xmm1, xmm2
 		; сдвинуть координаты
-		movsxd rdx, _clip.stk_bar.y
-		neg rdx
-_h:		mov r9, r8
-		movsxd rcx, _clip.stk_bar.x
-		neg rcx
-@@:		vcvtsi2ss xmm2, xmm2, rcx
+		; сдвинуть на clip.x, clip.y
+		vshufps xmm7, xmm9, xmm8, 00000000b				; dx|dx|dy|dy
+		vcvtsi2ss xmm6, xmm6, _clip.y
+		vmulss xmm6, xmm6, xmm9							; y
+		vshufps xmm7, xmm6, xmm7, 00100000b				; dy|dx|y|y
+		vcvtsi2ss xmm6, xmm6, _clip.x
+		vmulss xmm6, xmm6, xmm8							; x
+_h:		push rdx
+		push rcx
+		vmovss xmm7, xmm7, xmm6							; dy|dx|y|x
+		vcvtps2dq xmm5, xmm7
+		vpextrd r13, xmm5, 1
+		mov r9, r8
+@@:		vcvtss2si rbx, xmm7
+		call r12										; вернуть координаты, в соответствии с адресацией координат
+		vcvtsi2ss xmm2, xmm2, rbx
 		vcvtsi2ss xmm3, xmm3, rdx
 		vmulss xmm2, xmm2, xmm0							; x *= plane_x
 		vfmadd231ss xmm2, xmm3, xmm1					; x += y * plane_y
 		vsubss xmm2, xmm2, xmm4							; x -= plane_z
-		call r12										; вернуть цвет в xmm5, в соответствии с адресацией координат
-		vshufps xmm5, xmm5, xmm5, 0
-		vmulps xmm2, xmm15, xmm5						; tmp1 = color2 * color
-		vsubps xmm3, xmm13, xmm5						; tmp2 = 1 - color
+		vshufps xmm2, xmm2, xmm2, 0
+		vsubps xmm3, xmm13, xmm2						; tmp2 = 1 - color1
+		vmulps xmm2, xmm15, xmm2						; tmp1 = color2 * color1
 		vfmadd231ps xmm2, xmm3, xmm14					; tmp1 += tmp2 * color1
+		vmulps xmm2, xmm2, xmm12
 		vcvtps2dq xmm2, xmm2							; пакуем цвет
 		vpackssdw xmm2, xmm2, xmm2
-		movdq2q mm2, xmm1
+		movdq2q mm2, xmm2
 		packuswb mm2, mm2
 		movd mm3, dword ptr [r9]
 		call r11										; пиксельная операция
 		movd dword ptr [r9], mm2
 		add r9, 4
-		inc rcx
-		cmp rcx, r14
-		jb @b
+		vmovhlps xmm2, xmm2, xmm7						; 0|0|dy|dx
+		vaddss xmm7, xmm7, xmm2							; dy|dx|y|x+dx
+		loop @b
+		vmovlhps xmm2, xmm2, xmm7						; y|x|0|0
+		vaddps xmm2, xmm2, xmm7							; y+dy|x+dx|y|x
+		vmovhlps xmm7, xmm7, xmm2						; dy|dx|y+dy|x+dx
+		pop rcx
+		pop rdx
 		add r8, r10
-		inc rdx
-		cmp rdx, r15
-		jb _h
+		dec rdx
+		jnz _h
 _fin:	emms
 		ret
-_func_tex	dq _clamp,_mirror,_repeat,_clamp, _mirror, _repeat, 0, 0
+_func_tex	dq _clamp,_mirror,_repeat,_clamp, _mirror, _repeat
 OPTION EPILOGUE:NONE
-_clamp:	vmaxss xmm5, xmm2, xmm10
-		vminss xmm5, xmm5, xmm13
+_clamp:	mov rdx, r13
 		ret
-_repeat:vroundss xmm3, xmm2, xmm2, 00001011b
-		vsubss xmm5, xmm2, xmm3
+_repeat:xor rdx, rdx
+		mov rax, rbx
+		div r14
+		mov rbx, rdx
+		xor rdx, rdx
+		mov rax, r13
+		div r15
 		ret
-_mirror:vandps xmm2, xmm2, _fabs		; v = |v|
-		vdivss xmm3, xmm2, xmm11		; tmp = v / 2.0
-		vroundss xmm3, xmm3, xmm3, 00001011b
-		vmulps xmm3, xmm3, xmm11		; tmp *= 2.0
-		vsubps xmm4, xmm2, xmm3			; flag = v - tmp (остаток от деления)
-		vroundss xmm4, xmm4, xmm4, 00001011b
-		vroundss xmm3, xmm2, xmm2, 00001011b
-		vsubss xmm2, xmm2, xmm3			; v = modf(v, 1.0)
-		vmulss xmm3, xmm4, xmm11		; f = flag * 2.0
-		vsubss xmm3, xmm13, xmm3		; f = 1.0 - f
-		vaddss xmm4, xmm4, xmm3			; flag += f
-		vmulss xmm5, xmm2, xmm4			; res = v * flag
+_mirror:mov rax, rbx
+		xor rdx, rdx
+		lea rsi, [r14 * 2]
+		div rsi
+		lea rax, [rdx + 1]
+		sub rsi, rax
+		cmp rdx, r14
+		cmovge rdx, rsi
+		mov rbx, rdx
+		mov rax, r13
+		xor rdx, rdx
+		lea rsi, [r15 * 2]
+		div rsi
+		lea rax, [rdx + 1]
+		sub rsi, rax
+		cmp rdx, r15
+		cmovge rdx, rsi
 		ret
 OPTION EPILOGUE:EPILOGUEDEF
 asm_ssh_gradient endp
 
- ;(const Range<int>& vals, const Range<int>& msks, void* pix, const Range<int>& clip);
-asm_ssh_replace proc USES rdi
-		mov rdi, r8
-		mov r10d, [rcx].stk_range.w		; src_val
-		mov r11d, [rcx].stk_range.h		; dst_val
+asm_ssh_replace proc vals:QWORD, msks:QWORD, pix:QWORD, clip:QWORD
+		mov r10, r8
+		mov r8d, [rcx].stk_range.w				; src_val
+		movd mm0, dword ptr [rcx].stk_range.h	; dst_val
 		movsxd rax, [r9].stk_range.w
 		movsxd rcx, [r9].stk_range.h
-		imul rcx, rax					; длина изображения
+		imul rcx, rax							; длина изображения
 		jrcxz _fin
-		mov r8d, [rdx].stk_range.w		; src_msk
-		mov r9d, [rdx].stk_range.h		; dst_msk
-_loop:	mov eax, [rdi]
-		mov edx, eax
-		and edx, r8d
-		cmp edx, r10d
+		mov r9d, [rdx].stk_range.w				; src_msk
+		movd mm1, dword ptr [rdx].stk_range.h	; dst_msk
+		movq mm2, mm1
+		pandn mm2, mm0							; dst_val
+_loop:	movd mm0, dword ptr [r10]
+		movd edx, mm0
+		and edx, r9d
+		cmp edx, r8d
 		jnz @f
-		and eax, r9d
-		or eax, r11d
-@@:		stosd
+		pand mm0, mm1
+		por mm0, mm2
+		movd dword ptr [r10], mm0
+@@:		add r10, 4
 		loop _loop
+		emms
 _fin:	ret
 asm_ssh_replace endp
 
-; (const Range<int>& tmp, ImgMod* modify, void* buf);
-asm_ssh_histogramm proc
+asm_make_histogramm proc
+		ret
+asm_make_histogramm endp
+
+asm_ssh_histogramm proc wh:QWORD, modify:QWORD, buf:QWORD
+comment $
+;rcx(wh), rdx(clip), r8(rgba), r9(pixels), background, foreground, type
+asmHistogramm proc USES rbx r12 r13 rdi rsi wh:QWORD, clip:QWORD, dst:QWORD, src:QWORD, cb:DWORD, cf:DWORD, type:BYTE
+LOCAL @@transform[256]:DWORD
+		xorps xmm15, xmm15
+		movaps xmm14, _fp255x4
+		movaps xmm13, _gamma
+		mov r11, rcx
+		lea r13, @@transform
+		mov rdi, r13
+		xor rax, rax
+		mov rcx, 128
+		rep stosq
+		mov rcx, [rdx + 00]
+		imul rcx, [rdx + 08]							; размер изображения
+		movzx rax, type
+		mov r10, offset _addr_his
+		mov r10, [rax * 8 + r10]
+		mov rdx, 1										; для пропорции по высоте
+		cvtsi2ss xmm1, rcx								; общее количество пикселей
+		xor rbx, rbx
+_loop:	call r10
+		add rbx, rax
+		inc dword ptr [rax * 4 + r13]
+		test rax, rax
+		jz @f
+		cmp rax, 255
+		jz @f
+		mov eax, dword ptr [rax * 4 + r13]
+		cmp rax, rdx
+		cmova rdx, rax
+@@:		add r9, 4
+		loop _loop
+		cmp type, 4
+		jb _pic
+		mov rdi, r8
+		mov rsi, r13
+		cvtsi2ss xmm0, rbx
+		divss xmm0, xmm1
+		cvtss2si rax, xmm0
+		;stosd					?????
+		mov rcx, 128
+		rep movsq
+		mov rax, r8
+		ret
+_pic:	;сформировать изображение гистограммы
+		xorps xmm3, xmm3			; x
+		mov rbx, [r11 + 00]			; w
+		mov r11, [r11 + 08]			; h
+		cvtsi2ss xmm0, rbx
+		cvtsi2ss xmm1, r11
+		cvtsi2ss xmm2, rdx			; пропорция высоты
+		divss xmm1, xmm2			; отношение высоты
+		divss xmm0, _fp256			; приращение ширины
+		; коррекция(если ширина == 0)
+		cvtss2si r9, xmm0
+		cmp r9, 1
+		adc r9, 0					; ширина линии
+		shl rbx, 2					; pitch
+		mov rsi, 256
+_loop0:	cvtsi2ss xmm2, dword ptr [r13]
+		add r13, 4
+		mulss xmm2, xmm1			; высота
+		cvttss2si rdx, xmm3			; x
+		lea r10, [r8 + rdx * 4]
+		cvtss2si rdx, xmm2			; высота линии
+		mov eax, cb
+		mov r12, r11
+		sub r12, rdx				; высота пустоты
+		jle _nn
+@@:		mov rcx, r9
+		mov rdi, r10
+		rep stosd
+		add r10, rbx
+		dec r12
+		jnz @b
+_nn:	mov eax, cf
+		test rdx, rdx
+		jle _nol
+		cmp rdx, r11
+		cmovg rdx, r11
+@@:		mov rcx, r9
+		mov rdi, r10
+		rep stosd
+		add r10, rbx
+		dec rdx
+		jnz @b
+_nol:	addss xmm3, xmm0
+		dec rsi
+		jnz _loop0
+		ret
+_addr_his dq _rgb, _red, _green, _blue, _rgb, _red, _green, _blue
+OPTION EPILOGUE:NONE
+_red:	movzx rax, byte ptr [r9 + 2]					; red
+		ret
+_green:	movzx rax, byte ptr [r9 + 1]					; green
+		ret
+_blue:	movzx rax, byte ptr [r9 + 0]
+		ret
+_rgb:	movd xmm0, dword ptr [r9]
+		punpcklbw xmm0, xmm15
+		punpcklwd xmm0, xmm15
+		cvtdq2ps xmm0, xmm0
+		dpps xmm0, xmm13, 01110001b
+		cvtss2si rax, xmm0
+		ret
+OPTION EPILOGUE:EpilogueDef
+asmHistogramm endp
+
+$
 		ret
 asm_ssh_histogramm endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod::Histogramms type);
-asm_ssh_correct proc
+asm_ssh_correct proc bar:QWORD, clip:QWORD, pix:QWORD, type:DWORD
 		ret
 asm_ssh_correct endp
 
@@ -311,9 +450,9 @@ asm_ssh_noise_terrain proc
 asm_ssh_noise_terrain endp
 
 ; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_border_3d proc
+asm_ssh_border3d proc
 		ret
-asm_ssh_border_3d endp
+asm_ssh_border3d endp
 
 ; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 asm_ssh_group proc
@@ -327,6 +466,22 @@ asm_ssh_table endp
 
 ; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 asm_ssh_border2d proc
+comment $
+; rcx(bar) rdx(clip), r8(src), r9(widthBorder), val, msk, side, pixOps
+asmBorder proc USES rbx r12 r13 r14 bar:QWORD, clip:QWORD, src:QWORD, width:QWORD, val:QWORD, msk:QWORD, side:QWORD, pixOps:BYTE
+		movzx rax, pixOps
+		mov r12, offset pix_ops
+		mov r12, [rax * 8 + r12]
+		mov r14, r12
+		mov r13, side
+		movd mm0, val
+		movd mm1, msk
+		movq mm2, mm1
+		pandn mm2, qword ptr _mmNot
+		call drawBorder
+		ret
+asmBorder endp
+$
 		ret
 asm_ssh_border2d endp
 

@@ -32,4 +32,7 @@
       <Filter>Файлы исходного кода</Filter>
     </MASM>
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\..\..\..\mod.xml" />
+  </ItemGroup>
 </Project>

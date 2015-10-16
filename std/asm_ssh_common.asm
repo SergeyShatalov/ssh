@@ -437,11 +437,7 @@ xml_chars	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0
 			db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 2, 2, 0, 0, 1
 			db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1
 			db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0
-asm_ssh_parse_xml proc
-		push rbx
-		push r10
-		push r11
-		push r12
+asm_ssh_parse_xml proc USES rbx r10 r11 r12
 		mov r11, 002d002d0021003ch
 		mov r12, 003e002d002d0020h
 		xor r8, r8					; cur src
@@ -512,11 +508,10 @@ _ex:	xor rax, rax
 		movzx r8, word ptr [rdx + 4]
 		call _set_v
 		lea rax, [rbx + 3]
-		pop r12
-		pop r11
-		pop r10
-		pop rbx
 		ret
+_fin:	xor rax, rax
+		ret
+OPTION EPILOGUE:NONE
 _skip_c:call _skip_s
 ;<!-- sergey -->
 		cmp qword ptr [rcx + r8 * 2], r11
@@ -562,8 +557,6 @@ _word:	lea r9, [r8 - 1]
 _err:	add rsp, 8
 _err1:	mov rax, -1
 		ret
-_fin:	xor rax, rax
-		ret
 _str:	cmp rax, 34
 		jnz _str1
 		mov r9, r8
@@ -577,6 +570,7 @@ _str:	cmp rax, 34
 		ret
 _str1:	clc
 		ret
+OPTION EPILOGUE:EPILOGUEDEF
 asm_ssh_parse_xml endp
 
 end

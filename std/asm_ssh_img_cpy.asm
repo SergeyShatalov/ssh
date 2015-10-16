@@ -33,7 +33,6 @@ align 16
 dataBin		dd 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0
 sub_alpha	dw 256, 256, 256, 256
 _mm_alpha	dq 00000000ff000000h
-_alpha_not	dw 255, 255, 255, 255
 _func_ops	dq _add, _sub, _set, _xor, _and, _or, _lum, _not, _alph, _fix_al, _mul, _lum_add, _lum_sub, _norm
 
 mtx_prewit1	dd -1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 1.0
@@ -113,7 +112,7 @@ _lum:	movq2dq xmm0, mm2
 		pand mm3, mm1
 		por mm2, mm3
 		ret
-_not:	pxor mm2, _mm_not
+_not:	pxor mm2, qword ptr _mm_not
 		pand mm2, mm0
 		pand mm3, mm1
 		por mm2, mm3
@@ -339,7 +338,7 @@ init_operation:
 		pxor mm7, mm7
 		movd mm0, [rsi].stk_modify.src_msk
 		movq mm1, mm0
-		pandn mm1, _mm_not
+		pandn mm1, qword ptr _mm_not
 		movq mm6, qword ptr _mm_alpha
 		mov r11, offset _func_ops
 		movsxd rax, [rsi].stk_modify.src_ops
@@ -361,8 +360,8 @@ init_addressing:
 func_addr	dq init_lc, init_lm, init_lr, init_lc, init_lm, init_lr
 			dq l_clamp, l_mirror, l_repeat, n_clamp, n_mirror, n_repeat
 init_lm:
-init_lr:vmovss xmm2, [rsi].stk_modify.wh_repeat.stk_range.w
-		vmovss xmm3, [rsi].stk_modify.wh_repeat.stk_range.h
+init_lr:vmovss xmm2, [rsi].stk_modify.wh_repeat.w
+		vmovss xmm3, [rsi].stk_modify.wh_repeat.h
 init_lc:vcvtsi2ss xmm0, xmm0, r14
 		vcvtsi2ss xmm1, xmm1, r15
 		vmulss xmm0, xmm0, xmm2

@@ -5,7 +5,7 @@
 namespace ssh
 {
 	ssh_ws* Xml::_xml(nullptr);
-	static ssh_w vec[256];
+	static ssh_w vec[512];
 
 	Xml::Xml(const Buffer<ssh_cs>& buf)
 	{
@@ -82,6 +82,8 @@ namespace ssh
 	// 10... - имя атрибута и его значение
 	void Xml::make(HXML hp, ssh_u lev)
 	{
+		HXML h(nullptr);
+
 		while(_xml)
 		{
 			ssh_l ret(asm_ssh_parse_xml(_xml, vec));
@@ -104,7 +106,8 @@ namespace ssh
 			_x[vec[5]] = 0;
 			// есть значение?
 			if(vec[8]) _x[vec[9]] = 0;
-			HXML h(add_node(hp, _x + vec[4], (vec[8] ? _x + vec[8] : L"")));
+			if(h && !hp) SSH_THROW(L"Несколько корневых элементов недопустимы!");
+			h = add_node(hp, _x + vec[4], (vec[8] ? _x + vec[8] : L""));
 			bool is_child(len_vec(3) == 1);
 			// есть атрибуты?
 			if(ret > 5)

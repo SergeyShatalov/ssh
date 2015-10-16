@@ -41,54 +41,64 @@ namespace ssh
 	// SSH_ENUMS(, _E());
 #pragma warning(pop)
 
-	ImgMod::ImgMod(Xml* xml, HXML hroot, Image* img, int layer_map)
+	void ImgMod::make(Xml * xml, HXML hroot, Image * img)
 	{
-		String def;
-		type = (Types)ssh_cnv_value(xml->attr(hroot, L"type", def), m_img_mods, SSH_CAST(Types::undef));
-		type_address = (Addr)ssh_cnv_value(xml->attr(hroot, L"type_addr", def), m_mod_addrs, SSH_CAST(Addr::lclamp));
-		type_ops = (Ops)ssh_cnv_value(xml->attr(hroot, L"type_ops", def), m_mod_ops, SSH_CAST(Ops::none));
-		type_coord = (Coord)ssh_cnv_value(xml->attr(hroot, L"type_coord", def), m_mod_coords, SSH_CAST(Coord::absolute));
-		type_filter = (Flt)ssh_cnv_value(xml->attr(hroot, L"type_filter", def), m_mod_flts, SSH_CAST(Flt::none));
-		type_figure = (Figures)ssh_cnv_value(xml->attr(hroot, L"type_figure", def), m_mod_figures, SSH_CAST(Figures::ellipse));
-		type_terrain = (Terrain)ssh_cnv_value(xml->attr(hroot, L"type_terrain", def), m_img_terrain, SSH_CAST(Terrain::island));
-		type_histogramm = (Histogramms)ssh_cnv_value(xml->attr(hroot, L"type_histogramm", def), m_img_histogramms, SSH_CAST(Histogramms::rgb));
-		sides = (Borders)ssh_cnv_value(xml->attr(hroot, L"side_border", def), m_img_borders, SSH_CAST(Borders::all));
-		aspect = xml->attr(hroot, L"aspect", 1);
-		w_border = xml->attr(hroot, L"w_border", 1);
-		w_mtx = xml->attr(hroot, L"mtx", 3);
-		radius = xml->attr<int>(hroot, L"radius", 1);
-		scale = xml->attr<float>(hroot, L"scale", 1.0f);
-		alpha = xml->attr(hroot, L"alpha", 1.0f);
-		shadow = xml->attr<String>(hroot, L"shadow", L"0").toNum<int>(0, String::_hex);
-		ssh_explode<Pix>(L",", xml->attr(hroot, L"pix", def), ops, 2, Pix::set, m_mod_pix_ops);
-		ssh_explode<int>(L",", xml->attr(hroot, L"bar", def), bar, 4, 0);
-		ssh_explode<int>(L",", xml->attr(hroot, L"msk", def), msks, 2, 0x00FFFFFF, nullptr, true);
-		ssh_explode<int>(L",", xml->attr(hroot, L"val", def), vals, 2, 0, nullptr, true);
-		ssh_explode<int>(L",", xml->attr(hroot, L"col", def), cols_histogramm, 2, 0, nullptr, true);
-		ssh_explode<int>(L",", xml->attr(hroot, L"cell", def), wh_cell, 2, 1);
-		ssh_explode<int>(L",", xml->attr(hroot, L"rn", def), rn, 2, 0);
-		ssh_explode<int>(L",", xml->attr(hroot, L"wh", def), wh, 2, 1);
-		ssh_explode<int>(L",", xml->attr(hroot, L"array_count", def), array_count, 2, 1);
-		ssh_explode<float>(L",", xml->attr(hroot, L"rep", def), wh_rep, 2, 1.0f);
-		ssh_explode<float>(L",", xml->attr(hroot, L"vec", def), flt_vec, 4, 1.0f);
-		if(xml->is_attr(hroot, L"array_map"))
+		SSH_TRACE;
+		try
 		{
-			ImgMap* t(img->get_map(xml->attr(hroot, L"array_map", layer_map)));
-			if(t)
+			if(!xml || !hroot) SSH_THROW(L"Недопустимые параметры при парсинге модификатора!");
+			String def;
+			type = (Types)ssh_cnv_value(xml->attr(hroot, L"type", def), m_img_mods, SSH_CAST(Types::undef));
+			type_address = (Addr)ssh_cnv_value(xml->attr(hroot, L"addr", def), m_mod_addrs, SSH_CAST(Addr::lclamp));
+			type_ops = (Ops)ssh_cnv_value(xml->attr(hroot, L"ops", def), m_mod_ops, SSH_CAST(Ops::none));
+			type_coord = (Coord)ssh_cnv_value(xml->attr(hroot, L"coord", def), m_mod_coords, SSH_CAST(Coord::absolute));
+			type_filter = (Flt)ssh_cnv_value(xml->attr(hroot, L"filter", def), m_mod_flts, SSH_CAST(Flt::none));
+			type_figure = (Figures)ssh_cnv_value(xml->attr(hroot, L"figure", def), m_mod_figures, SSH_CAST(Figures::ellipse));
+			type_terrain = (Terrain)ssh_cnv_value(xml->attr(hroot, L"terrain", def), m_img_terrain, SSH_CAST(Terrain::island));
+			type_histogramm = (Histogramms)ssh_cnv_value(xml->attr(hroot, L"histogramm", def), m_img_histogramms, SSH_CAST(Histogramms::rgb));
+			sides = (Borders)ssh_cnv_value(xml->attr(hroot, L"sides", def), m_img_borders, SSH_CAST(Borders::all));
+			aspect = xml->attr(hroot, L"aspect", 1);
+			w_border = xml->attr(hroot, L"wbrd", 1);
+			w_mtx = xml->attr(hroot, L"mtx", 3);
+			radius = xml->attr(hroot, L"radius", 1);
+			scale = xml->attr(hroot, L"scale", 1.0f);
+			alpha = xml->attr(hroot, L"alpha", 1.0f);
+			shadow = xml->attr<String>(hroot, L"shadow", L"0").toNum<int>(0, String::_hex);
+			ssh_explode<int>(L",", xml->attr(hroot, L"pix", def), (int*)&ops, 2, SSH_CAST(Pix::set), m_mod_pix_ops);
+			ssh_explode<int>(L",", xml->attr(hroot, L"bar", def), bar, 4, 0);
+			ssh_explode<int>(L",", xml->attr(hroot, L"msk", def), msks, 2, 0x00FFFFFF, nullptr, true);
+			ssh_explode<int>(L",", xml->attr(hroot, L"val", def), vals, 2, 0, nullptr, true);
+			ssh_explode<int>(L",", xml->attr(hroot, L"hcol", def), cols_histogramm, 2, 0, nullptr, true);
+			ssh_explode<int>(L",", xml->attr(hroot, L"cell", def), wh_cell, 2, 1);
+			ssh_explode<int>(L",", xml->attr(hroot, L"rn", def), rn, 2, 0);
+			ssh_explode<int>(L",", xml->attr(hroot, L"wh", def), wh, 2, 1);
+			ssh_explode<int>(L",", xml->attr(hroot, L"array_count", def), array_count, 2, 1);
+			ssh_explode<float>(L",", xml->attr(hroot, L"rep", def), wh_rep, 2, 1.0f);
+			ssh_explode<float>(L",", xml->attr(hroot, L"vec", def), flt_vec, 4, 1.0f);
+			if(xml->is_attr(hroot, L"array_map"))
 			{
-				rgba = Buffer<ssh_cs>(t->pixels());
-				array_count = t->bar().range;
+				ImgMap* t(img->get_map(xml->attr(hroot, L"array_map", -1)));
+				if(t)
+				{
+					rgba = Buffer<ssh_cs>(t->pixels());
+					array_count = t->bar().range;
+				}
+			}
+			else if(xml->is_attr(hroot, L"array_val"))
+			{
+				rgba = Buffer<ssh_cs>(array_count.w * array_count.h);
+				ssh_explode<ssh_b>(L",", xml->attr(hroot, L"array_val", def), rgba.to<ssh_b>(), rgba.count(), 0);
 			}
 		}
-		else if(xml->is_attr(hroot, L"array_val"))
+		catch(const Exception& e)
 		{
-			rgba = Buffer<ssh_cs>(array_count.w * array_count.h);
-			ssh_explode<ssh_cs>(L",", xml->attr(hroot, L"array_val", def), rgba, rgba.count(), 0);
+			e.add(L"");
 		}
 	}
 
 	void ImgMod::apply(ImgMap* map)
 	{
+		SSH_TRACE;
 		try
 		{
 			if(!map) SSH_THROW(L"Неопределена карта для модификатора!");

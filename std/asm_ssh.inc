@@ -6,9 +6,6 @@ OPTION NOKEYWORD:<width type>
 ;OPTION PROLOGUE:PrologueDef
 ;OPTION EPILOGUE:EpilogueDef
 
-pw typedef ptr word
-pd typedef ptr dword
-
 bc1 struct
 	dw rgb0
 	dw rgb1
@@ -42,22 +39,22 @@ gif_fmt struct
 gif_fmt ends
 
 stk_bar struct
-	x dd 0
-	y dd 0
-	w dd 0
-	h dd 0
+	x dd ?
+	y dd ?
+	w dd ?
+	h dd ?
 stk_bar ends
 
 stk_vec struct
-	x dd 0
-	y dd 0
-	z dd 0
-	w dd 0
+	x dd ?
+	y dd ?
+	z dd ?
+	w dd ?
 stk_vec ends
 
 stk_range struct
-	w dd 0
-	h dd 0
+	w dd ?
+	h dd ?
 stk_range ends
 
 stk_modify struct
@@ -111,7 +108,9 @@ externdef flt_max:DWORD
 externdef f_3_0x8:DWORD
 externdef f_1_0x8:DWORD
 externdef f_2_0x8:DWORD
-externdef _mm_not:QWORD
+externdef _mm_not:DWORD
+externdef _mm_gamma:WORD
+externdef _alpha_not:WORD
 
 externdef malloc:near
 externdef free:near

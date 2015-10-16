@@ -7,7 +7,7 @@ extern "C"
 	ssh_ws* asm_ssh_to_base64(ssh_cs* ptr, ssh_u count);
 	ssh_cs* asm_ssh_from_base64(ssh_ws* str, ssh_u count, ssh_u* len_buf, ssh_u null);
 	ssh_l	asm_ssh_parse_xml(ssh_ws* src, ssh_w* vec);
-	ssh_wcs	asm_ssh_ntow(void* num, ssh_u radix);
+	ssh_wcs	asm_ssh_ntow(const void* num, ssh_u radix);
 	void*	asm_ssh_wton(ssh_wcs str, ssh_u radix, ssh_ws* end);
 };
 
@@ -131,18 +131,18 @@ namespace ssh
 	// разбить строку на элементы
 	template <typename T> T* ssh_explode(ssh_wcs split, const String& src, T* dst, ssh_u count_dst, const T& def, ENUM_DATA* stk = nullptr, bool is_hex = false)
 	{
-		ssh_ws* _wcs(src.buffer());
-		ssh_ws* t;
+		ssh_ws* _wcs(src.buffer()), *t;
 		ssh_u i(0), j(wcslen(split));
 		T tmp;
-		while(i < count_dst)
+		while(i < count_dst && *_wcs)
 		{
 			if((t = wcsstr(_wcs, split))) *t = 0;
 			if(stk) tmp = (T)ssh_cnv_value(_wcs, stk, (ssh_u)def);
-			else tmp = (T)_wcstoi64(_wcs, nullptr, is_hex ? 16 : 10);
-			dst[i++] = tmp;
+			else if(is_hex) tmp = String(_wcs).toNum<T>(0, String::_hex);
+			else tmp = String(_wcs);
+			dst[i] = tmp;
 			if(t) { *t = *split; _wcs = t + j; }
-			else break;
+			i++;
 		}
 		// заполняем значениями по умолчанию
 		for(; i < count_dst; i++) dst[i] = def;

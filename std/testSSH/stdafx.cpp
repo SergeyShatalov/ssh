@@ -302,160 +302,25 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	float x = -2.47656508055759199108314e+1;
-	ENUM_DATA* _s = _stk;
 	Singlton<Log> _lg;
 	try
 	{
-		ssh_u gh1 = ssh_hash(L"jpeg");
-		ssh_u gh2 = ssh_hash(L"psd");
-		ssh_u gh3 = ssh_hash(L"png");
-		//ssh_u resss = asm_ssh_shufb(0x0102030405060708);
 		Log::LOG _log;
 		_log._out = Log::TypeOutput::File;
 		_lg->init(_log);
 		Image* img;
 		asm_ssh_shufb();
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
-		img->set_map(L"e:\\1.png", 0);
-		img->save(L"e:\\psd.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
-		img->release();
-		return 0;
-		int w = 1536, h = 2048;
+		int w = 512, h = 512;
 		int ww = 1536, hh = 2048;
-		img->set_empty(Range<int>(w, h), 1);
-		ImgMod mod;
-		mod.msks.w = 0xffffffff;
-		mod.ops.w = ImgMod::Pix::set;
-		mod.type_address = ImgMod::Addr::lclamp;
-		mod.wh_rep.w = 1.0f;
-		mod.wh_rep.h = 1.0f;
-		mod.type_filter = ImgMod::Flt::median;
-		mod.w_mtx = 7;
-		// mod.flt_vec = vec4(2.2, 2, 2, 2);
-		//mod.flt_vec = vec4(9, 0.5, 0.2, 0.2);
-		asm_ssh_copy(Bar<int>(0, 0, ww, hh), Range<int>(ww, hh), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
-		img->save(L"e:\\1_jpg1.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
-		//		mod.type_filter = ImgMod::Flt::median;
-	//mod.type_filter = ImgMod::Flt::hi;
-		mod.type_filter = ImgMod::Flt::none;
-		mod.w_mtx = 3;
-		mod.wh_rep.w = 1.0f;
-		mod.wh_rep.h = 1.0f;
-		mod.alpha = 0.35f;
-		//mod.ops.w = ImgMod::Pix::fix_alpha;
-		mod.flt_vec = vec4(1.5, 2, 2, 2);
-		asm_ssh_copy(Bar<int>(0, 0, ww, hh), Range<int>(ww, hh), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
-		//asm_ssh_copy(Bar<int>(0, 0, w, h), Range<int>(w, h), img->get_map(1)->pixels(), img->get_map(1)->pixels(), Bar<int>(480, 360, 640, 480), Range<int>(w, h), &mod);
-		img->save(L"e:\\1_jpg2.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
-		//img->set_font(L"font", L"Arial", nullptr, -16, 0);
+		img->set_empty(Range<int>(w, h), 0);
+		Xml xml(L"e:\\mod.xml");
+		HXML hroot(xml.node(xml.root(), L"modify"));
+		ImgMod(&xml, xml.node(hroot, L"mod1"), img).apply(img->get_map(0));
+		ImgMod(&xml, xml.node(hroot, L"mod2"), img).apply(img->get_map(0));
+		//asm_ssh_copy(Bar<int>(0, 0, ww, hh), Range<int>(ww, hh), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
+		img->save(L"e:\\mod.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
 		img->release();
-		return 0;
-		img->save(L"e:\\bc1", ImgCnv::Types::dds, FormatsMap::bc1, 0);
-		img->release();
-		return 0;
-		img->save(L"e:\\rgb5a1", ImgCnv::Types::bmp, FormatsMap::rgb5a1, 0);
-		img->save(L"e:\\rgb8", ImgCnv::Types::bmp, FormatsMap::rgb8, 0);
-		img->save(L"e:\\rgba8", ImgCnv::Types::bmp, FormatsMap::rgba8, 0);
-		img->save(L"e:\\rgba4", ImgCnv::Types::bmp, FormatsMap::rgba4, 0);
-		img->save(L"e:\\bgra8", ImgCnv::Types::bmp, FormatsMap::bgra8, 0);
-		img->save(L"e:\\r5g6b5", ImgCnv::Types::bmp, FormatsMap::r5g6b5, 0);
-		img->save(L"e:\\bgr8", ImgCnv::Types::bmp, FormatsMap::bgr8, 0);
-		img->save(L"e:\\a8", ImgCnv::Types::bmp, FormatsMap::a8, 0);
-		return 0;
-		ssh_u is_c = ssh_system_info(SystemInfo::siCpuCaps, CpuCaps::SUPPORTS_BMI1);
-		ssh_u h1 = ssh_hash(L"bmp");
-		ssh_u h2 = ssh_hash(L"bfs");
-		ssh_u h3 = ssh_hash(L"fse");
-		ssh_u h4 = ssh_hash(L"jpg");
-		ssh_u h5 = ssh_hash(L"tga");
-		ssh_u h6 = ssh_hash(L"dds");
-		ssh_u h7 = ssh_hash(L"gif");
-		Map<String, String, SSH_TYPE, SSH_TYPE>* m;
-		Array<Map<String, String, SSH_TYPE, SSH_TYPE>, SSH_TYPE> arr(550, 10, 20);
-		MySql _sql(L"localhost", L"root", L"", L"sergey");
-		_sql.del_table(L"shatalov");
-		MySql::FIELD flds[] =
-		{
-			{L"ID", MySql::TypesField::INT, MySql::NOT_NULL | MySql::AUTO_INCREMENT | MySql::PRIMARY | MySql::KEY, 0, nullptr, L"идентификатор"},
-			{ L"бит", MySql::TypesField::BIT, MySql::_NULL, 0, nullptr, L"тип данных - BIT" },
-			{ L"_enum", MySql::TypesField::ENUM, MySql::NOT_NULL, 0, L"serg", L"тип данных - ENUM", 0, 0, L"max,vlad,serg,olga" },
-			{ L"_varchar", MySql::TypesField::VARCHAR, MySql::NOT_NULL | MySql::KEY, 255, L"Шаталов", L"тип данных - VARCHAR", 0, 10 },
-			{ L"_timestamp", MySql::TypesField::TIMESTAMP, MySql::_NULL, 1, nullptr, L"тип данных - TIMESTAMP" },
-			{ L"_double", MySql::TypesField::DOUBLE, MySql::UNSIGNED, 10, nullptr, L"тип данных - DOUBLE", 5 },
-			{ L"_float", MySql::TypesField::FLOAT, MySql::UNSIGNED, 10, L"1.0", L"тип данных - FLOAT", 6 },
-			{ L"_decimal", MySql::TypesField::DECIMAL, MySql::UNSIGNED, 20, L"100.0", L"тип данных - DECIMAL", 10 },
-			{ L"_char", MySql::TypesField::CHAR, MySql::_NULL, 10, L"c", L"тип данных - CHAR" },
-			{ L"_tinyint", MySql::TypesField::TINYINT, MySql::NOT_NULL, 0, L"10", L"тип данных - TINYINT" },
-			{ L"_smallint", MySql::TypesField::SMALLINT, MySql::NOT_NULL, 0, L"20", L"тип данных - SMALLINT" },
-			{ L"_mediumint", MySql::TypesField::MEDIUMINT, MySql::NOT_NULL, 0, L"30", L"тип данных - MEDIUMINT" },
-			{ L"_bigint", MySql::TypesField::BIGINT, MySql::NOT_NULL, 0, L"40", L"тип данных - BIGINT" },
-			{ L"_int", MySql::TypesField::INT, MySql::NOT_NULL, 0, L"50", L"тип данных - INT" },
-			{ L"_year", MySql::TypesField::YEAR, MySql::_NULL, 2, nullptr, L"тип данных - YEAR" },
-			{ L"_set", MySql::TypesField::SET, MySql::NOT_NULL, 0, L"max", L"тип данных - SET", 0, 0, L"max,vlad,serg,olga" },
-			{ L"_tinyblob", MySql::TypesField::TINYBLOB, MySql::_NULL, 0, nullptr, L"тип данных - TINYBLOB" },
-			{ L"_mediumblob", MySql::TypesField::MEDIUMBLOB, MySql::_NULL, 0, nullptr, L"тип данных - MEDIUMBLOB" },
-			{ L"_longblob", MySql::TypesField::LONGBLOB, MySql::_NULL, 0, nullptr, L"тип данных - LONGBLOB" },
-			{ L"_blob", MySql::TypesField::BLOB, MySql::_NULL, 0, nullptr, L"тип данных - BLOB" },
-			{ L"_tinytext", MySql::TypesField::TINYTEXT, MySql::_NULL, 0, nullptr, L"тип данных - TINYTEXT" },
-			{ L"_mediumtext", MySql::TypesField::MEDIUMTEXT, MySql::_NULL, 0, nullptr, L"тип данных - MEDIUMTEXT" },
-			{ L"_longtext", MySql::TypesField::LONGTEXT, MySql::_NULL, 0, nullptr, L"тип данных - LONGTEXT" },
-			{ L"_text", MySql::TypesField::TEXT, MySql::_NULL, 0, nullptr, L"тип данных - TEXT" },
-			{ L"_date", MySql::TypesField::DATE, MySql::_NULL, 0, nullptr, L"тип данных - DATE" },
-			{ L"_time", MySql::TypesField::TIME, MySql::_NULL, 0, nullptr, L"тип данных - TIME" },
-			{ L"_datetime", MySql::TypesField::DATETIME, MySql::_NULL, 0, nullptr, L"тип данных - DATETIME" },
-			{ nullptr },
-		};
-		Time tt(Time::current());
-		int y = tt.year();
-		Time t(1970, 1, 1, 4, 0, 0);
-		y = t.year();
-		//		_sql.query(L"CREATE TABLE `shatalov` (`id` int UNSIGNED NOT NULL AUTO_INCREMENT, PRIMARY KEY `idx_id`(`id`), `str` varchar(255) NOT NULL UNIQUE DEFAULT 'serg', FULLTEXT KEY `idx_str`(`str`(10)))");
-		_sql.add_table(flds, L"shatalov", L"Таблица для проверки всех типов данных mysql!");
-		_sql.insert(L"shatalov", L"_varchar,_timestamp,_enum,_double,_float,_decimal,_char,_tinyint,_smallint,_mediumint,_bigint,_int,_year,_set,_tinyblob,_mediumblob,_longblob,_blob,_tinytext,_mediumtext,_longtext,_text,бит,_date,_time,_datetime",
-					L"Сергей,2015-10-10 11:12:13,max,25.10,11.234,100.25678,ccc,1,2,3,4,5,16,vlad,aaa,bbb,ccc,ddd,qqq,www,eee,rrr,0,2010-08-08,01:02:03,2008-05-05 03:04:05");
-		arr = _sql.select(L"*", L"shatalov", nullptr);
-		for(ssh_u i = 0; i < arr.size(); i++)
-		{
-			m = &arr[i];
-			//Time t = Time::parse(L"$y-$m-$d", (*m)[L"_date"]);
-		}
-		return 0;
-		ssh_u res = _sql.remove(L"shatalov");
-		String tmp;
-		ssh_wcs _tmp[] = { L"Сергей", L"Максим", L"Владислав", L"Ольга", L"Мирослав", L"Виктор", L"Владимир", L"Алан", L"Светлана", L"Георгий", L"Иван", L"Василий"};
-		for(ssh_u i = 0; i < 10; i++)
-		{
-			res = _sql.insert(L"shatalov", L"f1,f2,f3, f4", tmp.fmt(L"%i,%i,%s,%i", i, i*10, _tmp[i], i*20));
-		}
-		_sql.del_table(L"new_table");
-	}
-	catch(const Exception& e)
-	{
-		e.add(L"");
-	}
-	return 0;
-	try
-	{
-		Log::LOG _log;
-		_log._out = Log::TypeOutput::File;
-		_lg->init(_log);
-		Singlton<Gamepad> _gp;
-		SSH_LOG(L"Привет!!!!");
-		Log::LOG _log1;
-		_log1._out = Log::TypeOutput::Mail;
-		_log1.email_login = L"ostrov_skal";
-		_log1.email_pass = MAIL_PASS;
-		_lg->init(_log1);
-		SSH_LOG(L"Привет!");
-		Mail mail_smtp(L"smtp.yandex.ru:25", L"ostrov-skal", MAIL_PASS, Mail::stTLS);
-		mail_smtp.set_charset(L"koi8-r");
-		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov_skal@mail.ru");
-		mail_smtp.add_recipient(L"Шаталов Сергей", L"ostrov-skal@yandex.ru");
-		mail_smtp.set_sender(L"Влад", L"ostrov-skal@yandex.ru");
-//		mail_smtp.add_attach(L"e:\\1.jpg");
-		//mail_smtp.add_attach(L"e:\\2.jpg");
-		mail_smtp.smtp(L"Привет!", L"новое письмецо!!!");
 		return 0;
 	}
 	catch(const Exception& e) { e.add(L"главная процедура!"); }

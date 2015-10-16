@@ -15,7 +15,7 @@ colors	dd 64 dup(0)
 result	dd 128 dup(0)
 result1	dd 128 dup(0)
 _mm0	dq -1
-_mm1	dq 0102030405060708h
+_mm1	db 01, 02, 03,04, 05,06,07,08
 _m1000	db 255, 0, 0, 0, 255, 0, 0, 0
 _xmm0	dd 2.0, 30.0, 0.5, 0.25
 tmp_mtx	dd 10.0, 1.0, 5.0, 6.0, 11.0, 25.0, 40.0, 60.0, 0.0, 4.0, 7.0, 8.0, 3.0, 0.0, 1.0, 9.0
@@ -26,10 +26,25 @@ f_2_0	dd 2.0,2.0,2.0,2.0
 f_1_0	dd 1.0,1.0,1.0,1.0
 _255	dd 255.0, 255.0, 255.0, 255.0
 
+
 .code
-externdef powf:near
+_mm_l	db -1, 3, -1, -1, -1, 7, -1, -1
 asm_ssh_shufb proc public
 ; pow(x,y) = do {x = sqrt(x); y = frac(y) * 2; if (y >= 1) res *= x; } while(x == 1);
+		movq mm0, qword ptr _mm1
+		pshufb mm0, qword ptr _mm_l
+		vmovups ymm0, tmp_mtx
+		vdpps ymm0, ymm0, ymm0, 01110001b
+		vcvtps2dq ymm0, ymm0
+		vpackssdw ymm0, ymm0, ymm0
+		vpackuswb ymm0, ymm0, ymm0
+		movdq2q mm1, xmm0
+		por mm1, mm0
+		psrlq mm0, 32
+		vextracti128 xmm0, ymm0, 1
+		movdq2q mm2, xmm0
+		por mm2, mm0
+		ret
 		mov al, 240
 		ror al, 4
 		ror al, 4
