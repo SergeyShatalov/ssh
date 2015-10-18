@@ -119,12 +119,13 @@ namespace ssh
 		SSH_TRACE;
 		ImgMap* map(get_map(layer, mip));
 		if(!map) SSH_THROW(L"Карта <%i, %i> не обнаружена!", layer, mip);
-		buf_cs buf((SSH_CAST(type) >= SSH_CAST(ImgMod::Histogramms::rgb_v)) ? 1024 + 8 : wh.w * wh.h * 4);
+		buf_cs buf((SSH_CAST(type) >= SSH_CAST(ImgMod::Histogramms::rgb_v)) ? 1024 + 4 : wh.w * wh.h * 4);
 		ImgMod modify;
 		modify.cols_histogramm.w = bkg.BGRA();
 		modify.cols_histogramm.h = frg.BGRA();
 		modify.rgba = buf_cs(map->pix, map->pix.count(), false);
 		modify.wh_rgba = map->ixywh;
+		modify.type_histogramm = type;
 		asm_ssh_histogramm(wh, &modify, buf);
 		return buf;
 	}

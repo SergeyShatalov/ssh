@@ -121,6 +121,8 @@ externdef asm_clip_bar:near
 externdef asm_ssh_bc_x:near
 externdef asm_absolute_bar:near
 externdef asm_ssh_pow:near
+externdef _add:near
+externdef _sub:near
 
 externdef _func_ops:QWORD
 externdef _gamma:DWORD
@@ -138,6 +140,7 @@ externdef f_2_0x8:DWORD
 externdef _mm_not:DWORD
 externdef _mm_gamma:WORD
 externdef _alpha_not:WORD
+externdef _mm_alpha:QWORD
 
 externdef malloc:near
 externdef free:near

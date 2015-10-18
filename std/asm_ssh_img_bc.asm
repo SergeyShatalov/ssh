@@ -437,17 +437,21 @@ asm_decode565 proc USES rcx rdx
 		ret
 asm_decode565 endp
 
+idx0 dd 0, 0, 0, 0, 0, 0, 0, 0
+idx1 dd 0, 0, 0, 0, 0, 0, 0, 0
+
 asm_decompress_colors proc USES r9 rcx rdx
 		cmp rbx, 3						; пропустить, если это не bc1
 		jz @f
 		add r9, 8
-@@:		mov eax, [r9 + 4]
-		mov rdi, offset idx
-		mov [rdi + 04], al
-		mov [rdi + 09], ah
-		shr rax, 16
-		mov [rdi + 14], al
-		mov [rdi + 19], ah
+@@:		mov edx, [r9 + 4]
+		xor rcx, rcx
+		mov rdi, offset idx0
+@@:		pext eax, edx, ecx
+		shl ecx, 2
+		stosd
+		test ecx, ecx
+		jnz @b
 		mov cx, [r9]
 		mov ax, cx
 		call asm_decode565
@@ -480,15 +484,11 @@ _nbc1:	vsubps xmm4, xmm3, xmm2
 		vunpcklps xmm0, xmm0, xmm1
 		vunpcklps xmm4, xmm4, xmm5
 		vmovlhps xmm0, xmm0, xmm4
-idx:	vpshufd xmm1, xmm0, 0
-		vpshufd xmm2, xmm0, 0
-		vpshufd xmm3, xmm0, 0
-		vpshufd xmm4, xmm0, 0
-		lea rax, [r15 * 2+ r15]
-		vmovaps [r8], xmm1
-		vmovaps [r8 + r15], xmm2
-		vmovaps [r8 + r15 * 2], xmm3
-		vmovaps [r8 + rax], xmm4
+		vinserti128 ymm0, ymm0, xmm0, 1
+		vpermilps ymm1, ymm0, idx0
+		vpermilps ymm2, ymm0, idx1
+		vmovaps [r8], ymm0
+		vmovaps [r8 + r15], ymm1
 		ret
 asm_decompress_colors endp
 

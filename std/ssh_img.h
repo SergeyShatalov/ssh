@@ -520,7 +520,7 @@ namespace ssh
 		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_histogramm(const Range<int>& tmp, ImgMod* modify, void* buf);
 		void asm_ssh_correct(const Range<int>& clip, const Range<int>& wh, ImgMod::Histogramms type, void* pix);
-		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
+		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, ImgMod* modify);
 		void asm_ssh_noise_terrain(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_flip_90(const Range<int>& clip, void* dst, void* pix);
 		void asm_ssh_border3d(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);

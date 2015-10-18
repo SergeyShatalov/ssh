@@ -1,6 +1,29 @@
 
 include asm_ssh.inc
 
+side_left	= 1
+side_right	= 2
+side_top	= 4
+side_bottom	= 8
+
+draw_side macro p, w, h, f
+LOCAL _h, _w
+		mov r15, p
+		xor rsi, rsi
+_h:		xor rax, rax
+_w:		movq mm2, _mm_tmp
+		movd mm3, dword ptr [r15 + rax * 4]
+		call f
+		movd dword ptr [r15 + rax * 4], mm2
+		inc rax
+		cmp rax, w
+		jb _w
+		add r15, r10
+		inc rsi
+		cmp rsi, h
+		jb _h
+endm
+
 public _alpha_not, _mm_gamma
 
 .const
@@ -20,9 +43,14 @@ _fabs		dd 7fffffffh, 7fffffffh, 7fffffffh, 7fffffffh
 _mm_not		dd -1, -1, -1, -1
 _alpha_not	dw 255, 255, 255, 255
 _mm_gamma	dw 77, 151, 28, 1, 77, 151, 28, 1
+f_16_0		dd 16.0
+f_8_0		dd 8.0
+f_4_0		dd 4.0
+f_1073741824_0 dd 1073741824.0
 
 .data?
 _clip		stk_bar<?>
+_mm_tmp		dq ?
 histogramm	dd 256 dup(?)
 
 .code
@@ -172,6 +200,568 @@ asm_ssh_flip_90 endp
 
 asm_ssh_figure proc bar:QWORD, clip:QWORD, pix:QWORD, modify:QWORD
 		ret
+comment $
+; r13(buf) rcx(x) rdx(y) rbx(pitch)
+filling proc private USES rdi rsi r8 r9
+		mov rdi, offset tmpBuf
+		imul rdx, rbx
+		add rdx, rcx
+		lea rsi, [rdi + 32768]
+		mov [rsi], edx				; начальное смещение
+		xor rax, rax
+		mov dl, 1
+		movzx rcx, dl				; начальное количество смещений
+loop0:	mov r8, rsi
+		mov r9, rdi
+loop1:	lodsd						; смещение от начала буфера пикселей
+		inc rax
+		cmp [rax + r15], dl
+		jz @f
+		mov [rax + r15], dl
+		stosd
+@@:		sub rax, 2
+		cmp [rax + r15], dl
+		jz @f
+		mov [rax + r15], dl
+		stosd
+@@:		lea rax, [rax + rbx + 1]
+		cmp [rax + r15], dl
+		jz @f
+		mov [rax + r15], dl
+		stosd
+@@:		sub rax, rbx
+		sub rax, rbx
+		cmp [rax + r15], dl
+		jz @f
+		mov [rax + r15], dl
+		stosd
+@@:		loop loop1
+		mov rcx, rdi
+		sub rcx, r9
+		shr rcx, 2
+		jz _fin
+		cmp rcx, 8191
+		jae _fin
+		mov rsi, r9
+		mov rdi, r8
+		jmp loop0
+_fin:	ret
+filling endp
+
+; rcx(bar) rdx(clip) r8(src) r9(array) count vals msks pixOps pixOpsEx figure radius shadow
+asmFigure proc USES r12 r13 r14 r15 rsi rdi rbx bar:QWORD, clip:QWORD, src:QWORD, array:QWORD, count:QWORD, vals:QWORD, msks:QWORD, pixOps:BYTE, pixOpsEx:BYTE, figure:BYTE, radius:QWORD, shadow:DWORD
+LOCAL @@texW:QWORD, @@texH:QWORD, @@msk1:DWORD, @@msk2:DWORD, @@pt[8]:QWORD
+		or radius, 1
+		shr radius, 1
+		mov [dataFigures + 8], r9
+		mov rax, msks
+		mov r10, [rax + 00]
+		mov r11, [rax + 08]
+		mov @@msk1, r10d
+		mov @@msk2, r11d
+		not r10
+		not r11
+		movd mm6, r10d
+		movd mm7, r11d
+		call asmClipBar
+		jnc _fin
+		push r8
+		push rbx
+		movaps xmm13, _fp100x4
+		movss xmm14, _fp1_0
+		movss xmm15, _fp3_0
+		mov @@texW, rcx
+		mov @@texH, rdx
+		push rdx
+		mov rsi, rcx
+		dec rdx
+		dec rcx
+		cvtsi2ss xmm7, rdx
+		cvtsi2ss xmm6, rcx
+		divss xmm7, xmm13					; чтобы не делить на 100 и потом умножать на габариты буфера
+		divss xmm6, xmm13
+		add rcx, 3
+		add rdx, 3							; расширить для "рамки" вокруг буфера (чтобы исключить выход за пределы)
+		mov rbx, rcx
+		imul rcx, rdx						; размер буферов
+		sub rsp, 32
+		call malloc
+		add rsp, 32
+		mov r15, rax						; буфер для картинки
+		mov rdi, rax
+		pop rdx								; h
+		; заполнить буфер картинки с учетом "рамки"
+		mov al, 1
+		lea rcx, [rsi + 2]
+		rep stosb
+@@:		mov al, 1
+		stosb
+		mov rcx, rsi
+		xor al, al
+		rep stosb
+		mov al, 1
+		stosb
+		dec rdx
+		jnz @b
+		mov al, 1
+		lea rcx, [rsi + 2]
+		rep stosb
+		; параметры фигуры
+		movzx rax, figure
+		mov rsi, offset dataFigures
+		mov rsi, [rax* 8 + rsi]				; параметры фигуры
+		test rax, rax
+		mov r9, offset fRegion
+		mov rax, offset fEllipse
+		cmovnz rax, r9						; функция рисования
+		; нарисовать фигуру во временном буфере
+		lea rdi, [r15 + rbx + 1]
+		movzx r9, byte ptr [rsi]			; количество точек
+		push r15
+		call rax							; рисуем фигуру
+		pop r15
+		movzx rcx, byte ptr [rsi + 1]		; координаты заполнения
+		movzx rdx, byte ptr [rsi + 2]
+		jrcxz @f
+		cvtsi2ss xmm0, rcx
+		cvtsi2ss xmm1, rdx
+		mulss xmm0, xmm6
+		mulss xmm1, xmm7
+		cvtss2si rcx, xmm0
+		cvtss2si rdx, xmm1
+		call filling						; заполнить фигуру
+@@:		cmp shadow, 0
+		jz nShadow
+		; формирование тени - метод Превита
+		mov rdx, 1
+_h:		mov r11, rdx
+		imul r11, rbx
+		add r11, r15
+		mov rcx, 1
+_w:		xor rsi, rsi				; sum mtx
+		xor rdi, rdi				; sum inv_mtx
+		mov r10, offset mtxPrewit
+		mov r12, r11
+		xor r9, r9
+@@:		movzx eax, byte ptr [r12 + rcx]
+		imul eax, [r10]
+		add edi, eax
+		movzx eax, byte ptr [r12 + rcx]
+		imul eax, [r10 + 36]
+		add esi, eax
+		movzx eax, byte ptr [r12 + rcx + 1]
+		imul eax, [r10 + 4]
+		add edi, eax
+		movzx eax, byte ptr [r12 + rcx + 1]
+		imul eax, [r10 + 40]
+		add esi, eax
+		movzx eax, byte ptr [r12 + rcx + 2]
+		imul eax, [r10 + 8]
+		add edi, eax
+		movzx eax, byte ptr [r12 + rcx + 2]
+		imul eax, [r10 + 44]
+		add esi, eax
+		add r10, 12
+		add r12, rbx
+		inc r9
+		cmp r9, 3
+		jb @b
+		cmp esi, edi
+		cmovl edi, esi
+		test edi, edi
+		jge @f
+		mov byte ptr [r11 + rcx], 2
+@@:		inc rcx
+		cmp rcx, @@texW
+		jle _w
+		inc rdx
+		cmp rdx, @@texH
+		jle _h
+nShadow:mov r11, offset pix_ops
+		movzx rax, pixOps
+		mov r10, [rax * 8 + r11]			; пиксельная операция внутри фигуры
+		movzx eax, pixOpsEx
+		mov r11, [rax * 8 + r11]			; пиксельная операция вне фигуры
+		lea rsi, [r15 + rbx + 1]
+		mov r14, offset cnvPixFigure
+		mov rdx, @@texH
+		mov r13, vals
+		pop rbx
+		pop r8
+loop0:	push r8
+		mov rcx, @@texW
+@@:		lodsb
+		movzx rax, al
+		movd mm3, dword ptr [r8]
+		call qword ptr [rax * 8 + r14]
+		movd dword ptr [r8], mm3
+		add r8, 4
+		loop @b
+		pop r8
+		add rsi, 2
+		add r8, rbx
+		dec rdx
+		jnz loop0
+		sub rsp, 32
+		mov rcx, r15
+		call free
+		add rsp, 32
+_fin:	emms
+		ret
+cnvPixFigure	dq fig0, fig1, fig2
+OPTION EPILOGUE:NONE
+fig0:	movq mm0, [r13 + 00]
+		movd mm1, @@msk1
+		movq mm2, mm6
+		jmp r10
+fig1:	movq mm0, [r13 + 08]
+		movd mm1, @@msk2
+		movq mm2, mm7
+		jmp r11
+fig2:	movd mm2, dword ptr shadow
+		psubusb mm3, mm2
+		ret
+dataFigures	dq dataEllipse, 0, dataRect, dataUTri, dataDTri, dataRTri, dataLTri, dataPyramid, dataSixangle
+			dq dataEightangle, dataRomb, dataStar1, dataStar2, dataRarrow, dataLarrow, dataDarrow, dataUarrow
+			dq dataCross45, dataChecked, dataVPlzSlider, dataHPlzSlider, dataPlus
+getPoint:	mov rax, rcx							; для замыкания
+			xor rdx, rdx
+			div r9
+			movzx rax, byte ptr [rsi + rdx * 2 + 3]
+			movzx rdx, byte ptr [rsi + rdx * 2 + 4]
+			cvtsi2ss xmm4, rax
+			cvtsi2ss xmm5, rdx
+			mulss xmm4, xmm6
+			mulss xmm5, xmm7
+			ret
+radiusPt:	mov r8, -1
+			mov r14, r11
+			imul r14, rbx
+			add r14, r10
+			mov rdx, 1				; delta X
+			sub rcx, r10			; приращатели
+			jge @f
+			neg rcx
+			neg rdx
+@@:			setnz r10b
+			movzx r10, r10b
+			imul r10, rdx
+			mov rdx, rbx
+			sub rax, r11
+			jge @f
+			neg rax
+			neg rdx
+@@:			setnz r11b
+			movzx r11, r11b
+			imul r11, rdx
+			cmp rcx, rax			; направления
+			jge @f
+			xchg rcx, rax			; <
+			xchg r10, r11
+@@:			mov r12, rcx			; r12(ebp,r13) = delta X, rax(rsi) = delta Y, rcx - length, r10(rax) - offsX, r11(rbx) - offsY
+			; считаем 2 точки радиуса
+			sub rcx, radius
+			jle _pt2
+			xor rdx, rdx			; error
+_loopr:		add rdx, rax			; главный цикл создания линии(в данном случае только расчет координат)
+			lea r13, [rdx * 2]
+			cmp r13, r12
+			jl @f
+			add r14, r11
+			sub rdx, r12
+@@:			add r14, r10
+			cmp rcx, radius
+			jnz @f
+			; 1 точка
+			mov r8, r14
+@@:			loop _loopr
+_pt2:		; 2 точка
+			test r8, r8
+			cmovs r8, r14
+			mov rax, r14
+			xor rdx, rdx
+			div rbx
+			; записываем точки(они временные)
+			mov [r9 + 32], rdx
+			mov [r9 + 40], rax
+			xor rdx, rdx
+			mov rax, r8
+			div rbx
+			mov [r9 + 00], rdx
+			mov [r9 + 08], rax
+			add r9, 16
+			ret						;rax = pty2 rcx = ptx2
+calcRound:	push rcx
+			push r9
+			lea r9, @@pt
+			cvttss2si r10, xmm0		; x0
+			cvttss2si r11, xmm1		; y0
+			cvttss2si rcx, xmm2		; x1
+			cvttss2si rax, xmm3		; y1
+			call radiusPt
+			cvttss2si r10, xmm4		; x0
+			cvttss2si r11, xmm5		; y0
+			cvttss2si rcx, xmm2		; x1
+			cvttss2si rax, xmm3		; y1
+			call radiusPt
+			pop r9
+			pop rcx
+			ret
+calcBesie:	cvtsi2ss xmm4, r14
+			cvtsi2ss xmm13, r13
+			divss xmm4, xmm13					; scalar
+			movss xmm5, xmm14					; 1 - scalar
+			subss xmm5, xmm4
+			movss xmm8, xmm5
+			mulss xmm8, xmm8
+			mulss xmm8, xmm5
+			movss xmm9, xmm8
+			cvtsi2ss xmm10, @@pt + 00
+			cvtsi2ss xmm11, @@pt + 08
+			mulss xmm8, xmm10
+			mulss xmm9, xmm11
+			movss xmm12, xmm8
+			movss xmm13, xmm9
+			movss xmm8, xmm5
+			mulss xmm8, xmm8
+			mulss xmm8, xmm4
+			mulss xmm8, xmm15
+			movss xmm9, xmm8
+			cvtsi2ss xmm10, @@pt + 32
+			cvtsi2ss xmm11, @@pt + 40
+			mulss xmm8, xmm10
+			mulss xmm9, xmm11
+			addss xmm12, xmm8
+			addss xmm13, xmm9
+			movss xmm8, xmm4
+			mulss xmm8, xmm8
+			mulss xmm8, xmm5
+			mulss xmm8, xmm15
+			movss xmm9, xmm8
+			cvtsi2ss xmm10, @@pt + 48
+			cvtsi2ss xmm11, @@pt + 56
+			mulss xmm8, xmm10
+			mulss xmm9, xmm11
+			addss xmm12, xmm8
+			addss xmm13, xmm9
+			movss xmm8, xmm4
+			mulss xmm8, xmm8
+			mulss xmm8, xmm4
+			movss xmm9, xmm8
+			cvtsi2ss xmm10, @@pt + 16
+			cvtsi2ss xmm11, @@pt + 24
+			mulss xmm8, xmm10
+			mulss xmm9, xmm11
+			addss xmm12, xmm8
+			addss xmm13, xmm9
+			ret
+funcRound:	mov r13, radius
+			xor r14, r14
+			call calcBesie
+			movss xmm0, xmm12
+			movss xmm1, xmm13
+			inc r14
+@@:			call calcBesie
+			movss xmm2, xmm12
+			movss xmm3, xmm13
+			call funcLine
+			movss xmm0, xmm2
+			movss xmm1, xmm3
+			inc r14
+			cmp r14, r13
+			jle @b
+			ret
+funcLine:	push rcx
+			push rbx
+			; координаты
+			cvttss2si r10, xmm0		; x0
+			cvttss2si r11, xmm1		; y0
+			cvttss2si rcx, xmm2		; x1
+			cvttss2si rax, xmm3		; y1
+			mov rdx, 1				; delta X
+			mov r8, r11				; адрес начальной точки
+			imul r8, rbx
+			add r8, r10
+			add r8, rdi
+			sub rcx, r10			; приращатели
+			jge @f
+			neg rcx
+			neg rdx
+@@:			setnz r10b
+			movzx r10, r10b
+			imul r10, rdx
+			mov rdx, rbx
+			sub rax, r11
+			jge @f
+			neg rax
+			neg rdx
+@@:			setnz r11b
+			movzx r11, r11b
+			imul r11, rdx
+			cmp rcx, rax			; направления
+			jge @f
+			xchg rcx, rax			; <
+			xchg r10, r11
+@@:			jrcxz _finLn
+			mov rbx, rcx			; delta X
+			xor rdx, rdx			; error
+_ln:		mov byte ptr [r8], 1
+			add rdx, rax			; error += delta Y
+			lea r12, [rdx * 2]
+			cmp r12, rbx			; error * 2 >= deltaX
+			jl @f
+			add r8, r11				; buf += offsY
+			sub rdx, rbx			; error -= deltaX
+@@:			add r8, r10				; buf += offsX
+			loop _ln
+_finLn:		pop rbx
+			pop rcx
+			ret
+ellipsePt:	push rax
+ 			mov rax, rdx
+ 			imul rax, rbx
+			lea r14, [rax + rcx]
+ 			mov byte ptr [r11 + r14], 1
+			sub rax, rcx
+ 			mov byte ptr [r11 + rax], 1
+			mov rax, rdx
+			imul rax, rbx
+			mov rax, rdx
+			neg rax
+			imul rax, rbx
+			lea r14, [rax + rcx]
+ 			mov byte ptr [r11 + r14], 1
+			sub rax, rcx
+ 			mov byte ptr [r11 + rax], 1
+			pop rax
+			ret
+fEllipse:	mov rcx, @@texW
+			mov rdx, @@texH
+			shr rdx, 1
+			jle no2
+			shr rcx, 1
+			jle no2
+			mov r10, rbx				; pitch
+			imul r10, rdx
+			add r10, rcx
+			add r10, rdi
+			mov r11, r10
+			mov rax, rcx
+			mov r10, rdx
+			xor rcx, rcx				; x = 0
+			mov rdx, r10				; y = b
+			imul rax, rax				; a2 = a * a
+			imul r10, r10				; b2 = b * b
+			lea rdi, [rdx * 2]			; 2 * b2
+			mov r12, 1
+			sub r12, rdi
+			imul r12, rax
+			lea r12, [r12 + r10 * 2]	; S = a2 * (1 - 2 * b) + 2 * b2
+			dec rdi
+			imul rdi, rax
+			shl rdi, 1
+			sub rdi, r10
+			neg rdi						; T = b2 - 2 * a2 * (2 * b - 1)
+			call ellipsePt
+ ellips:	push r11
+			test r12, r12
+			jge @f
+			lea r11, [rcx * 2 + 3]
+			imul r11, r10
+			shl r11, 1
+			add r12, r11
+			inc rcx
+			jmp next
+@@:			test rdi, rdi
+			jl @f
+			push rdi
+			lea r11, [rdx - 1]
+			imul r11, rax
+			shl r11, 2
+			lea rdi, [rcx * 2 + 3]
+			imul rdi, r10
+			shl rdi, 1
+			sub rdi, r11
+			add r12, rdi
+			pop rdi
+			push r12
+			lea r11, [rdx * 2 - 3]
+			imul r11, rax
+			shl r11, 1
+			lea r12, [rcx + 1]
+			imul r12, r10
+			shl r12, 2
+			sub r12, r11
+			add rdi, r12
+			pop r12
+			inc rcx
+			dec rdx
+			jmp next
+@@:			lea r11, [rdx -1]
+			imul r11, rax 
+			shl r11, 2
+			sub r12, r11
+			lea r11, [rdx * 2 - 3]
+			imul r11, rax
+			shl r11, 1
+			sub rdi, r11
+			dec rdx
+next:		pop r11
+			call ellipsePt
+			test rdx, rdx
+			jg ellips
+no2:		ret
+fRegion:	xor rcx, rcx
+			cmp radius, rcx
+			jnz round
+			call getPoint
+			movss xmm0, xmm4
+			movss xmm1, xmm5
+			inc rcx
+@@:			call getPoint
+			movss xmm2, xmm4
+			movss xmm3, xmm5
+			inc rcx
+			call funcLine
+			movss xmm0, xmm2
+			movss xmm1, xmm3
+			cmp rcx, r9
+			jbe @b
+			ret
+round:		dec rcx
+			call getPoint
+			movss xmm0, xmm4
+			movss xmm1, xmm5
+			inc rcx
+			call getPoint
+			movss xmm2, xmm4
+			movss xmm3, xmm5
+			inc rcx
+			call getPoint
+			call calcRound
+			mov rax, r9
+@@:			push rax
+			cvtsi2ss xmm0, @@pt + 16
+			cvtsi2ss xmm1, @@pt + 24
+			call getPoint
+			movss xmm2, xmm4
+			movss xmm3, xmm5
+			inc rcx
+			call getPoint
+			call calcRound
+			cvtsi2ss xmm2, @@pt + 00
+			cvtsi2ss xmm3, @@pt + 08
+			call funcLine
+			call funcRound
+			pop rax
+			dec rax
+			jg @b
+			ret
+asmFigure endp
+
+OPTION EPILOGUE:EpilogueDef
+$
+
 asm_ssh_figure endp
 
 asm_ssh_gradient proc USES r11 r12 r13 r14 r15 rsi rbx bar:QWORD, clip:QWORD, pix:QWORD, modify:QWORD
@@ -181,6 +771,7 @@ asm_ssh_gradient proc USES r11 r12 r13 r14 r15 rsi rbx bar:QWORD, clip:QWORD, pi
 		call asm_clip_bar
 		jc _fin
 		pxor mm7, mm7
+		movq mm6, qword ptr _mm_alpha
 		movd mm0, [r9].stk_modify.src_msk
 		movq mm1, mm0
 		pandn mm1, qword ptr _mm_not
@@ -348,30 +939,21 @@ asm_ssh_histogramm proc USES rsi rdi rbx wh:QWORD, modify:QWORD, buf:QWORD
 		inc dword ptr [rax * 4 + r10]
 		add r9, 4
 		loop @b
-		mov rax, 1									; максимальное значение
-		mov rcx, rax
-@@:		cmp eax, dword ptr [r10 + rcx * 4]
-		cmovl eax, dword ptr [r10 + rcx * 4]
+		xor r11, r11								; максимальное значение
+		mov rcx, r11
+		vcvtsi2ss xmm1, xmm1, rbx
+@@:		movsxd rax, dword ptr [r10 + rcx * 4]
+		vcvtsi2ss xmm0, xmm0, rax
+		movss dword ptr [r10 + rcx * 4], xmm0
+		cmp r11, rax
+		cmovl r11, rax
 		inc rcx
-		cmp rcx, 254
+		cmp rcx, 255
 		jb @b
 		cmp [rdx].stk_modify.type_histogramm, histogramm_rgb_v
 		jb img
-		; найти мин и макс диапазона
-		mov rcx, 1
-		mov rdx, 254
-@@:		cmp dword ptr [r10 + rcx * 4], 15
-		jae @f
-		inc rcx
-		cmp rcx, rdx
-		jb @b
-@@:		cmp dword ptr [r10 + rdx * 4], 15
-		jae @f
-		dec rdx
-		jnz @b
-@@:		mov [r8], ecx
-		mov [r8 + 4], rdx
-		lea rdi, [r8 + 8]
+		mov [r8], ebx
+		lea rdi, [r8 + 4]
 		mov rsi, r10
 		mov rcx, 128
 		rep movsq
@@ -383,7 +965,7 @@ img:	movsxd rbx, [rsi].stk_range.w				; w
 		vcvtsi2ss xmm0, xmm0, rbx
 		vdivss xmm0, xmm0, f_256x8					; dx
 		vcvtsi2ss xmm1, xmm1, rsi
-		vcvtsi2ss xmm2, xmm2, rax					; max_h
+		vcvtsi2ss xmm2, xmm2, r11					; max_h
 		vdivss xmm1, xmm1, xmm2						; dh
 		shl rbx, 2									; pitch
 		; заполнить картинку цветом гистограммы
@@ -404,10 +986,8 @@ _loop:	mov rdi, rdx
 		cmp rdx, 255
 		jz _fin
 		mov rdi, 255
-@@:		vcvtsi2ss xmm2, xmm2, dword ptr [r10 + rdx * 4]	; v1
-		vcvtsi2ss xmm3, xmm3, dword ptr [r10 + rdi * 4]	; v2
-		vmulss xmm2, xmm2, xmm1						; h1
-		vmulss xmm3, xmm3, xmm1						; h2
+@@:		vmulss xmm2, xmm1, dword ptr [r10 + rdx * 4]; h1
+		vmulss xmm3, xmm1, dword ptr [r10 + rdi * 4]; h2
 		vcvtsi2ss xmm4, xmm4, rdx
 		vcvtsi2ss xmm5, xmm5, rdi
 		vmulss xmm4, xmm4, xmm0						; x1
@@ -535,114 +1115,278 @@ _alpha:	mov al, [r9 + 3]
 epilog_def
 asm_ssh_correct endp
 
-; (const Range<int>& clip, int vals, void* pix, float scale);
-asm_ssh_noise_perlin proc
-comment $
-function Noise1(integer x, integer y)
-    n = x + y * 57
-    n = (n<<13) ^ n;
-    return ( 1.0 - ( (n * (n * n * 15731 + 789221) + 1376312589) & 7fffffff) / 1073741824.0);    
-  end function
+asm_noise proc
+		xor rax, rax
+		cmp r11, rax
+		cmovl r11, rax
+		cmp r12, rax
+		cmovl r12, rax
+		cmp r11, r14
+		cmovg r11, r14
+		cmp r12, r15
+		cmovg r12, r15						; x = clamp(x, 0, r14), y = clamp(y, 0, r15)
+		imul r12, 57
+		add r11, r12						; n
+		mov rax, r11
+		shl rax, 13
+		xor r11, rax						; n = (n << 13) ^ n
+		mov r12, r11
+		imul r12, r11						; nn = n * n
+		imul r12, 15731						; nn *= 15731
+		add r12, 789221						; nn += 789221
+		imul r11, r12						; n *= nn
+		add r11, 1376312589					; n += 1376312589
+		and r11, 7fffffffh					; n &= 7fffffff
+		vcvtsi2ss xmm10, xmm10, r11
+		vsubss xmm10, xmm12, xmm10			; n = 1.0 - n
+		vdivss xmm10, xmm10, f_1073741824_0 ; n /= 1073741824.0
+		ret
+asm_noise endp
 
-  function SmoothNoise_1(float x, float y)
-    corners = ( Noise(x-1, y-1)+Noise(x+1, y-1)+Noise(x-1, y+1)+Noise(x+1, y+1) ) / 16
-    sides   = ( Noise(x-1, y)  +Noise(x+1, y)  +Noise(x, y-1)  +Noise(x, y+1) ) /  8
-    center  =  Noise(x, y) / 4
-    return corners + sides + center
-  end function
+asm_smooth_noise proc
+		lea r11, [rcx - 1]
+		lea r12, [rdx - 1]
+		call asm_noise
+		vmovss xmm8, xmm8, xmm10
+		lea r11, [rcx + 1]
+		lea r12, [rdx - 1]
+		call asm_noise
+		vaddss xmm8, xmm8, xmm10
+		lea r11, [rcx + 1]
+		lea r12, [rdx + 1]
+		call asm_noise
+		vaddss xmm8, xmm8, xmm10
+		lea r11, [rcx + 1]
+		lea r12, [rdx + 1]
+		call asm_noise
+		vaddss xmm8, xmm8, xmm10		; corners
+		lea r11, [rcx - 1]
+		mov r12, rdx
+		call asm_noise
+		vmovss xmm9, xmm9, xmm10
+		lea r11, [rcx + 1]
+		mov r12, rdx
+		call asm_noise
+		vaddss xmm9, xmm9, xmm10
+		mov r11, rcx
+		lea r12, [rdx - 1]
+		call asm_noise
+		vaddss xmm9, xmm9, xmm10
+		mov r11, rcx
+		lea r12, [rdx + 1]
+		call asm_noise
+		vaddss xmm9, xmm9, xmm10		; sides
+		mov r11, rcx
+		mov r12, rdx
+		call asm_noise
+		vdivss xmm8, xmm8, f_16_0
+		vdivss xmm9, xmm9, f_8_0
+		vdivss xmm10, xmm10, f_4_0
+		vaddss xmm10, xmm10, xmm9
+		vaddss xmm10, xmm10, xmm8
+		ret
+asm_smooth_noise endp
 
- function Linear_Interpolate(a, b, x)
-	return  a*(1-x) + b*x
-  end of function
-  
-  function Cosine_Interpolate(a, b, x)
-	ft = x * 3.1415927
-	f = (1 - cos(ft)) * .5
-	return  a*(1-f) + b*f
-  end of function
-  
-  function Cubic_Interpolate(v0, v1, v2, v3,x)
-	P = (v3 - v2) - (v0 - v1)
-	Q = (v0 - v1) - P
-	R = v2 - v0
-	S = v1
-
-	return Px3 + Qx2 + Rx + S
-  end of function
-  
-  function InterpolatedNoise_1(float x, float y)
-      integer_X    = int(x)
-      fractional_X = x - integer_X
-      integer_Y    = int(y)
-      fractional_Y = y - integer_Y
-      v1 = SmoothedNoise1(integer_X,     integer_Y)
-      v2 = SmoothedNoise1(integer_X + 1, integer_Y)
-      v3 = SmoothedNoise1(integer_X,     integer_Y + 1)
-      v4 = SmoothedNoise1(integer_X + 1, integer_Y + 1)
-      i1 = Interpolate(v1 , v2 , fractional_X)
-      i2 = Interpolate(v3 , v4 , fractional_X)
-      return Interpolate(i1 , i2 , fractional_Y)
-  end function
-
-frequencyx  = flt_vec.x
-frequencyy  = flt_vec.y
-amplitude  = scale
-
-  function PerlinNoise_2D(float x, float y)
-      total = 0
-      p = persistence
-      n = Number_Of_Octaves - 1
-      loop i from 0 to n
-          frequency = 2i
-          amplitude = pi
-          total = total + InterpolatedNoisei(x * frequencyx, y * frequencyy) * amplitude
-      end of i loop
-      return total
-  end function$
+asm_ssh_noise_perlin proc USES rbx rsi rdi r12 r13 r14 r15 clip:QWORD, vals:DWORD, dst:QWORD, modify:QWORD
+		movsxd rax, [r9].stk_modify.src_ops
+		mov r10, offset _func_ops
+		mov r10, [r10 + rax * 8]				; пиксельная операция
+		movsxd r14, [rcx].stk_range.w
+		movsxd r15, [rcx].stk_range.h
+		lea rbx, [r14 * 4]						; pitch
+		dec r14
+		dec r15
+		movss xmm12, f_1_0x8
+		movss xmm14, [r9].stk_modify.flt_vec.x	; frequency
+		movss xmm15, [r9].stk_modify.flt_vec.y	; persistence
+		pxor mm7, mm7
+		movq mm6, qword ptr _mm_alpha
+		movd mm0, [r9].stk_modify.src_msk
+		movq mm1, mm0
+		pandn mm1, qword ptr _mm_not
+		mov r9, rdx								; число октав
+		xor rdx, rdx							; y
+_h:		push rdx
+		push r8
+		xor rcx, rcx							; x
+_w:		push rcx
+		vxorps xmm11, xmm11, xmm11				; total
+		xor r13, r13
+@@:		; интерполяция
+		vcvtsi2ss xmm0, xmm0, rcx				; x
+		vcvtsi2ss xmm1, xmm1, rdx				; y
+		lea rax, [r13 + 1]
+		vcvtsi2ss xmm13, xmm13, rax				; ii = i + 1
+		vmulss xmm10, xmm13, f_2_0x8			; tmp = ii * 2
+		vmulss xmm0, xmm0, xmm13				; x *= tmp
+		vmulss xmm1, xmm1, xmm13				; y *= tmp
+		vroundss xmm2, xmm0, xmm0, 11b			; int_x
+		vroundss xmm3, xmm1, xmm1, 11b			; int_y
+		vcvtss2si rsi, xmm2
+		vcvtss2si rdi, xmm3
+		vsubss xmm2, xmm0, xmm2					; frac_x
+		vsubss xmm3, xmm1, xmm3					; frac_y
+		mov rcx, rsi
+		mov rdx, rdi
+		call asm_smooth_noise
+		vmovss xmm4, xmm4, xmm10				; v1
+		lea rcx, [rsi + 1]
+		mov rdx, rdi
+		call asm_smooth_noise
+		vmovss xmm5, xmm5, xmm10				; v2
+		mov rcx, rsi
+		lea rdx, [rdi + 1]
+		call asm_smooth_noise
+		vmovss xmm6, xmm6, xmm10				; v3
+		lea rcx, [rsi + 1]
+		lea rdx, [rdi + 1]
+		call asm_smooth_noise
+		vmovss xmm7, xmm7, xmm10				; v4
+		vsubss xmm8, xmm12, xmm2				; sx = 1.0 - frac_x
+		vsubss xmm9, xmm12, xmm3				; sy = 1.0 - frac_y
+		vmulss xmm4, xmm4, xmm2					; v1 *= frac_x
+		vfmadd231ss xmm4, xmm5, xmm8			; i1 = v1 + v2 * sx
+		vmulss xmm6, xmm6, xmm2					; v3 *= frac_x
+		vfmadd231ss xmm6, xmm7, xmm8			; i2 = v3 + v4 * sx
+		vmulss xmm4, xmm4, xmm3					; i1 *= frac_y
+		vfmadd231ss xmm4, xmm6, xmm9			; i1 = i1 + i2 * sy
+		vmulss xmm10, xmm13, xmm15				; tmp = ii * amplitude
+		vfmadd231ss xmm11, xmm4, xmm10			; total += i1 * tmp
+		inc r13
+		cmp r13, r9
+		jb @b
+		vpshufd xmm11, xmm11, 0b
+		vpackssdw xmm11, xmm11, xmm11
+		vpackuswb xmm11, xmm11, xmm11
+		movd dword ptr [r8], xmm11
+		pop rcx
+		add r8, 4
+		inc rcx
+		cmp rcx, r14
+		jbe _w
+		pop r8
+		pop rdx
+		add r8, rbx
+		inc rdx
+		cmp rdx, r15
+		jbe _h
 		ret
 asm_ssh_noise_perlin endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_noise_terrain proc
+asm_ssh_noise_terrain proc bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
 		ret
 asm_ssh_noise_terrain endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_border3d proc
+asm_draw_border proc USES rsi r13 rbx r14 r15
+		pxor mm7, mm7
+		movq mm6, qword ptr _mm_alpha
+		movd mm0, [r9].stk_modify.src_msk
+		movq mm1, mm0
+		pandn mm1, qword ptr _mm_not
+		movd mm2, [r9].stk_modify.src_val
+		movq _mm_tmp, mm2
+		movsxd r13, [r9].stk_modify.sides
+		movsxd r9, [r9].stk_modify.w_border
+		test r9, r9
+		jle _fin
+		call asm_clip_bar
+		jc _fin
+		test r13, side_top
+		jz @f
+		mov rbx, r9
+		sub ebx, _clip.y
+		jle @f
+		draw_side r8, rcx, rbx, r11
+		sub rdx, rbx
+		imul rbx, r10
+		add r8, rbx
+@@:		test r13, side_bottom
+		jz @f
+		mov rbx, r9
+		sub ebx, _clip.h
+		jle @f
+		sub rdx, rbx
+		mov r14, rdx
+		imul r14, r10
+		add r14, r8
+		draw_side r14, rcx, rbx, r12
+@@:		test r13, side_left
+		jz @f
+		mov rbx, r9
+		sub ebx, _clip.x
+		jle @f
+		draw_side r8, rbx, rdx, r11
+		lea r8, [r8 + rbx * 4]
+		sub rcx, rbx
+@@:		test r13, side_right
+		jz _fin
+		mov rbx, r9
+		sub ebx, _clip.w
+		jle _fin
+		sub rcx, rbx
+		lea r14, [r8 + rcx * 4]
+		draw_side r14, rbx, rdx, r12
+_fin:	emms
+		ret
+asm_draw_border endp
+
+asm_ssh_border2d proc USES r12 bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
+		mov r11, offset _func_ops
+		movsxd rax, [r9].stk_modify.src_ops
+		mov r11, [r11 + rax * 8]					; процедура отрисовка левой и верхней стороны
+		mov r12, r11								; процедура отрисовка правой и нижней стороны
+		call asm_draw_border
+		ret
+asm_ssh_border2d endp
+
+asm_ssh_border3d proc USES r12 bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
+		mov r11, offset _add						; процедура отрисовка левой и верхней стороны
+		mov r12, offset _sub						; процедура отрисовка правой и нижней стороны
+		mov rax, r11
+		cmp [r9].stk_modify.type_ops, 3				; brd_o3d
+		cmovnz r11, r12
+		cmovnz r12, rax
+		call asm_draw_border
 		ret
 asm_ssh_border3d endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_group proc
+asm_ssh_group proc bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
+LOCAL _bar:stk_bar
+		mov bar, rcx
+		mov clip, rdx
+		mov dst, r8
+		mov modify, r9
+		mov [r9].stk_modify.type_ops, 4		; brd_i3d
+		call asm_ssh_border3d
+		mov r8, dst
+		mov r9, modify
+		mov [r9].stk_modify.type_ops, 3		; brd_o3d
+		mov rdx, bar
+		lea rcx, _bar
+		; скорректировать область на ширину границы
+		movsxd r10, [r9].stk_modify.w_border
+		lea rax, [r10 * 2]
+		movsxd r10, [rdx].stk_bar.x
+		movsxd r11, [rdx].stk_bar.y
+		add r10, rax
+		add r11, rax
+		mov [rcx].stk_bar.x, r10d
+		mov [rcx].stk_bar.y, r11d
+		shl rax, 1
+		movsxd r10, [rdx].stk_bar.w
+		movsxd r11, [rdx].stk_bar.h
+		sub r10, rax
+		sub r11, rax
+		mov [rcx].stk_bar.w, r10d
+		mov [rcx].stk_bar.h, r11d
+		mov rdx, clip
+		call asm_ssh_border3d
 		ret
 asm_ssh_group endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_table proc
+asm_ssh_table proc bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
 		ret
 asm_ssh_table endp
-
-asm_ssh_border2d proc bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
-		
-		ret
-comment $
-; rcx(bar) rdx(clip), r8(src), r9(widthBorder), val, msk, side, pixOps
-asmBorder proc USES rbx r12 r13 r14 bar:QWORD, clip:QWORD, src:QWORD, width:QWORD, val:QWORD, msk:QWORD, side:QWORD, pixOps:BYTE
-		movzx rax, pixOps
-		mov r12, offset pix_ops
-		mov r12, [rax * 8 + r12]
-		mov r14, r12
-		mov r13, side
-		movd mm0, val
-		movd mm1, msk
-		movq mm2, mm1
-		pandn mm2, qword ptr _mmNot
-		call drawBorder
-		ret
-asmBorder endp
-$
-		ret
-asm_ssh_border2d endp
 
 ; (const Range<int>& _wh, ImgMod* modify, void* cells, void* ptr)
 asm_ssh_mosaik proc

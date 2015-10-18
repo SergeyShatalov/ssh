@@ -135,7 +135,7 @@ namespace ssh
 				case Types::noise:
 					switch(type_ops)
 					{
-						case Ops::perlin: asm_ssh_noise_perlin(clip, vals.w, map->pixels(), scale); break;
+						case Ops::perlin: asm_ssh_noise_perlin(clip, vals.w, map->pixels(), this); break;
 						case Ops::terrain: asm_ssh_noise_terrain(bar, clip, map->pixels(), this); break;
 					}
 					break;
@@ -155,7 +155,7 @@ namespace ssh
 				case Types::gradient: asm_ssh_gradient(bar, clip, map->pixels(), this); break;
 				case Types::replace: asm_ssh_replace(vals, msks, map->pixels(), clip); break;
 				case Types::histogramm:
-					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(258, 1) : wh);
+					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(257, 1) : wh);
 					buf_cs buf(tmp, 4);
 					asm_ssh_histogramm(tmp, this, buf);
 					map->ixywh = tmp;

@@ -28,6 +28,8 @@ pack_pix macro
 		packuswb mm2, mm2
 endm
 
+public _add, _sub, _mm_alpha
+
 .const
 align 16
 dataBin		dd 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0
@@ -77,9 +79,9 @@ _add:	paddusb mm2, mm3
 		pand mm3, mm1
 		por mm2, mm3
 		ret
-_sub:	psubusb mm2, mm3
-		pand mm2, mm0
-		pand mm3, mm1
+_sub:	psubusb mm3, mm2
+		pand mm3, mm0
+		pand mm2, mm1
 		por mm2, mm3
 		ret
 _set:	pand mm2, mm0
@@ -91,9 +93,9 @@ _xor:	pxor mm2, mm3
 		pand mm3, mm1
 		por mm2, mm3
 		ret
-_and:	pand mm2, mm3
-		pand mm2, mm0
-		pand mm3, mm1
+_and:	pand mm3, mm2
+		pand mm3, mm0
+		pand mm2, mm1
 		por mm2, mm3
 		ret
 _or:	por mm2, mm3
@@ -431,15 +433,15 @@ if XMM_LINEAR
 		cvtdq2ps xmm3, xmm3
 		cvtdq2ps xmm4, xmm4
 		cvtdq2ps xmm5, xmm5
-		pshufd xmm6, xmm0, 00000000b				; tx = fracX
-		pshufd xmm7, xmm1, 00000000b				; sx = 1.0 - fracX
-		mulps xmm2, xmm6							; f1 *= tx
+		vpshufd xmm6, xmm0, 00000000b				; tx = fracX
+		vpshufd xmm7, xmm1, 00000000b				; sx = 1.0 - fracX
+		vmulps xmm2, xmm2, xmm6						; f1 *= tx
 		vfmadd231ps xmm2, xmm3, xmm7				; i1 = f1 + f2 * sx
-		mulps xmm4, xmm6							; f3 *= tx
+		vmulps xmm4, xmm4, xmm6						; f3 *= tx
 		vfmadd231ps xmm4, xmm5, xmm7				; i2 = f3 + f4 * sx
-		pshufd xmm6, xmm0, 01010101b				; ty = fracY
-		pshufd xmm7, xmm1, 01010101b				; sy = 1.0 - fracY
-		mulps xmm2, xmm6							; i1 *= ty
+		vpshufd xmm6, xmm0, 01010101b				; ty = fracY
+		vpshufd xmm7, xmm1, 01010101b				; sy = 1.0 - fracY
+		vmulps xmm2, xmm2, xmm6						; i1 *= ty
 		vfmadd231ps xmm2, xmm4, xmm7				; res = i1 + i2 * sy
 		vdivps xmm0, xmm2, xmm12
 		ret ; 26 инструкций

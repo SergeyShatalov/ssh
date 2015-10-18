@@ -26,11 +26,33 @@ f_2_0	dd 2.0,2.0,2.0,2.0
 f_1_0	dd 1.0,1.0,1.0,1.0
 _255	dd 123.0, 255.0, 255.0, 255.0
 _255_1	dd 0.00392156862
-
+_msk	dd -1, 0, -1, -1
+_imm8	dd 3, 2, 1, 0
+idx0	dd 8 dup(0)
 .code
 _mm_l	db -1, 3, -1, -1, -1, 7, -1, -1
 asm_ssh_shufb proc public
 ; pow(x,y) = do {x = sqrt(x); y = frac(y) * 2; if (y >= 1) res *= x; } while(x == 1);
+		ret
+		movups xmm2, _msk
+		xorps xmm1, xmm1
+		mov rdx, offset _255
+		vgatherqps xmm0, [rdx + xmm1 * 4], xmm2
+		vxorps ymm0, ymm0, ymm0
+		movups xmm0, _255
+		vinserti128 ymm0, ymm0, xmm0, 1
+		mov edx, 01110010100101110000101001011001b
+		mov ecx, 3
+		mov rdi, offset idx0
+@@:		pext eax, edx, ecx
+		shl ecx, 2
+		stosd
+		test ecx, ecx
+		jnz @b
+		VPERMILPS xmm1, xmm2, xmm4;11100100b
+		movups xmm4, _imm8
+		pshufd xmm3, xmm2, 11100100b
+		movaps xmm0, xmm2
 		movss xmm0, _255
 		movss xmm3, _255_1
 		movaps xmm2, xmm0

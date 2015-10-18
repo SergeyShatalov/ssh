@@ -98,6 +98,8 @@ namespace ssh
 		email_subject = L"Уведомление логгирования";
 		email_max_msgs = 200;
 		email_blocked = false;
+		email_pass = MAIL_PASS;
+		email_login = L"ostrov_skal";
 		// вывод в файл
 		file_path = ssh_system_paths(SystemInfo::siProgFolder) + ssh_system_paths(SystemInfo::siNameProg) + L".log";
 		file_template = L"[$tp] $DT-$tm\t$fn  -  ($fl: $ln) - <$ms>\r\n";;
@@ -147,6 +149,7 @@ namespace ssh
 		try
 		{
 			_log = new LOG;
+			_log->_out = lg._out;
 			_log->string_begin = apply_template(L"", L"", 0, 0, L"", lg.string_begin);
 			_log->string_continue = apply_template(L"", L"", 0, 0, L"", lg.string_continue);
 			_log->string_finish = lg.string_finish;
