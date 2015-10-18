@@ -14,6 +14,7 @@ namespace ssh
 		Buffer(Buffer&& buf) : sz(buf.sz), is_owner(buf.is_owner), data(buf.data) {buf.data = nullptr;}
 		// создать буфер определённого размера
 		Buffer(ssh_u count) : sz(count * sizeof(T)), is_owner(true), data(new T[count]) {}
+		Buffer(const Range<int>& wh, int bpp) : sz(wh.w * wh.h * bpp), is_owner(true), data(new T[sz]) {}
 		// создать из существующего неопределённого буфера
 		Buffer(T* p, ssh_u count, bool is_own = true) : sz(count * sizeof(T)), is_owner(is_own), data(p) {}
 		// деструктор

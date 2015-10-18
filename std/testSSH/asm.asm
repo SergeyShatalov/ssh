@@ -24,13 +24,22 @@ _1		dd 0.5,0.5,-0.5,-1.5
 _2		dd 0.2,1.2,1.2,1.2
 f_2_0	dd 2.0,2.0,2.0,2.0
 f_1_0	dd 1.0,1.0,1.0,1.0
-_255	dd 255.0, 255.0, 255.0, 255.0
-
+_255	dd 123.0, 255.0, 255.0, 255.0
+_255_1	dd 0.00392156862
 
 .code
 _mm_l	db -1, 3, -1, -1, -1, 7, -1, -1
 asm_ssh_shufb proc public
 ; pow(x,y) = do {x = sqrt(x); y = frac(y) * 2; if (y >= 1) res *= x; } while(x == 1);
+		movss xmm0, _255
+		movss xmm3, _255_1
+		movaps xmm2, xmm0
+		movss xmm1, _255 + 4
+		divss xmm0, xmm1
+		mulss xmm2, xmm3
+		divss xmm2, xmm3
+		movups xmm0, _1
+		roundps xmm0, xmm0, 01b
 		movq mm0, qword ptr _mm1
 		pshufb mm0, qword ptr _mm_l
 		vmovups ymm0, tmp_mtx

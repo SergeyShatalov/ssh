@@ -21,7 +21,7 @@ extern "C"
 
 namespace ssh
 {
-	inline long loop(long x, long y)
+	__forceinline long ssh_loop(long x, long y)
 	{
 		long z(y / (x * 2));
 		long y1 = z * x;
@@ -29,32 +29,37 @@ namespace ssh
 		return x - (y < x ? x - y : y - x);
 	}
 
-	inline int log2(int i)
+	__forceinline int ssh_log2(int i)
 	{
 		int value = 0;
-		while(i >>= 1) {value++;}
+		while(i >>= 1) { value++; }
 		return value;
 	}
 
-	inline float lerp(float f0, float f1, float t)
+	__forceinline float ssh_lerp(float f0, float f1, float t)
 	{
 		float s = 1.0f - t;
 		return f0 * s + f1 * t;
 	}
 
-	inline float floor(float f)
+	__forceinline float ssh_floor(float f)
 	{
-		return (float)_mm_cvtt_ss2si(_mm_set_ss(f));
+		return _mm_floor_ss(_mm_set_ss(f), _mm_set_ss(f)).m128_f32[0];
 	}
 
-	inline int round(float f)
+	__forceinline float ssh_ceil(float f)
 	{
-		return _mm_cvt_ss2si(_mm_set_ss(f));
+		return _mm_ceil_ss(_mm_set_ss(f), _mm_set_ss(f)).m128_f32[0];
 	}
 
-	inline float frac(float f)
+	__forceinline int ssh_trunc(float f)
 	{
-		return f - ssh::floor(f);
+		return (int)_mm_round_ss(_mm_set_ss(f), _mm_set_ss(f), 3).m128_f32[0];
+	}
+
+	__forceinline float ssh_frac(float f)
+	{
+		return f - ssh_trunc(f);
 	}
 
 	class plane;
@@ -116,9 +121,8 @@ namespace ssh
 		float cross(const vec2& v) const {return x * v.y - y * v.x;}
 		bool is_identity() const {return (lengthSq() < SSH_EPSILON2);}
 		const vec2& normalize() {float l(length()); l = (l > SSH_EPSILON ? 1.0f / l : 0.0f); x *= l; y *= l; return *this;}
-		const vec2& floor(const vec2& v) {if(v.x < x) x = v.x; if(v.y < y) y = v.y; return *this;}
-		const vec2& ceil(const vec2& v) { if(v.x > x) x = v.x; if(v.y > y) y = v.y; return *this;}
-		const vec2& floor() {x = ssh::floor(x); y = ssh::floor(y); return *this;}
+		const vec2& ceil() { x = ssh_ceil(x); y = ssh_ceil(y); return *this; }
+		const vec2& floor() { x = ssh_floor(x); y = ssh_floor(y); return *this; }
 		vec2 middle(const vec2& v) const {return vec2((x + v.x) / 2.0f, (y + v.y) / 2.0f);}
 		vec2 reflect(const vec2& v) const {return vec2(*this - (2.0f * dot(v) * v));}
 		// приведение типа
@@ -186,7 +190,7 @@ namespace ssh
 		const vec3& floor(const vec3& v) {if(v.x < x) x = v.x; if(v.y < y) y = v.y; if(v.z < z) z = v.z; return *this;}
 		const vec3& ceil(const vec3& v) {if(v.x > x) x = v.x; if(v.y > y) y = v.y; if(v.z > z) z = v.z; return *this;}
 		const vec3& set(float X, float Y, float Z) {x = X; y = Y; z = Z; return *this;}
-		const vec3& floor() {x = ssh::floor(x); y = ssh::floor(y); z = ssh::floor(z); return *this;}
+		const vec3& floor() {x = ssh_floor(x); y = ssh_floor(y); z = ssh_floor(z); return *this;}
 		vec3 cross(const vec3& v) const {return vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);}
 		vec3 middle(const vec3& v) const {return vec3((x + v.x) / 2.0f, (y + v.y) / 2.0f, (z + v.z) / 2.0f);}
 		vec3 reflect(const vec3& v) const {return vec3(*this - (2.0f * dot(v) * v));}

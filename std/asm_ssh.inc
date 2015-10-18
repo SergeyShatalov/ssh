@@ -6,6 +6,26 @@ OPTION NOKEYWORD:<width type>
 ;OPTION PROLOGUE:PrologueDef
 ;OPTION EPILOGUE:EpilogueDef
 
+epilog_none	equ OPTION EPILOGUE:NONE
+epilog_def	equ OPTION EPILOGUE:EPILOGUEDEF
+
+floor macro p1
+	vroundss p1, p1, 01b
+endm
+
+ceil macro p1
+	vroundss p1, p1, 10b
+endm
+
+trunc macro p1
+	vroundss p1, p1, 11b
+endm
+
+frac macro p1, p2
+	vroundss p2, p1, 11b
+	vsubss p1, p1, p2
+endm
+
 bc1 struct
 	dw rgb0
 	dw rgb1
@@ -57,6 +77,12 @@ stk_range struct
 	h dd ?
 stk_range ends
 
+stk_buf struct
+	sz  dq ?
+	own dq ?
+	buf dq ?
+stk_buf ends
+
 stk_modify struct
 		type			dd 0				; тип модификатора
 		type_ops		dd 0				; тип операций
@@ -80,14 +106,13 @@ stk_modify struct
 		w_mtx			dd 0				; габариты матрицы
 		scale			dd 0.0				; масштаб
 		alpha			dd 0.0				; значение альфы
-		rgba			dq 0, 0, 0			; массив значений(size, is_owner, ptr)
+		rgba			stk_buf<>			; массив значений(size, is_owner, ptr)
 		flt_vec			stk_vec<>			; вектор дл€ фильтра
 		bar				stk_bar<>			; область действи€ модификатора
-		range			stk_range<>			; диапазон
 		wh				stk_range<>			; габариты
 		wh_cells		stk_range<>			; габариты €чейки
 		wh_repeat		stk_range<>			; количество повторений
-		array_count		stk_range<>			; диапазон элементов в массивах
+		wh_rgba			stk_range<>			; диапазон элементов в массивах
 		cols_histogramm stk_range<>			; цвета дл€ формировани€ гистограммы
 stk_modify ends
 
@@ -101,6 +126,8 @@ externdef _func_ops:QWORD
 externdef _gamma:DWORD
 externdef f_255x8:DWORD
 externdef f_256x8:DWORD
+externdef f_inv255x8:DWORD
+externdef f_inv256x8:DWORD
 externdef f_0_5x8:DWORD
 externdef f_100x4:DWORD
 externdef _clip:stk_bar

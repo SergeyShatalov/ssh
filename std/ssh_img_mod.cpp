@@ -13,7 +13,7 @@ namespace ssh
 	SSH_ENUMS(m_img_mods, _E(flip), _E(copy), _E(border), _E(resize), _E(noise), _E(correct), _E(figure), _E(gradient), _E(replace), _E(histogramm));
 	// фильтры
 #define ssh_enum_tp ImgMod::Flt
-	SSH_ENUMS(m_mod_flts, _E(none), _E(sobel), _E(laplacian), _E(prewit), _E(emboss), _E(normal), _E(hi), _E(low), _E(median), _E(roberts), _E(max), _E(min), _E(contrast), _E(binary), _E(gamma), _E(scale_bias));
+	SSH_ENUMS(m_mod_flts, _E(none), _E(sobel), _E(laplac), _E(prewit), _E(emboss), _E(normal), _E(hi), _E(low), _E(median), _E(roberts), _E(max), _E(min), _E(contrast), _E(binary), _E(gamma), _E(scale_bias));
 	// фигуры
 #define ssh_enum_tp ImgMod::Figures
 	SSH_ENUMS(m_mod_figures, _E(ellipse), _E(rectangle), _E(tri_u), _E(tri_d), _E(tri_r), _E(tri_l), _E(sixangle), _E(eightangle), _E(romb), _E(star1), _E(star2), _E(arrow_r), _E(arrow_l), _E(arrow_d), _E(arrow_u), _E(cross_diag), _E(checked), _E(vplz), _E(hplz), _E(plus));
@@ -28,10 +28,10 @@ namespace ssh
 	SSH_ENUMS(m_img_histogramms, _E(rgb), _E(red), _E(green), _E(blue), _E(rgb_v), _E(red_v), _E(green_v), _E(blue_v));
 	// пиксельные операции
 #define ssh_enum_tp ImgMod::Pix
-	SSH_ENUMS(m_mod_pix_ops, _E(add), _E(sub), _E(set), _E(xor), _E(and), _E(or), _E(lum), _E(not), _E(var_alpha), _E(fix_alpha), _E(mul), _E(lum_add), _E(lum_sub), _E(norm), _E(pow2));
+	SSH_ENUMS(m_mod_pix_ops, _E(add), _E(sub), _E(set), _E(xor), _E(and), _E(or), _E(lum), _E(not), _E(var_alpha), _E(fix_alpha), _E(mul), _E(lum_add), _E(lum_sub), _E(norm));
 	// типы операций
 #define ssh_enum_tp ImgMod::Ops
-	SSH_ENUMS(m_mod_ops, _E(perlin), _E(brd_o3d), _E(brd_i3d), _E(grp), _E(h_flip), _E(v_flip), _E(flip_90), _E(tbl_2d), _E(tbl_3d), _E(tbl_grp), _E(terrain));
+	SSH_ENUMS(m_mod_ops, _E(perlin), _E(brd_o3d), _E(brd_i3d), _E(grp), _E(h_flip), _E(v_flip), _E(flip_90), _E(tbl_2d), _E(tbl_3d), _E(tbl_grp), _E(terrain), _E(pow2));
 	// выравнивание текста
 #define ssh_enum_tp ImgTxt::Aligned
 	SSH_ENUMS(m_txt_aligned, _E(top), _E(left), _E(right), _E(bottom), _E(h_center), _E(v_center), _E(brk));
@@ -70,24 +70,23 @@ namespace ssh
 			ssh_explode<int>(L",", xml->attr(hroot, L"val", def), vals, 2, 0, nullptr, true);
 			ssh_explode<int>(L",", xml->attr(hroot, L"hcol", def), cols_histogramm, 2, 0, nullptr, true);
 			ssh_explode<int>(L",", xml->attr(hroot, L"cell", def), wh_cell, 2, 1);
-			ssh_explode<int>(L",", xml->attr(hroot, L"rn", def), rn, 2, 0);
 			ssh_explode<int>(L",", xml->attr(hroot, L"wh", def), wh, 2, 1);
-			ssh_explode<int>(L",", xml->attr(hroot, L"array_count", def), array_count, 2, 1);
+			ssh_explode<int>(L",", xml->attr(hroot, L"wh_rgba", def), wh_rgba, 2, 1);
 			ssh_explode<float>(L",", xml->attr(hroot, L"rep", def), wh_rep, 2, 1.0f);
 			ssh_explode<float>(L",", xml->attr(hroot, L"vec", def), flt_vec, 4, 1.0f);
-			if(xml->is_attr(hroot, L"array_map"))
+			if(xml->is_attr(hroot, L"map"))
 			{
-				ImgMap* t(img->get_map(xml->attr(hroot, L"array_map", -1)));
+				ImgMap* t(img->get_map(xml->attr(hroot, L"map", -1)));
 				if(t)
 				{
-					rgba = Buffer<ssh_cs>(t->pixels());
-					array_count = t->bar().range;
+					rgba = Buffer<ssh_cs>(t->pixels(), t->pixels().count(), false);
+					wh_rgba = t->bar().range;
 				}
 			}
-			else if(xml->is_attr(hroot, L"array_val"))
+			else if(xml->is_attr(hroot, L"array"))
 			{
-				rgba = Buffer<ssh_cs>(array_count.w * array_count.h);
-				ssh_explode<ssh_b>(L",", xml->attr(hroot, L"array_val", def), rgba.to<ssh_b>(), rgba.count(), 0);
+				rgba = Buffer<ssh_cs>(wh_rgba.w * wh_rgba.h);
+				ssh_explode<ssh_b>(L",", xml->attr(hroot, L"array", def), rgba.to<ssh_b>(), rgba.count(), 0);
 			}
 		}
 		catch(const Exception& e)
@@ -113,19 +112,19 @@ namespace ssh
 						case Ops::h_flip: asm_ssh_h_flip(bar, clip, map->pixels()); break;
 						case Ops::v_flip: asm_ssh_v_flip(bar, clip, map->pixels()); break;
 						case Ops::flip_90:
-							Buffer<ssh_cs> dst(map->pix.size());
+							buf_cs dst(map->pix.size());
 							asm_ssh_flip_90(clip, dst, map->pixels());
 							map->pix = dst;
 							map->ixywh = Bar<int>(0, 0, clip.h, clip.w);
 							break;
 					}
 					break;
-				case Types::copy: asm_ssh_copy(array_count, array_count, rgba, map->pixels(), bar, clip, this); break;
+				case Types::copy: asm_ssh_copy(bar, clip, map->pixels(), rgba, wh_rgba, wh_rgba, this); break;
 				case Types::border:
 					switch(type_ops)
 					{
 						case Ops::brd_o3d:
-						case Ops::brd_i3d: asm_ssh_border_3d(bar, clip, map->pixels(), this); break;
+						case Ops::brd_i3d: asm_ssh_border3d(bar, clip, map->pixels(), this); break;
 						case Ops::grp: asm_ssh_group(bar, clip, map->pixels(), this); break;
 						case Ops::tbl_2d:
 						case Ops::tbl_3d:
@@ -140,14 +139,14 @@ namespace ssh
 						case Ops::terrain: asm_ssh_noise_terrain(bar, clip, map->pixels(), this); break;
 					}
 					break;
-				case Types::correct: asm_ssh_correct(clip, rn, map->pixels(), type_histogramm); break;
+				case Types::correct: asm_ssh_correct(clip, wh, type_histogramm, map->pixels()); break;
 				case Types::resize:
 				{
 					Range<int> _wh(wh);
 					if(type_coord == Coord::percent) { _wh.w *= (int)(clip.w / 100.0f); _wh.h *= (int)(clip.h / 100.0f); }
-					if(ops.h == Pix::pow2) { _wh.w = ssh_pow2<int>(_wh.w, true); _wh.h = ssh_pow2<int>(_wh.h, true); }
-					Buffer<ssh_cs> ptr(asm_ssh_compute_fmt_size(_wh.w, _wh.h, FormatsMap::rgba8));
-					if(type == Types::resize) asm_ssh_copy(map->bar(), map->bar().range, ptr, map->pixels(), _wh, _wh, this);
+					if(type_ops == Ops::pow2) { _wh.w = ssh_pow2<int>(_wh.w, false); _wh.h = ssh_pow2<int>(_wh.h, false); }
+					buf_cs ptr(_wh, 4);
+					if(type == Types::resize) asm_ssh_copy(bar, clip, map->pixels(), ptr, _wh, _wh, this);
 					map->pix = ptr;
 					map->ixywh = _wh;
 					break;
@@ -156,12 +155,12 @@ namespace ssh
 				case Types::gradient: asm_ssh_gradient(bar, clip, map->pixels(), this); break;
 				case Types::replace: asm_ssh_replace(vals, msks, map->pixels(), clip); break;
 				case Types::histogramm:
-					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(256, 1) : wh);
-					Buffer<ssh_cs> buf(tmp.w * tmp.h * 4);
+					Range<int> tmp(SSH_CAST(type_histogramm) >= SSH_CAST(ImgMod::Histogramms::rgb_v) ? Range<int>(258, 1) : wh);
+					buf_cs buf(tmp, 4);
 					asm_ssh_histogramm(tmp, this, buf);
 					map->ixywh = tmp;
 					map->pix = buf;
-				break;
+					break;
 			}
 		}
 		catch(const Exception& e) { e.add(L""); }

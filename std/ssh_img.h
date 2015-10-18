@@ -90,7 +90,8 @@ namespace ssh
 			flip_90,				// поворот на 90 градусов
 			tbl_2d,					// таблична€ рамка
 			tbl_3d,					// рамка 3д таблицы
-			tbl_grp					// рамка таблицы дл€ группы элементов
+			tbl_grp,				// рамка таблицы дл€ группы элементов
+			pow2					// стретч размеров на величину кратную степени 2
 		};
 		// основные операции над пиксел€ми
 		enum class Pix : int
@@ -108,15 +109,14 @@ namespace ssh
 			mul,					// умножение
 			lum_add,				// добавление оттенков серого
 			lum_sub,				// вычитание оттенков серого
-			norm,					// нормализаци€
-			pow2					// стретч размеров на величину кратную степени 2
+			norm					// нормализаци€
 		};
 		// типы фильтров
 		enum class Flt : int
 		{
 			none,			// без фильтра
 			sobel,			// собель
-			laplacian,		// лаплас
+			laplac,			// лаплас
 			prewit,			// превит
 			emboss,			// эмбосс
 			normal,			// нормализаци€
@@ -169,14 +169,8 @@ namespace ssh
 		// гистрограммы
 		enum class Histogramms : int
 		{
-			rgb,
-			red,
-			green,
-			blue,
-			rgb_v,
-			red_v,
-			green_v,
-			blue_v
+			rgb, red, green, blue, alpha,
+			rgb_v, red_v, green_v, blue_v, alpha_v
 		};
 		ImgMod() {}
 		// инициализирующий конструктор из xml
@@ -236,16 +230,14 @@ namespace ssh
 		vec4 flt_vec = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		// область действи€ модификатора
 		Bar<int> bar;
-		// диапазон
-		Range<int> rn;
-		// габариты
-		Range<int> wh = Range<int>(10, 10);
+		// габариты/диапазон
+		Range<int> wh = Range<int>(1, 1);
 		// габариты €чейки
 		Range<int> wh_cell = Range<int>(1, 1);
 		// количество повторений
 		Range<float> wh_rep = Range<float>(1.0f, 1.0f);
 		// диапазон элементов в массивах
-		Range<int> array_count = Range<int>(1, 1);
+		Range<int> wh_rgba = Range<int>(1, 1);
 		// цвета дл€ формировани€ гистограммы
 		Range<int> cols_histogramm;
 	};
@@ -365,7 +357,7 @@ namespace ssh
 		};
 		struct IMAGE
 		{
-			IMAGE(const Range<int>& _wh) : wh(_wh), pix(Buffer<ssh_cs>(_wh.w * _wh.h * 4)) {}
+			IMAGE(const Range<int>& _wh) : wh(_wh), pix(buf_cs(_wh, 4)) {}
 			// габариты
 			Range<int> wh;
 			// буфер пикселей
@@ -447,7 +439,7 @@ namespace ssh
 		// добавить/установить карту
 		int set_map(ssh_wcs path, int layer, int mip = 0);
 		// добавить/установить пустую карту
-		ImgMap* set_empty(const Range<int>& wh, int layer, int mip = 0);
+		ImgMap* set_empty(const Range<int>& wh, int layer, Buffer<ssh_cs>* buf = nullptr, int mip = 0);
 		// добавить/установить шрифт
 		ImgTxt* set_font(ssh_wcs name, ssh_wcs face, ssh_w* groups, int height, int layer);
 		// удалить карту
@@ -459,7 +451,7 @@ namespace ssh
 		// создать дубликат карты
 		ImgMap* duplicate(int nlayer, int nmip, int olayer, int omip);
 		// создать гистограмму
-		Buffer<ssh_cs> histogramm(int layer, int mip, const Range<int>& wh, ImgMod::Histogramms type, const color& bkg, const color& frg);
+		Buffer<ssh_cs> histogramm(const Range<int>& wh, ImgMod::Histogramms type, const color& bkg, const color& frg, int layer, int mip = 0);
 		// сформировать
 		Buffer<ssh_cs> make(ImgMap* map = nullptr);
 		// вернуть корень карт
@@ -527,7 +519,7 @@ namespace ssh
 		void asm_ssh_figure(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_gradient(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_histogramm(const Range<int>& tmp, ImgMod* modify, void* buf);
-		void asm_ssh_correct(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod::Histogramms type);
+		void asm_ssh_correct(const Range<int>& clip, const Range<int>& wh, ImgMod::Histogramms type, void* pix);
 		void asm_ssh_noise_perlin(const Range<int>& clip, int vals, void* pix, float scale);
 		void asm_ssh_noise_terrain(const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
 		void asm_ssh_flip_90(const Range<int>& clip, void* dst, void* pix);

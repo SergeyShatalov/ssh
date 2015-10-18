@@ -1,7 +1,7 @@
 
 include asm_ssh.inc
 
-XMM_LINEAR		= 0
+XMM_LINEAR		= 1
 
 coord_l_mirror macro p1
 		xor rdx, rdx

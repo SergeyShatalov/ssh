@@ -51,11 +51,11 @@ namespace ssh
 		return count;
 	}
 
-	ImgMap* Image::set_empty(const Range<int>& wh, int layer, int mip)
+	ImgMap* Image::set_empty(const Range<int>& wh, int layer, Buffer<ssh_cs>* buf, int mip)
 	{
 		SSH_TRACE;
 		ImgMap* new_map(new ImgMap(wh, Buffer<ssh_cs>(asm_ssh_compute_fmt_size(wh.w, wh.h, FormatsMap::rgba8))));
-		memset(new_map->pixels(), 0, new_map->pixels().size());
+		if(buf) memcpy(new_map->pixels(), buf->to<ssh_cs>(), new_map->pixels().size());  else memset(new_map->pixels(), 0, new_map->pixels().size());
 		set_map(new_map, layer, mip);
 		return new_map;
 	}
@@ -92,7 +92,7 @@ namespace ssh
 		SSH_TRACE;
 		ImgMap* old_map(get_map(olayer, omip));
 		ImgMap* new_map(get_map(nlayer, nmip));
-		if(!old_map) SSH_THROW(L"Карта дупликат <%i, %i> не обнаружена!", olayer, omip);
+		if(!old_map) SSH_THROW(L"Карта дубликат <%i, %i> не обнаружена!", olayer, omip);
 		if(new_map) SSH_THROW(L"Карта <%i, %i> для дублирования уже существует!", nlayer, nmip);
 		Bar<int> new_bar(old_map->ixywh);
 		buf_cs new_pix(new_bar.w * new_bar.h * 4);
@@ -114,17 +114,17 @@ namespace ssh
 		}
 	}
 
-	Buffer<ssh_cs> Image::histogramm(int layer, int mip, const Range<int>& wh, ImgMod::Histogramms type, const color & bkg, const color & frg)
+	Buffer<ssh_cs> Image::histogramm(const Range<int>& wh, ImgMod::Histogramms type, const color & bkg, const color & frg, int layer, int mip)
 	{
 		SSH_TRACE;
 		ImgMap* map(get_map(layer, mip));
 		if(!map) SSH_THROW(L"Карта <%i, %i> не обнаружена!", layer, mip);
-		buf_cs buf((SSH_CAST(type) >= SSH_CAST(ImgMod::Histogramms::rgb_v)) ? 1028 : wh.w * wh.h * 4);
+		buf_cs buf((SSH_CAST(type) >= SSH_CAST(ImgMod::Histogramms::rgb_v)) ? 1024 + 8 : wh.w * wh.h * 4);
 		ImgMod modify;
 		modify.cols_histogramm.w = bkg.BGRA();
 		modify.cols_histogramm.h = frg.BGRA();
-		modify.rgba = map->pixels();
-		modify.wh = map->ixywh;
+		modify.rgba = buf_cs(map->pix, map->pix.count(), false);
+		modify.wh_rgba = map->ixywh;
 		asm_ssh_histogramm(wh, &modify, buf);
 		return buf;
 	}
@@ -456,7 +456,7 @@ namespace ssh
 							duplicate(layer, mip, xml.attr(hnode, L"old_layer", -1), xml.attr(hnode, L"old_mip", 0));
 							break;
 						case Cmds::empty:
-							set_empty(Range<int>(ssh_explode<int>(L",", xml.attr(hnode, L"wh", tmp), rn, 2, 0)), layer, mip);
+							set_empty(Range<int>(ssh_explode<int>(L",", xml.attr(hnode, L"wh", tmp), rn, 2, 0)), layer, nullptr, mip);
 							break;
 						case Cmds::font:
 							{

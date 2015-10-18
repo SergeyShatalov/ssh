@@ -185,6 +185,7 @@
     </MASM>
     <MASM Include="asm_ssh_img_mod.asm">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</WarningLevel>
     </MASM>
     <MASM Include="asm_ssh_img_txt.asm">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0</WarningLevel>

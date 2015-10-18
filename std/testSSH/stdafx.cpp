@@ -302,6 +302,7 @@ void save_atlas(ssh_wcs path, const Range<int>& rn)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	float res = ssh_ceil(0.5f);
 	Singlton<Log> _lg;
 	try
 	{
@@ -313,13 +314,22 @@ int _tmain(int argc, _TCHAR* argv[])
 		new(&img, L"image") Image(Image::TypesMap::TextureMap, FormatsMap::rgba8);
 		int w = 512, h = 512;
 		int ww = 1536, hh = 2048;
-		img->set_empty(Range<int>(w, h), 0);
+		img->set_map(L"e:\\r5g6b5.bmp", 0);
+		//img->set_empty(Range<int>(w, h), 0);
+		img->set_empty(Range<int>(w, h), 1);
 		Xml xml(L"e:\\mod.xml");
 		HXML hroot(xml.node(xml.root(), L"modify"));
-		ImgMod(&xml, xml.node(hroot, L"mod1"), img).apply(img->get_map(0));
-		ImgMod(&xml, xml.node(hroot, L"mod2"), img).apply(img->get_map(0));
+		//ImgMod(&xml, xml.node(hroot, L"mod_gradient"), img).apply(img->get_map(0));
+		ImgMod(&xml, xml.node(hroot, L"mod_correct"), img).apply(img->get_map(0));
+		ImgMod(&xml, xml.node(hroot, L"mod_histogramm"), img).apply(img->get_map(1));
+		//ImgMod(&xml, xml.node(hroot, L"mod_resize"), img).apply(img->get_map(0));
+		//ImgMod(&xml, xml.node(hroot, L"mod_flip"), img).apply(img->get_map(0));
+		ImgMod(&xml, xml.node(hroot, L"mod_copy"), img).apply(img->get_map(0));
+		//buf_cs buf(img->histogramm(Range<int>(w, h), ImgMod::Histogramms::red, color(255, 255, 255, 255), color(0, 0, 0, 255), 0));
+		//img->set_empty(Range<int>(w, h), 1, &buf);
 		//asm_ssh_copy(Bar<int>(0, 0, ww, hh), Range<int>(ww, hh), img->get_map(0)->pixels(), img->get_map(1)->pixels(), Bar<int>(0, 0, w, h), Range<int>(w, h), &mod);
 		img->save(L"e:\\mod.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 0);
+		img->save(L"e:\\his.tga", ImgCnv::Types::tga, FormatsMap::rgba8, 1);
 		img->release();
 		return 0;
 	}

@@ -8,6 +8,8 @@ align 16
 _gamma		dd 0.3, 0.59, 0.11, 1.0, 0.3, 0.59, 0.11, 1.0
 f_255x8		dd 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0, 255.0
 f_256x8		dd 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0, 256.0
+f_inv255x8	dd 0.00392156862, 0.00392156862, 0.00392156862, 0.00392156862, 0.00392156862, 0.00392156862, 0.00392156862, 0.00392156862
+f_inv256x8	dd 0.00390625, 0.00390625, 0.00390625, 0.00390625, 0.00390625, 0.00390625, 0.00390625, 0.00390625
 f_0_5x8		dd 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5
 f_3_0x8		dd 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0
 f_1_0x8		dd 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
@@ -21,6 +23,7 @@ _mm_gamma	dw 77, 151, 28, 1, 77, 151, 28, 1
 
 .data?
 _clip		stk_bar<?>
+histogramm	dd 256 dup(?)
 
 .code
 
@@ -146,21 +149,21 @@ _fin:	ret
 swap_h_flip db 4, 5, 6, 7, 0, 1, 2, 3
 asm_ssh_h_flip endp
 
-asm_ssh_flip_90 proc wh:QWORD, dst:QWORD, src:QWORD
+asm_ssh_flip_90 proc USES rbx wh:QWORD, dst:QWORD, src:QWORD
 		mov r9, rdx
-		mov rdx, [rcx + 08]		; w->h
-		mov rcx, [rcx + 00]		; h->w
+		movsxd rdx, [rcx].stk_range.h		; w->h
+		movsxd rcx, [rcx].stk_range.w		; h->w
 		jrcxz _fin
-		lea rbx, [rdx * 4]		; pitch
-		lea r9, [r9 + rdx * 4 - 4]
+		lea rbx, [rdx * 4]					; pitch
+		lea r9, [r9 + rbx - 4]
 _loop:	mov r10, r9
-		push rcx
+		mov r11, rcx
 @@:		mov eax, [r8]
 		mov [r10], eax
-_11:	add r10, rbx
+		add r10, rbx
 		add r8, 4
 		loop @b
-		pop rcx
+		mov rcx, r11
 		sub r9, 4
 		dec rdx
 		jg _loop
@@ -188,8 +191,6 @@ asm_ssh_gradient proc USES r11 r12 r13 r14 r15 rsi rbx bar:QWORD, clip:QWORD, pi
 		movsxd rax, [r9].stk_modify.type_address
 		mov r12, [r12 + rax * 8]						; функция адресации координат
 		; преобразовать начальный и конечный цвет в плавающий формат
-		vxorps xmm10, xmm10, xmm10
-		vmovaps xmm11, f_2_0x8
 		vmovaps xmm12, f_255x8
 		vmovaps xmm13, f_1_0x8
 		vpmovzxbd xmm14, dword ptr [r9].stk_modify.src_val
@@ -211,8 +212,7 @@ asm_ssh_gradient proc USES r11 r12 r13 r14 r15 rsi rbx bar:QWORD, clip:QWORD, pi
 		vmulss xmm2, xmm4, xmm4							; length *= length
 		vmulss xmm0, xmm0, xmm2
 		vmulss xmm1, xmm1, xmm2
-		; сдвинуть координаты
-		; сдвинуть на clip.x, clip.y
+		; сдвинуть координаты на clip.x, clip.y
 		vshufps xmm7, xmm9, xmm8, 00000000b				; dx|dx|dy|dy
 		vcvtsi2ss xmm6, xmm6, _clip.y
 		vmulss xmm6, xmm6, xmm9							; y
@@ -259,7 +259,7 @@ _h:		push rdx
 _fin:	emms
 		ret
 _func_tex	dq _clamp,_mirror,_repeat,_clamp, _mirror, _repeat
-OPTION EPILOGUE:NONE
+epilog_none
 _clamp:	mov rdx, r13
 		ret
 _repeat:xor rdx, rdx
@@ -288,7 +288,7 @@ _mirror:mov rax, rbx
 		cmp rdx, r15
 		cmovge rdx, rsi
 		ret
-OPTION EPILOGUE:EPILOGUEDEF
+epilog_def
 asm_ssh_gradient endp
 
 asm_ssh_replace proc vals:QWORD, msks:QWORD, pix:QWORD, clip:QWORD
@@ -317,130 +317,288 @@ _loop:	movd mm0, dword ptr [r10]
 _fin:	ret
 asm_ssh_replace endp
 
-asm_make_histogramm proc
-		ret
-asm_make_histogramm endp
+histogramm_rgb			= 0
+histogramm_red			= 1
+histogramm_green		= 2
+histogramm_blue			= 3
+histogramm_alpha		= 4
+histogramm_rgb_v		= 5
+histogramm_red_v		= 6
+histogramm_green_V		= 7
+histogramm_blue_v		= 8
+histogramm_alpha_v		= 9
 
-asm_ssh_histogramm proc wh:QWORD, modify:QWORD, buf:QWORD
-comment $
-;rcx(wh), rdx(clip), r8(rgba), r9(pixels), background, foreground, type
-asmHistogramm proc USES rbx r12 r13 rdi rsi wh:QWORD, clip:QWORD, dst:QWORD, src:QWORD, cb:DWORD, cf:DWORD, type:BYTE
-LOCAL @@transform[256]:DWORD
-		xorps xmm15, xmm15
-		movaps xmm14, _fp255x4
-		movaps xmm13, _gamma
-		mov r11, rcx
-		lea r13, @@transform
-		mov rdi, r13
-		xor rax, rax
+asm_ssh_histogramm proc USES rsi rdi rbx wh:QWORD, modify:QWORD, buf:QWORD
+		vmovaps xmm1, _gamma
+		mov r11, offset _addr
+		mov eax, [rdx].stk_modify.type_histogramm
+		mov r11, [r11 + rax * 8]					; процедура извлечения канала
+		mov rdi, offset histogramm					; буфер гистограммы
+		mov rsi, rcx
+		mov r9, [rdx].stk_modify.rgba.buf
+		movsxd rcx, [rdx].stk_modify.wh_rgba.w
+		imul ecx, [rdx].stk_modify.wh_rgba.h
+		mov r10, rdi
+		mov rbx, rcx
 		mov rcx, 128
+		xor rax, rax								; заполняем нулями буфер
 		rep stosq
-		mov rcx, [rdx + 00]
-		imul rcx, [rdx + 08]							; размер изображения
-		movzx rax, type
-		mov r10, offset _addr_his
-		mov r10, [rax * 8 + r10]
-		mov rdx, 1										; для пропорции по высоте
-		cvtsi2ss xmm1, rcx								; общее количество пикселей
-		xor rbx, rbx
-_loop:	call r10
-		add rbx, rax
-		inc dword ptr [rax * 4 + r13]
-		test rax, rax
-		jz @f
-		cmp rax, 255
-		jz @f
-		mov eax, dword ptr [rax * 4 + r13]
-		cmp rax, rdx
-		cmova rdx, rax
-@@:		add r9, 4
-		loop _loop
-		cmp type, 4
-		jb _pic
-		mov rdi, r8
-		mov rsi, r13
-		cvtsi2ss xmm0, rbx
-		divss xmm0, xmm1
-		cvtss2si rax, xmm0
-		;stosd					?????
-		mov rcx, 128
-		rep movsq
-		mov rax, r8
-		ret
-_pic:	;сформировать изображение гистограммы
-		xorps xmm3, xmm3			; x
-		mov rbx, [r11 + 00]			; w
-		mov r11, [r11 + 08]			; h
-		cvtsi2ss xmm0, rbx
-		cvtsi2ss xmm1, r11
-		cvtsi2ss xmm2, rdx			; пропорция высоты
-		divss xmm1, xmm2			; отношение высоты
-		divss xmm0, _fp256			; приращение ширины
-		; коррекция(если ширина == 0)
-		cvtss2si r9, xmm0
-		cmp r9, 1
-		adc r9, 0					; ширина линии
-		shl rbx, 2					; pitch
-		mov rsi, 256
-_loop0:	cvtsi2ss xmm2, dword ptr [r13]
-		add r13, 4
-		mulss xmm2, xmm1			; высота
-		cvttss2si rdx, xmm3			; x
-		lea r10, [r8 + rdx * 4]
-		cvtss2si rdx, xmm2			; высота линии
-		mov eax, cb
-		mov r12, r11
-		sub r12, rdx				; высота пустоты
-		jle _nn
-@@:		mov rcx, r9
-		mov rdi, r10
-		rep stosd
-		add r10, rbx
-		dec r12
-		jnz @b
-_nn:	mov eax, cf
-		test rdx, rdx
-		jle _nol
-		cmp rdx, r11
-		cmovg rdx, r11
-@@:		mov rcx, r9
-		mov rdi, r10
-		rep stosd
-		add r10, rbx
+		mov rcx, rbx
+@@:		call r11
+		inc dword ptr [rax * 4 + r10]
+		add r9, 4
+		loop @b
+		mov rax, 1									; максимальное значение
+		mov rcx, rax
+@@:		cmp eax, dword ptr [r10 + rcx * 4]
+		cmovl eax, dword ptr [r10 + rcx * 4]
+		inc rcx
+		cmp rcx, 254
+		jb @b
+		cmp [rdx].stk_modify.type_histogramm, histogramm_rgb_v
+		jb img
+		; найти мин и макс диапазона
+		mov rcx, 1
+		mov rdx, 254
+@@:		cmp dword ptr [r10 + rcx * 4], 15
+		jae @f
+		inc rcx
+		cmp rcx, rdx
+		jb @b
+@@:		cmp dword ptr [r10 + rdx * 4], 15
+		jae @f
 		dec rdx
 		jnz @b
-_nol:	addss xmm3, xmm0
-		dec rsi
-		jnz _loop0
+@@:		mov [r8], ecx
+		mov [r8 + 4], rdx
+		lea rdi, [r8 + 8]
+		mov rsi, r10
+		mov rcx, 128
+		rep movsq
 		ret
-_addr_his dq _rgb, _red, _green, _blue, _rgb, _red, _green, _blue
-OPTION EPILOGUE:NONE
-_red:	movzx rax, byte ptr [r9 + 2]					; red
+img:	movsxd rbx, [rsi].stk_range.w				; w
+		movsxd rsi, [rsi].stk_range.h				; h
+		mov rcx, rbx
+		imul rcx, rsi
+		vcvtsi2ss xmm0, xmm0, rbx
+		vdivss xmm0, xmm0, f_256x8					; dx
+		vcvtsi2ss xmm1, xmm1, rsi
+		vcvtsi2ss xmm2, xmm2, rax					; max_h
+		vdivss xmm1, xmm1, xmm2						; dh
+		shl rbx, 2									; pitch
+		; заполнить картинку цветом гистограммы
+		mov eax, [rdx]. stk_modify.cols_histogramm.h; f_rgba
+		mov rdi, r8
+		rep stosd
+		mov eax, [rdx]. stk_modify.cols_histogramm.w; b_rgba
+		; находим x1, x2
+		xor rdx, rdx
+_loop:	mov rdi, rdx
+@@:		cmp rdi, 255
+		jae @f
+		inc rdi
+		movsxd rcx, dword ptr [r10 + rdi * 4]
+		jrcxz @b
+@@:		cmp rdx, rdi
+		jnz @f
+		cmp rdx, 255
+		jz _fin
+		mov rdi, 255
+@@:		vcvtsi2ss xmm2, xmm2, dword ptr [r10 + rdx * 4]	; v1
+		vcvtsi2ss xmm3, xmm3, dword ptr [r10 + rdi * 4]	; v2
+		vmulss xmm2, xmm2, xmm1						; h1
+		vmulss xmm3, xmm3, xmm1						; h2
+		vcvtsi2ss xmm4, xmm4, rdx
+		vcvtsi2ss xmm5, xmm5, rdi
+		vmulss xmm4, xmm4, xmm0						; x1
+		vmulss xmm5, xmm5, xmm0						; x2
+		vsubss xmm6, xmm5, xmm4						; w_length
+		vsubss xmm7, xmm3, xmm2						; h_length
+		vdivss xmm7, xmm7, xmm6						; dy = h_length / w_length
+		vcvtss2si r9, xmm4
+		vcvtss2si rcx, xmm6
+		cmp rcx, 1
+		adc rcx, 0
+		mov rdx, rdi
+		lea r9, [r8 + r9 * 4]
+_loop1:	vcvtss2si r11, xmm2							; h
+		sub r11, rsi
+		neg r11
+		jle _no
+		mov rdi, r9
+@@:		mov [rdi], eax
+		add rdi, rbx
+		dec r11
+		jnz @b
+_no:	vaddss xmm2, xmm2, xmm7
+		add r9, 4
+		loop _loop1
+		jmp _loop
+_fin:	ret
+_addr	dq _rgb, _red, _green, _blue, _alpha, _rgb, _red, _green, _blue, _alpha
+epilog_none
+_red:	movzx rax, byte ptr [r9 + 0]
 		ret
-_green:	movzx rax, byte ptr [r9 + 1]					; green
+_green:	movzx rax, byte ptr [r9 + 1]
 		ret
-_blue:	movzx rax, byte ptr [r9 + 0]
+_blue:	movzx rax, byte ptr [r9 + 2]
 		ret
-_rgb:	movd xmm0, dword ptr [r9]
-		punpcklbw xmm0, xmm15
-		punpcklwd xmm0, xmm15
-		cvtdq2ps xmm0, xmm0
-		dpps xmm0, xmm13, 01110001b
-		cvtss2si rax, xmm0
+_alpha:	movzx rax, byte ptr [r9 + 3]
 		ret
-OPTION EPILOGUE:EpilogueDef
-asmHistogramm endp
-
-$
+_rgb:	vpmovzxbd xmm0, dword ptr [r9]
+		vcvtdq2ps xmm0, xmm0
+		vdivps xmm0, xmm0, f_255x8
+		vdpps xmm0, xmm0, xmm1, 01110001b
+		vmulps xmm0, xmm0, f_255x8
+		vcvtss2si rax, xmm0
 		ret
+epilog_def
 asm_ssh_histogramm endp
 
-asm_ssh_correct proc bar:QWORD, clip:QWORD, pix:QWORD, type:DWORD
+asm_ssh_correct proc USES rdi clip:QWORD, wh:QWORD, type:DWORD, pix:QWORD
+		movsxd r11, [rcx].stk_range.w
+		imul r11d, [rcx].stk_range.h			; длина изображения
+		; фиксируем диапазон
+		movsxd rcx, [rdx].stk_range.w			; start
+		movsxd rdx, [rdx].stk_range.h			; end
+		xor rax, rax
+		mov r10, 255
+		cmp rcx, rax
+		cmovl rcx, rax
+		cmp rdx, rax
+		cmovl rdx, rax
+		cmp rcx, r10
+		cmovg rcx, r10
+		cmp rdx, r10
+		cmovg rdx, r10							; clamp(start, 0, 255), clamp(end, 0, 255)
+		mov rax, rcx
+		cmp rcx, rdx
+		cmovg rcx, rdx
+		cmp rdx, rax
+		cmovl rdx, rax							; start > end -> swap(start, end)
+		mov r10, offset _addr1
+		mov r10, [r10 + r8 * 8]
+		mov r8, offset histogramm
+		mov rdi, r8
+		xor rax, rax
+		sub rdx, rcx
+		rep stosb								; стереть до начальной позиции диапазона
+		mov rcx, rdx
+		jrcxz _fin
+		vcvtsi2ss xmm1, xmm1, rcx
+		vmovaps xmm0, f_256x8
+		vdivss xmm1, xmm0, xmm1					; dx
+		vxorps xmm0, xmm0, xmm0					; x
+@@:		vcvtss2si rax, xmm0
+		vaddss xmm0, xmm0, xmm1
+		stosb
+		loop @b
+		mov rcx, rdi
+		sub rcx, r8
+		sub rcx, 256
+		neg rcx
+		mov rax, 255
+		rep stosb								; заполнить конец диапазона значениями 255
+		mov rcx, r11							; корректировать изображение
+@@:		call r10
+		add r9, 4
+		loop @b
+_fin:	ret
+_addr1	dq _rgb, _red, _green, _blue, _alpha, _rgb, _red, _green, _blue, _alpha
+epilog_none
+_rgb:	mov al, [r9 + 0]
+		mov al, [rax + r8]
+		mov [r9 + 0], al
+		mov al, [r9 + 1]
+		mov al, [rax + r8]
+		mov [r9 + 1], al
+		mov al, [r9 + 2]
+		mov al, [rax + r8]
+		mov [r9 + 2], al
 		ret
+_red:	mov al, [r9 + 0]
+		mov al, [rax + r8]
+		mov [r9 + 0], al
+		ret
+_green:	mov al, [r9 + 1]
+		mov al, [rax + r8]
+		mov [r9 + 1], al
+		ret
+_blue:	mov al, [r9 + 2]
+		mov al, [rax + r8]
+		mov [r9 + 2], al
+		ret
+_alpha:	mov al, [r9 + 3]
+		mov al, [rax + r8]
+		mov [r9 + 3], al
+		ret
+epilog_def
 asm_ssh_correct endp
 
 ; (const Range<int>& clip, int vals, void* pix, float scale);
 asm_ssh_noise_perlin proc
+comment $
+function Noise1(integer x, integer y)
+    n = x + y * 57
+    n = (n<<13) ^ n;
+    return ( 1.0 - ( (n * (n * n * 15731 + 789221) + 1376312589) & 7fffffff) / 1073741824.0);    
+  end function
+
+  function SmoothNoise_1(float x, float y)
+    corners = ( Noise(x-1, y-1)+Noise(x+1, y-1)+Noise(x-1, y+1)+Noise(x+1, y+1) ) / 16
+    sides   = ( Noise(x-1, y)  +Noise(x+1, y)  +Noise(x, y-1)  +Noise(x, y+1) ) /  8
+    center  =  Noise(x, y) / 4
+    return corners + sides + center
+  end function
+
+ function Linear_Interpolate(a, b, x)
+	return  a*(1-x) + b*x
+  end of function
+  
+  function Cosine_Interpolate(a, b, x)
+	ft = x * 3.1415927
+	f = (1 - cos(ft)) * .5
+	return  a*(1-f) + b*f
+  end of function
+  
+  function Cubic_Interpolate(v0, v1, v2, v3,x)
+	P = (v3 - v2) - (v0 - v1)
+	Q = (v0 - v1) - P
+	R = v2 - v0
+	S = v1
+
+	return Px3 + Qx2 + Rx + S
+  end of function
+  
+  function InterpolatedNoise_1(float x, float y)
+      integer_X    = int(x)
+      fractional_X = x - integer_X
+      integer_Y    = int(y)
+      fractional_Y = y - integer_Y
+      v1 = SmoothedNoise1(integer_X,     integer_Y)
+      v2 = SmoothedNoise1(integer_X + 1, integer_Y)
+      v3 = SmoothedNoise1(integer_X,     integer_Y + 1)
+      v4 = SmoothedNoise1(integer_X + 1, integer_Y + 1)
+      i1 = Interpolate(v1 , v2 , fractional_X)
+      i2 = Interpolate(v3 , v4 , fractional_X)
+      return Interpolate(i1 , i2 , fractional_Y)
+  end function
+
+frequencyx  = flt_vec.x
+frequencyy  = flt_vec.y
+amplitude  = scale
+
+  function PerlinNoise_2D(float x, float y)
+      total = 0
+      p = persistence
+      n = Number_Of_Octaves - 1
+      loop i from 0 to n
+          frequency = 2i
+          amplitude = pi
+          total = total + InterpolatedNoisei(x * frequencyx, y * frequencyy) * amplitude
+      end of i loop
+      return total
+  end function$
 		ret
 asm_ssh_noise_perlin endp
 
@@ -464,8 +622,9 @@ asm_ssh_table proc
 		ret
 asm_ssh_table endp
 
-; (const Bar<int>& bar, const Range<int>& clip, void* pix, ImgMod* modify);
-asm_ssh_border2d proc
+asm_ssh_border2d proc bar:QWORD, clip:QWORD, dst:QWORD, modify:QWORD
+		
+		ret
 comment $
 ; rcx(bar) rdx(clip), r8(src), r9(widthBorder), val, msk, side, pixOps
 asmBorder proc USES rbx r12 r13 r14 bar:QWORD, clip:QWORD, src:QWORD, width:QWORD, val:QWORD, msk:QWORD, side:QWORD, pixOps:BYTE

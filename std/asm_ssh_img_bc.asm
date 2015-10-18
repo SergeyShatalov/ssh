@@ -26,6 +26,7 @@ null_bc1 endp
 asm_ssh_bc_x proc USES rdi rsi rbx r12 r13 r14 r15
 LOCAL points[64]:DWORD
 LOCAL alpha[16]:DWORD
+		vzeroupper
 		lea r15, [rcx * 4]						; pitch
 		shr rcx, 2
 		jz fin
